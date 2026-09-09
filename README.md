@@ -13,7 +13,8 @@ npm run setup
 npm run dev
 ```
 
-Acesse `http://127.0.0.1:3000`.
+Acesse `http://127.0.0.1:3000`. Em um telefone conectado à mesma rede
+Wi-Fi, abra `http://IP-DO-COMPUTADOR:3000`.
 
 No macOS ou Linux, substitua `copy .env.example .env` por
 `cp .env.example .env`.

@@ -1,0 +1,497 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Edition {
+  id                     String             @id @default(cuid())
+  name                   String
+  slug                   String             @unique
+  year                   Int
+  slogan                 String             @default("")
+  description            String             @default("")
+  startAt                DateTime
+  endAt                  DateTime
+  timezone               String             @default("America/Manaus")
+  status                 String             @default("DRAFT")
+  maxActivities          Int                @default(5)
+  maxCheckins            Int                @default(5)
+  normalMinutes          Int                @default(15)
+  noShowMinutes          Int                @default(20)
+  lateMinutes            Int                @default(25)
+  checkoutMinutes        Int                @default(24)
+  reminderMinutes        String             @default("30,10")
+  allowMultipleRewards   Boolean            @default(true)
+  logoUrl                String             @default("/assets/brand/logo-jornada-2026.png")
+  primaryColor           String             @default("#183d43")
+  secondaryColor         String             @default("#ba975b")
+  backgroundColor        String             @default("#f8f6f0")
+  certificateTemplateUrl String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  participants           Participant[]
+  categories             ActivityCategory[]
+  speakers               Speaker[]
+  activities             Activity[]
+  rewards                RewardItem[]
+  sponsors               Sponsor[]
+}
+
+model Participant {
+  id                String                  @id @default(cuid())
+  editionId         String
+  edition           Edition                 @relation(fields: [editionId], references: [id])
+  name              String
+  firstName         String
+  normalizedName    String
+  ra                String
+  semester          Int
+  photoUrl          String?
+  active            Boolean                 @default(true)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  enrollments       Enrollment[]
+  waitlist          WaitlistEntry[]
+  attendances       Attendance[]
+  stamps            PassportStamp[]
+  eligibilities     RewardEligibility[]
+  drawEntries       RewardDrawEntry[]
+  reservations      RewardReservation[]
+  deliveries        RewardDelivery[]
+  certificates      Certificate[]
+  recipients        NotificationRecipient[]
+  sessions          Session[]
+  pushSubscriptions PushSubscription[]
+
+  @@unique([editionId, ra])
+}
+
+model Role {
+  id     String           @id
+  name   String
+  users  AdminUser[]
+  grants RolePermission[]
+}
+
+model Permission {
+  id          String           @id
+  description String
+  grants      RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("OPERATOR")
+  roleRecord   Role      @relation(fields: [role], references: [id])
+  permissions  String    @default("[]")
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+model Session {
+  id            String       @id
+  kind          String
+  adminId       String?
+  participantId String?
+  admin         AdminUser?   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  expiresAt     DateTime
+  createdAt     DateTime     @default(now())
+
+  @@index([expiresAt])
+}
+
+model ActivityCategory {
+  id                   String          @id @default(cuid())
+  editionId            String
+  edition              Edition         @relation(fields: [editionId], references: [id])
+  name                 String
+  slug                 String
+  color                String          @default("#183d43")
+  icon                 String          @default("book")
+  order                Int             @default(0)
+  requiresEnrollment   Boolean         @default(true)
+  requiresCheckin      Boolean         @default(true)
+  requiresCheckout     Boolean         @default(false)
+  generatesStamp       Boolean         @default(true)
+  generatesCertificate Boolean         @default(false)
+  active               Boolean         @default(true)
+  stampUrl             String?
+  activities           Activity[]
+  stamps               PassportStamp[]
+  rules                RewardRule[]
+
+  @@unique([editionId, slug])
+}
+
+model Speaker {
+  id            String            @id @default(cuid())
+  editionId     String
+  edition       Edition           @relation(fields: [editionId], references: [id])
+  name          String
+  bio           String            @default("")
+  photoUrl      String?
+  curriculumUrl String?
+  institution   String            @default("")
+  activities    ActivitySpeaker[]
+}
+
+model Activity {
+  id                 String            @id @default(cuid())
+  editionId          String
+  edition            Edition           @relation(fields: [editionId], references: [id])
+  categoryId         String
+  category           ActivityCategory  @relation(fields: [categoryId], references: [id])
+  title              String
+  description        String            @default("")
+  startAt            DateTime
+  endAt              DateTime
+  block              String            @default("")
+  room               String            @default("")
+  capacity           Int               @default(20)
+  enrollmentOpen     Boolean           @default(true)
+  enrollmentDeadline DateTime?
+  swapDeadline       DateTime?
+  workload           Float             @default(1)
+  status             String            @default("OPEN")
+  allowWaitlist      Boolean           @default(true)
+  stampUrl           String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  speakers           ActivitySpeaker[]
+  enrollments        Enrollment[]
+  waitlist           WaitlistEntry[]
+  attendances        Attendance[]
+  stamps             PassportStamp[]
+  rules              RewardRule[]
+  certificates       Certificate[]
+
+  @@index([editionId, startAt])
+}
+
+model ActivitySpeaker {
+  activityId String
+  speakerId  String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  speaker    Speaker  @relation(fields: [speakerId], references: [id])
+
+  @@id([activityId, speakerId])
+}
+
+model Enrollment {
+  id             String      @id @default(cuid())
+  editionId      String
+  participantId  String
+  activityId     String
+  participant    Participant @relation(fields: [participantId], references: [id])
+  activity       Activity    @relation(fields: [activityId], references: [id])
+  status         String      @default("ACTIVE")
+  lateEnrollment Boolean     @default(false)
+  source         String      @default("PARTICIPANT")
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime    @default(now())
+
+  @@unique([participantId, activityId])
+  @@index([editionId, activityId, status])
+}
+
+model WaitlistEntry {
+  id            String      @id @default(cuid())
+  editionId     String
+  participantId String
+  activityId    String
+  participant   Participant @relation(fields: [participantId], references: [id])
+  activity      Activity    @relation(fields: [activityId], references: [id])
+  status        String      @default("WAITING")
+  createdAt     DateTime    @default(now())
+  promotedAt    DateTime?
+
+  @@unique([participantId, activityId])
+  @@index([activityId, status, createdAt])
+}
+
+model Attendance {
+  id            String            @id @default(cuid())
+  editionId     String
+  participantId String
+  activityId    String
+  participant   Participant       @relation(fields: [participantId], references: [id])
+  activity      Activity          @relation(fields: [activityId], references: [id])
+  checkinAt     DateTime?
+  checkoutAt    DateTime?
+  status        String            @default("PRESENT")
+  events        AttendanceEvent[]
+  stamp         PassportStamp?
+
+  @@unique([participantId, activityId])
+  @@index([editionId])
+}
+
+model AttendanceEvent {
+  id           String     @id @default(cuid())
+  attendanceId String
+  attendance   Attendance @relation(fields: [attendanceId], references: [id])
+  operation    String
+  operatorId   String
+  reason       String?
+  createdAt    DateTime   @default(now())
+}
+
+model PassportStamp {
+  id            String           @id @default(cuid())
+  editionId     String
+  participantId String
+  activityId    String
+  categoryId    String
+  attendanceId  String           @unique
+  participant   Participant      @relation(fields: [participantId], references: [id])
+  activity      Activity         @relation(fields: [activityId], references: [id])
+  category      ActivityCategory @relation(fields: [categoryId], references: [id])
+  attendance    Attendance       @relation(fields: [attendanceId], references: [id])
+  issuedAt      DateTime         @default(now())
+  issuedBy      String
+  status        String           @default("VALID")
+
+  @@unique([participantId, activityId])
+}
+
+model RewardItem {
+  id                  String              @id @default(cuid())
+  editionId           String
+  edition             Edition             @relation(fields: [editionId], references: [id])
+  name                String
+  description         String              @default("")
+  imageUrl            String?
+  total               Int
+  active              Boolean             @default(true)
+  order               Int                 @default(0)
+  confirmationMinutes Int                 @default(60)
+  exclusiveGroup      String?
+  rules               RewardRule[]
+  eligibilities       RewardEligibility[]
+  draws               RewardDraw[]
+  reservations        RewardReservation[]
+  deliveries          RewardDelivery[]
+}
+
+model RewardRule {
+  id              String            @id @default(cuid())
+  editionId       String
+  rewardId        String
+  reward          RewardItem        @relation(fields: [rewardId], references: [id])
+  minCheckins     Int               @default(1)
+  categoryId      String?
+  category        ActivityCategory? @relation(fields: [categoryId], references: [id])
+  activityId      String?
+  activity        Activity?         @relation(fields: [activityId], references: [id])
+  completeJourney Boolean           @default(false)
+}
+
+model RewardEligibility {
+  id            String      @id @default(cuid())
+  editionId     String
+  rewardId      String
+  participantId String
+  reward        RewardItem  @relation(fields: [rewardId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id])
+  eligible      Boolean
+  reason        String
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([rewardId, participantId])
+}
+
+model RewardDraw {
+  id            String              @id @default(cuid())
+  editionId     String
+  rewardId      String
+  reward        RewardItem          @relation(fields: [rewardId], references: [id])
+  round         Int
+  stockSnapshot Int
+  eligibleCount Int
+  operatorId    String
+  mode          String
+  status        String              @default("EXECUTED")
+  randomSeed    String
+  snapshot      String
+  createdAt     DateTime            @default(now())
+  cancelledAt   DateTime?
+  cancelReason  String?
+  entries       RewardDrawEntry[]
+  reservations  RewardReservation[]
+
+  @@unique([rewardId, round])
+}
+
+model RewardDrawEntry {
+  id            String      @id @default(cuid())
+  drawId        String
+  participantId String
+  draw          RewardDraw  @relation(fields: [drawId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id])
+  winner        Boolean
+  rank          Int
+
+  @@unique([drawId, participantId])
+}
+
+model RewardReservation {
+  id            String           @id @default(cuid())
+  editionId     String
+  rewardId      String
+  participantId String
+  drawId        String?
+  reward        RewardItem       @relation(fields: [rewardId], references: [id])
+  participant   Participant      @relation(fields: [participantId], references: [id])
+  draw          RewardDraw?      @relation(fields: [drawId], references: [id])
+  quantity      Int              @default(1)
+  status        String           @default("AWAITING_CONFIRMATION")
+  expiresAt     DateTime
+  confirmedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  deliveries    RewardDelivery[]
+
+  @@index([editionId, status, expiresAt])
+}
+
+model RewardDelivery {
+  id            String            @id @default(cuid())
+  editionId     String
+  participantId String
+  rewardId      String
+  reservationId String
+  participant   Participant       @relation(fields: [participantId], references: [id])
+  reward        RewardItem        @relation(fields: [rewardId], references: [id])
+  reservation   RewardReservation @relation(fields: [reservationId], references: [id])
+  quantity      Int               @default(1)
+  operatorId    String
+  status        String            @default("DELIVERED")
+  deliveredAt   DateTime          @default(now())
+  reversedAt    DateTime?
+  reverseReason String?
+}
+
+model Certificate {
+  id                 String      @id @default(cuid())
+  editionId          String
+  participantId      String
+  activityId         String
+  participant        Participant @relation(fields: [participantId], references: [id])
+  activity           Activity    @relation(fields: [activityId], references: [id])
+  code               String      @unique
+  workload           Float
+  status             String      @default("RELEASED")
+  pdfUrl             String?
+  issuedAt           DateTime    @default(now())
+  invalidatedAt      DateTime?
+  invalidationReason String?
+
+  @@index([editionId, participantId, activityId])
+}
+
+model Notification {
+  id         String                  @id @default(cuid())
+  editionId  String
+  type       String
+  title      String
+  message    String
+  audience   String                  @default("selected")
+  dedupeKey  String?                 @unique
+  createdAt  DateTime                @default(now())
+  recipients NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             String       @id @default(cuid())
+  notificationId String
+  participantId  String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  participant    Participant  @relation(fields: [participantId], references: [id])
+  readAt         DateTime?
+  pushedAt       DateTime?
+
+  @@unique([notificationId, participantId])
+}
+
+model PushSubscription {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id])
+  endpoint      String      @unique
+  p256dh        String
+  auth          String
+  createdAt     DateTime    @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  editionId  String?
+  actorType  String
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  oldValue   String?
+  newValue   String?
+  reason     String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([editionId, createdAt])
+}
+
+model ImportJob {
+  id          String      @id @default(cuid())
+  editionId   String
+  operatorId  String
+  filename    String
+  status      String      @default("PREVIEW")
+  valid       Int
+  invalid     Int
+  duplicates  Int
+  createdAt   DateTime    @default(now())
+  confirmedAt DateTime?
+  rows        ImportRow[]
+}
+
+model ImportRow {
+  id       String    @id @default(cuid())
+  jobId    String
+  job      ImportJob @relation(fields: [jobId], references: [id])
+  row      Int
+  name     String
+  ra       String
+  semester Int?
+  status   String
+  error    String?
+}
+
+model Sponsor {
+  id        String  @id @default(cuid())
+  editionId String
+  edition   Edition @relation(fields: [editionId], references: [id])
+  name      String
+  logoUrl   String?
+  url       String?
+  order     Int     @default(0)
+  active    Boolean @default(true)
+}

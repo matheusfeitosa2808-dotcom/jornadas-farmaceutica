@@ -114,20 +114,27 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
           <form onSubmit={submit} className="stack">
             {kind === "participant" ? (
               <>
-                <label className="field">
-                  Edição
+                <div className="field">
+                  <label htmlFor="participant-edition">Edição</label>
                   <select
+                    id="participant-edition"
                     name="editionId"
                     required
                     defaultValue={data?.edition?.id || ""}
                   >
-                    {data?.editions?.map((ed: any) => (
-                      <option key={ed.id} value={ed.id}>
-                        {ed.name}
+                    {data?.editions?.length ? (
+                      data.editions.map((ed: any) => (
+                        <option key={ed.id} value={ed.id}>
+                          {ed.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>
+                        Carregando edições…
                       </option>
-                    ))}
+                    )}
                   </select>
-                </label>
+                </div>
                 <label className="field">
                   Primeiro nome
                   <input

@@ -3208,6 +3208,77 @@ img {
   max-width: 600px;
   margin: 0;
 }
+.landing-edition-picker {
+  width: min(480px, 100%);
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.landing-edition-picker select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid rgba(8, 59, 80, 0.25);
+  border-radius: 7px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.7);
+  font: 700 0.82rem var(--font-sans);
+  text-transform: none;
+}
+.landing-test-access {
+  width: min(610px, 100%);
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(8, 59, 80, 0.14);
+}
+.landing-test-access > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.landing-test-access > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.landing-test-access button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid rgba(183, 138, 47, 0.42);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink);
+  background: rgba(232, 215, 174, 0.2);
+  font: 700 0.76rem var(--font-sans);
+  cursor: pointer;
+}
+.landing-test-access button:hover {
+  border-color: var(--gold);
+  background: rgba(232, 215, 174, 0.36);
+}
+.landing-test-access button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.landing-error {
+  margin: 10px 0 0 !important;
+  color: var(--danger) !important;
+  font-size: 0.78rem !important;
+}
 .landing-campus {
   position: absolute;
   z-index: -1;
@@ -3320,17 +3391,21 @@ img {
   .landing-main {
     width: min(790px, calc(100vw - 48px));
     margin: 8px auto 18px;
-    padding: 30px 44px;
+    padding: 24px 44px;
   }
   .landing h1 {
-    margin: 14px 0 12px;
-    font-size: clamp(2.75rem, 4vw, 3.4rem);
+    margin: 10px 0 9px;
+    font-size: clamp(2.55rem, 3.6vw, 3.12rem);
   }
   .entry-actions {
-    margin-top: 18px;
+    margin-top: 11px;
   }
-  .dev-note {
-    margin-top: 14px;
+  .landing-edition-picker {
+    margin-top: 10px;
+  }
+  .landing-test-access {
+    margin-top: 9px;
+    padding-top: 9px;
   }
   .landing-campus {
     height: 220px;
@@ -3372,6 +3447,16 @@ img {
   }
   .landing-main > p {
     font-size: 0.96rem;
+  }
+  .landing-edition-picker {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .landing-edition-picker > span {
+    text-align: center;
+  }
+  .landing-test-access > div {
+    grid-template-columns: 1fr;
   }
   .landing-campus {
     height: 220px;

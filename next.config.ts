@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   serverExternalPackages: ["@prisma/client", "exceljs", "web-push"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.3.183"],
   poweredByHeader: false,
   async headers() {
     return [

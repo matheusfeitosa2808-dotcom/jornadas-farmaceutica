@@ -49,14 +49,23 @@ async function rewardStock(tx: any, rewardId: string) {
     ),
   };
 }
-async function recalc(tx: any, editionId: string) {
+async function recalc(tx: any, editionId: string, participantIds?: string[]) {
   const [people, rewards, rules, att] = await Promise.all([
-    tx.participant.findMany({ where: { editionId, active: true } }),
+    tx.participant.findMany({
+      where: {
+        editionId,
+        active: true,
+        ...(participantIds?.length ? { id: { in: participantIds } } : {}),
+      },
+    }),
     tx.rewardItem.findMany({ where: { editionId, active: true } }),
     tx.rewardRule.findMany({ where: { editionId } }),
     tx.attendance.findMany({
       where: {
         editionId,
+        ...(participantIds?.length
+          ? { participantId: { in: participantIds } }
+          : {}),
         checkinAt: { not: null },
         status: { notIn: ["CANCELLED", "INVALIDATED"] },
       },
@@ -470,7 +479,7 @@ export async function POST(req: NextRequest) {
             "CHECK_IN",
             actor,
           );
-          await recalc(tx, editionId);
+          await recalc(tx, editionId, [result.participantId]);
           message = "Presença confirmada e carimbo emitido.";
           break;
         case "attendance.checkout":
@@ -493,7 +502,7 @@ export async function POST(req: NextRequest) {
             body.reason,
             actor,
           );
-          await recalc(tx, editionId);
+          await recalc(tx, editionId, [result.participantId]);
           break;
         case "activity.cancel": {
           requirePermission(actor, "activities.write");

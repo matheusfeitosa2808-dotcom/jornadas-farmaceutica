@@ -55,6 +55,17 @@ O teste usa uma edição isolada, arquiva essa edição ao terminar e salva o
 relatório detalhado em `work/`. A quantidade pode ser alterada com a variável
 `LOAD_TEST_PARTICIPANTS`.
 
+Para simular os quatro dias completos com 250 participantes, quatro
+atividades, seis brindes, inscrições, avisos, check-ins, carimbos,
+certificados, retiradas e personalização de perfil, execute:
+
+```bash
+npm run test:event
+```
+
+O cenário completo também desativa atualizações periódicas dos participantes
+e inclui no relatório a projeção dos eventos administrativos.
+
 SQLite é usado no preview local. O schema de produção está em `prisma/schema.postgresql.prisma`; defina uma URL PostgreSQL e gere/aplique as migrations desse schema no ambiente de produção. A pasta `prisma/migrations` contém a migração reproduzível do preview.
 
 Operações automáticas de no-show, promoção de espera e expiração podem ser executadas com `npm run jobs` em um agendador confiável.

@@ -59,12 +59,10 @@ export function Provider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setLoading(true);
     refresh();
-    const poll = setInterval(refresh, 15000);
-    return () => clearInterval(poll);
   }, [refresh]);
   const actorId = data?.actor?.id;
   useEffect(() => {
-    if (!actorId) return;
+    if (!actorId || scope !== "admin") return;
     const events = new EventSource(
       `/api/events?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`,
     );

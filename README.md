@@ -44,6 +44,17 @@ npm run build
 $env:E2E_START_SERVER="1"; npm run test:e2e
 ```
 
+Com o servidor local aberto, simule 250 participantes, carregamentos e
+check-ins simultâneos com:
+
+```bash
+npm run test:load
+```
+
+O teste usa uma edição isolada, arquiva essa edição ao terminar e salva o
+relatório detalhado em `work/`. A quantidade pode ser alterada com a variável
+`LOAD_TEST_PARTICIPANTS`.
+
 SQLite é usado no preview local. O schema de produção está em `prisma/schema.postgresql.prisma`; defina uma URL PostgreSQL e gere/aplique as migrations desse schema no ambiente de produção. A pasta `prisma/migrations` contém a migração reproduzível do preview.
 
 Operações automáticas de no-show, promoção de espera e expiração podem ser executadas com `npm run jobs` em um agendador confiável.

@@ -283,11 +283,12 @@ async function main() {
       ],
       integrity: { attendanceCount, stampCount },
       projection: {
-        currentPollingRequestsPerHour: participantsCount * 4 * 60,
+        automaticParticipantRefreshRequestsPerHour: 0,
         freeWorkersRequestsPerDay: 100_000,
-        hoursUntilFreeRequestLimitAtCurrentPolling: Number(
-          (100_000 / (participantsCount * 4 * 60)).toFixed(2),
+        theoreticalFullRefreshBurstsPerDay: Math.floor(
+          100_000 / participantsCount,
         ),
+        note: "Estimativa isolada: não inclui login, ações administrativas ou outras rotas.",
       },
     };
     await mkdir("work", { recursive: true });

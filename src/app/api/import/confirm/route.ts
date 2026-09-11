@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/server/db";
 import { confirmImportBulk } from "@/server/import-bulk";
+import { insertParticipantsBulk } from "@/server/participant-import";
 import {
   csrf,
   errorResponse,
@@ -21,6 +23,71 @@ export async function POST(req: NextRequest) {
     ensure(editionId, "Edição não informada.");
     ensure(jobId, "Importação não informada.");
 
+    if (jobId.startsWith("ephemeral.")) {
+      const encoded = jobId.slice("ephemeral.".length);
+      let payload: any;
+      try {
+        payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+      } catch {
+        ensure(false, "Prévia de importação inválida.");
+      }
+
+      ensure(payload?.editionId === editionId, "A edição da prévia não confere.");
+      ensure(
+        Number.isFinite(payload?.createdAt) && Date.now() - payload.createdAt <= 60 * 60 * 1000,
+        "A prévia expirou. Gere uma nova pré-visualização.",
+      );
+      ensure(Array.isArray(payload?.rows), "Prévia sem participantes válidos.");
+
+      const normalizedRows = payload.rows
+        .map((row: any) => ({
+          name: String(row?.name || "").trim(),
+          ra: String(row?.ra || "").trim(),
+          semester: Number(row?.semester),
+        }))
+        .filter(
+          (row: any) =>
+            row.name &&
+            row.ra &&
+            Number.isInteger(row.semester) &&
+            row.semester >= 1,
+        );
+
+      const existing = new Set(
+        (
+          await db.participant.findMany({
+            where: { editionId },
+            select: { ra: true },
+          })
+        ).map((row: any) => String(row.ra)),
+      );
+
+      const seen = new Set<string>();
+      const fresh = normalizedRows.filter((row: any) => {
+        if (existing.has(row.ra) || seen.has(row.ra)) return false;
+        seen.add(row.ra);
+        return true;
+      });
+
+      const insertedResult = await insertParticipantsBulk({
+        editionId,
+        rows: fresh,
+      });
+      const skipped = normalizedRows.length - insertedResult.inserted;
+      const message =
+        skipped > 0
+          ? `${insertedResult.inserted} participantes importados; ${skipped} já existiam e foram ignorados.`
+          : `${insertedResult.inserted} participantes importados.`;
+
+      return NextResponse.json({
+        ok: true,
+        imported: insertedResult.inserted,
+        skipped,
+        message,
+      });
+    }
+
+    // Compatibilidade com prévias antigas que já tenham sido gravadas no banco.
     const result = await confirmImportBulk({ jobId, editionId });
     const message =
       result.skipped > 0

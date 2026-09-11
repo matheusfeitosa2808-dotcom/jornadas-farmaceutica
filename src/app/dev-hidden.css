@@ -4,3 +4,14 @@
 .dev-ribbon {
   display: none !important;
 }
+
+/* Saudação neutra na área do participante */
+.greeting > div:first-child > p {
+  visibility: hidden;
+}
+
+.greeting > div:first-child > p::after {
+  content: "Boas-vindas à sua jornada acadêmica.";
+  visibility: visible;
+  display: block;
+}

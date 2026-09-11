@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { Prisma } from "@prisma/client";
-import { Tx } from "./db";
+import type { Tx } from "@/server/db";
 import { Actor, DomainError, ensure, requirePermission } from "./security";
 
 export const minute = 60_000;
@@ -133,12 +132,12 @@ export async function validateEnrollment(
     include: { activity: true },
   });
   ensure(
-    !enrolled.some((e) => e.activityId === activityId),
+    !enrolled.some((e: any) => e.activityId === activityId),
     "Você já está inscrito nesta atividade.",
     "ALREADY_ENROLLED",
     409,
   );
-  const conflict = enrolled.find((e) => overlaps(e.activity, activity));
+  const conflict = enrolled.find((e: any) => overlaps(e.activity, activity));
   ensure(
     !conflict,
     `Conflito de horário${conflict ? ` com ${conflict.activity.title}` : ""}.`,
@@ -713,7 +712,7 @@ export async function correctAttendance(
       "CHECKIN_LIMIT",
     );
   }
-  const update: Prisma.AttendanceUpdateInput =
+  const update: Record<string, unknown> =
     operation === "CANCEL_CHECK_IN"
       ? { checkinAt: null, checkoutAt: null, status: "CANCELLED" }
       : operation === "CANCEL_CHECK_OUT"

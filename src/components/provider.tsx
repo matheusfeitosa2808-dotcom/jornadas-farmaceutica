@@ -27,6 +27,7 @@ export const useJornadas = () => useContext(JornadasContext);
 export function Provider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLogin = pathname.startsWith("/login/");
+  const isAdminImport = pathname.startsWith("/admin/importacoes");
   const scope = pathname.startsWith("/admin")
     ? "admin"
     : pathname.startsWith("/app")
@@ -48,23 +49,38 @@ export function Provider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 25000);
+
     try {
       const endpoint = isLogin
         ? "/api/editions"
-        : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
-      const res = await fetch(endpoint, { cache: "no-store" });
+        : isAdminImport
+          ? `/api/state?scope=admin&mode=import${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
+          : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
+      const res = await fetch(endpoint, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
       const body = (await res.json()) as any;
       if (!res.ok) throw new Error(body.error || "Não foi possível atualizar.");
       setData(body);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro de conexão.");
+      const message =
+        e instanceof DOMException && e.name === "AbortError"
+          ? "O carregamento demorou demais. Tente novamente."
+          : e instanceof Error
+            ? e.message
+            : "Erro de conexão.";
+      setError(message);
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
-  }, [scope, editionId, isLogin]);
+  }, [scope, editionId, isLogin, isAdminImport]);
 
-  // Uma única carga quando o escopo ou a edição realmente muda.
+  // Uma única carga quando o escopo, a edição ou a tela realmente muda.
   // Sem polling, SSE, EventSource ou atualização automática contínua.
   useEffect(() => {
     setLoading(true);
@@ -104,15 +120,11 @@ export function Provider({ children }: { children: ReactNode }) {
           },
         );
 
-      if (importConfirm) {
-        toast(body.message || "Participantes importados.");
-        void refresh();
-        return body;
-      }
-
-      // Atualiza uma única vez somente após uma ação explícita do usuário.
-      await refresh();
       toast(body.message || "Alteração salva.");
+
+      // Em importação, o retorno já contém o resultado necessário.
+      // Evita recarregar todo o estado administrativo logo após confirmar.
+      if (!importConfirm) await refresh();
       return body;
     } catch (e) {
       toast(e instanceof Error ? e.message : "Não foi possível concluir.");

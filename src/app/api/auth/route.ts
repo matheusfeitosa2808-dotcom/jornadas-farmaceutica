@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "node:crypto";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import {
   csrf,
   errorResponse,
@@ -17,106 +17,108 @@ export async function POST(req: NextRequest) {
     const b = (await req.json()) as any;
     const kind = b.kind === "admin" ? "admin" : "participant";
     const devLogin = b.dev === true || b.dev === "true";
-
-    let id: string;
-
-    if (devLogin) {
-      ensure(
-        process.env.DEV_SEED === "true",
-        "Acesso DEV não está habilitado.",
-        "DEV_DISABLED",
-        403,
-      );
-
-      if (kind === "admin") {
-        const user = await db.adminUser.findUnique({
-          where: { email: "admin@jornadas.dev" },
-        });
-        ensure(
-          user?.active,
-          "Administrador DEV não encontrado.",
-          "DEV_ACCOUNT_NOT_FOUND",
-          404,
-        );
-        id = user.id;
-      } else {
-        const requestedEditionId = String(b.editionId || "").trim();
-        const participant = await db.participant.findFirst({
-          where: {
-            ...(requestedEditionId ? { editionId: requestedEditionId } : {}),
-            ra: "48884",
-            normalizedName: normalizeName("Lívia"),
-            active: true,
-          },
-          orderBy: { updatedAt: "desc" },
-        });
-        ensure(
-          participant,
-          "Participante DEV não encontrado.",
-          "DEV_ACCOUNT_NOT_FOUND",
-          404,
-        );
-        id = participant.id;
-      }
-    } else {
-      const credentialKey = createHash("sha256")
-        .update(
-          kind === "admin"
-            ? String(b.email || "")
-                .trim()
-                .toLowerCase()
-            : `${String(b.editionId || "")}:${String(b.ra || "").trim()}`,
-        )
-        .digest("hex");
-
-      if (kind === "admin") {
-        const u = await db.adminUser.findUnique({
-          where: {
-            email: String(b.email || "")
-              .trim()
-              .toLowerCase(),
-          },
-        });
-        if (
-          !u ||
-          !u.active ||
-          !verifyPassword(String(b.password || ""), u.passwordHash)
-        ) {
-          rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
-          throw Object.assign(new Error("Credenciais inválidas."), {
-            status: 401,
-          });
-        }
-        id = u.id;
-      } else {
-        const p = await db.participant.findFirst({
-          where: {
-            editionId: String(b.editionId || ""),
-            ra: String(b.ra || "").trim(),
-            normalizedName: normalizeName(String(b.firstName || "")),
-            active: true,
-          },
-        });
-        if (!p) {
-          rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
-          throw Object.assign(
-            new Error("Nome ou RA não conferem com o cadastro."),
-            { status: 401 },
-          );
-        }
-        id = p.id;
-      }
-    }
-
     const token = randomBytes(32).toString("base64url");
-    await db.session.create({
-      data: {
-        id: tokenHash(token),
-        kind,
-        adminId: kind === "admin" ? id : null,
-        participantId: kind === "participant" ? id : null,
-        expiresAt: new Date(Date.now() + (kind === "admin" ? 8 : 24) * 3600000),
-      },
+
+    await transaction(async (tx) => {
+      let id: string;
+
+      if (devLogin) {
+        ensure(
+          process.env.DEV_SEED === "true",
+          "Acesso DEV não está habilitado.",
+          "DEV_DISABLED",
+          403,
+        );
+
+        if (kind === "admin") {
+          const user = await tx.adminUser.findUnique({
+            where: { email: "admin@jornadas.dev" },
+          });
+          ensure(
+            user?.active,
+            "Administrador DEV não encontrado.",
+            "DEV_ACCOUNT_NOT_FOUND",
+            404,
+          );
+          id = user.id;
+        } else {
+          const requestedEditionId = String(b.editionId || "").trim();
+          const participant = await tx.participant.findFirst({
+            where: {
+              ...(requestedEditionId ? { editionId: requestedEditionId } : {}),
+              ra: "48884",
+              normalizedName: normalizeName("Lívia"),
+              active: true,
+            },
+            orderBy: { updatedAt: "desc" },
+          });
+          ensure(
+            participant,
+            "Participante DEV não encontrado.",
+            "DEV_ACCOUNT_NOT_FOUND",
+            404,
+          );
+          id = participant.id;
+        }
+      } else {
+        const credentialKey = createHash("sha256")
+          .update(
+            kind === "admin"
+              ? String(b.email || "")
+                  .trim()
+                  .toLowerCase()
+              : `${String(b.editionId || "")}:${String(b.ra || "").trim()}`,
+          )
+          .digest("hex");
+
+        if (kind === "admin") {
+          const user = await tx.adminUser.findUnique({
+            where: {
+              email: String(b.email || "")
+                .trim()
+                .toLowerCase(),
+            },
+          });
+          if (
+            !user ||
+            !user.active ||
+            !verifyPassword(String(b.password || ""), user.passwordHash)
+          ) {
+            rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
+            throw Object.assign(new Error("Credenciais inválidas."), {
+              status: 401,
+            });
+          }
+          id = user.id;
+        } else {
+          const participant = await tx.participant.findFirst({
+            where: {
+              editionId: String(b.editionId || ""),
+              ra: String(b.ra || "").trim(),
+              normalizedName: normalizeName(String(b.firstName || "")),
+              active: true,
+            },
+          });
+          if (!participant) {
+            rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
+            throw Object.assign(
+              new Error("Nome ou RA não conferem com o cadastro."),
+              { status: 401 },
+            );
+          }
+          id = participant.id;
+        }
+      }
+
+      await tx.session.create({
+        data: {
+          id: tokenHash(token),
+          kind,
+          adminId: kind === "admin" ? id : null,
+          participantId: kind === "participant" ? id : null,
+          expiresAt: new Date(Date.now() + (kind === "admin" ? 8 : 24) * 3600000),
+        },
+      });
     });
 
     const res = NextResponse.json({ ok: true, dev: devLogin });

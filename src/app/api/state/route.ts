@@ -266,12 +266,14 @@ export async function GET(req: NextRequest) {
               where: { id: { in: notificationIds } },
             })
           : [];
-        const notificationById = new Map(
-          notificationRows.map((n: any) => [n.id, n]),
+        const notificationById = new Map<string, any>(
+          notificationRows.map(
+            (n: any) => [String(n.id), n] as [string, any],
+          ),
         );
         notifications = (notificationRecipients as any[])
           .map((r: any) => {
-            const notification = notificationById.get(r.notificationId);
+            const notification = notificationById.get(String(r.notificationId));
             return notification
               ? {
                   ...notification,

@@ -1,51 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { useJornadas } from "@/components/provider";
+
 export default function Landing() {
   const { data } = useJornadas();
-  const router = useRouter();
   const [editionId, setEditionId] = useState("");
-  const [busy, setBusy] = useState<"participant" | "admin" | "">("");
-  const [error, setError] = useState("");
   const selectedEditionId = editionId || data?.edition?.id || "";
 
-  async function enterTest(kind: "participant" | "admin") {
-    setBusy(kind);
-    setError("");
-    try {
-      const credentials =
-        kind === "admin"
-          ? {
-              kind,
-              email: "admin@jornadas.dev",
-              password: "Jornada@2026!",
-            }
-          : {
-              kind,
-              editionId: selectedEditionId,
-              firstName: "Lívia",
-              ra: "48884",
-            };
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-      const body = (await response.json()) as any;
-      if (!response.ok)
-        throw new Error(body.error || "Não foi possível abrir o teste.");
-      router.push(kind === "admin" ? "/admin" : "/app");
-      router.refresh();
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "Não foi possível entrar.",
-      );
-      setBusy("");
-    }
-  }
   return (
     <div className="landing">
       <img
@@ -105,32 +68,6 @@ export default function Landing() {
             <ShieldCheck size={19} /> Administração <ArrowRight size={18} />
           </Link>
         </div>
-        {data?.devMode && (
-          <section className="landing-test-access">
-            <span>TESTE RÁPIDO · DADOS FICTÍCIOS</span>
-            <div>
-              <button
-                type="button"
-                onClick={() => enterTest("participant")}
-                disabled={Boolean(busy) || !selectedEditionId}
-              >
-                <UserRound size={16} />
-                {busy === "participant"
-                  ? "Abrindo…"
-                  : "Testar como participante"}
-              </button>
-              <button
-                type="button"
-                onClick={() => enterTest("admin")}
-                disabled={Boolean(busy)}
-              >
-                <ShieldCheck size={16} />
-                {busy === "admin" ? "Abrindo…" : "Testar administração"}
-              </button>
-            </div>
-          </section>
-        )}
-        {error && <p className="landing-error">{error}</p>}
       </main>
       <section className="landing-partners" aria-label="Criação e apoiadores">
         <article className="landing-partner-group landing-created-by">

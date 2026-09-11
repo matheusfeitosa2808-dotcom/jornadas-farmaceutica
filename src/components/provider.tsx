@@ -73,15 +73,25 @@ export function Provider({ children }: { children: ReactNode }) {
 
   const action = async (actionName: string, payload: any = {}) => {
     try {
-      const res = await fetch("/api/action", {
+      const currentEditionId = data?.edition?.id || editionId;
+      const importConfirm = actionName === "import.confirm";
+      const endpoint = importConfirm ? "/api/import/confirm" : "/api/action";
+      const requestBody = importConfirm
+        ? {
+            editionId: currentEditionId,
+            jobId: payload.jobId,
+          }
+        : {
+            action: actionName,
+            scope,
+            editionId: currentEditionId,
+            ...payload,
+          };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: actionName,
-          scope,
-          editionId: data?.edition?.id || editionId,
-          ...payload,
-        }),
+        body: JSON.stringify(requestBody),
       });
       const body = (await res.json()) as any;
       if (!res.ok)

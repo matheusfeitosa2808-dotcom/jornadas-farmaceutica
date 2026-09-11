@@ -386,7 +386,7 @@ async function saveEntity(
 export async function POST(req: NextRequest) {
   try {
     csrf(req);
-    const body = await req.json(),
+    const body = (await req.json()) as any,
       scope =
         body.scope === "admin" ||
         (!body.scope && Boolean(req.cookies.get("jornadas_admin")))

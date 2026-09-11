@@ -12,7 +12,7 @@ import {
 export async function POST(req: NextRequest) {
   try {
     csrf(req);
-    const b = await req.json(),
+    const b = (await req.json()) as any,
       kind = b.kind === "admin" ? "admin" : "participant";
     const credentialKey = createHash("sha256")
       .update(

@@ -1343,7 +1343,7 @@ function Profile({ person }: { person: any }) {
       form.set("file", file);
       form.set("kind", "avatar");
       const res = await fetch("/api/upload", { method: "POST", body: form });
-      const result = await res.json();
+      const result = (await res.json()) as any;
       if (!res.ok) throw new Error(result.error);
       await action("participant.photo", { photoUrl: result.url });
     } catch (e) {

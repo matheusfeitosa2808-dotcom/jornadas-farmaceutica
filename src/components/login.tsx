@@ -26,7 +26,7 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind, ...values }),
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       if (!res.ok) throw new Error(body.error || "Não foi possível entrar.");
       router.replace(kind === "admin" ? "/admin" : "/app");
       router.refresh();

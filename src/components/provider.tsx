@@ -46,7 +46,7 @@ export function Provider({ children }: { children: ReactNode }) {
         `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`,
         { cache: "no-store" },
       );
-      const body = await res.json();
+      const body = (await res.json()) as any;
       if (!res.ok) throw new Error(body.error || "Não foi possível atualizar.");
       setData(body);
       setError("");
@@ -82,7 +82,7 @@ export function Provider({ children }: { children: ReactNode }) {
           ...payload,
         }),
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       if (!res.ok)
         throw Object.assign(
           new Error(body.error || "Não foi possível concluir."),

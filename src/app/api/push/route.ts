@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const actor = await getActor(req, "participant");
     ensure(actor?.editionId, "Faça login.", "UNAUTHORIZED", 401);
     requireParticipant(actor, actor.editionId);
-    const body = await req.json(),
+    const body = (await req.json()) as any,
       endpoint = String(body.endpoint || ""),
       p256dh = String(body.keys?.p256dh || ""),
       auth = String(body.keys?.auth || "");

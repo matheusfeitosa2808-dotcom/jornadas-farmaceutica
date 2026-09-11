@@ -17,5 +17,10 @@ export default defineConfig([
     "node_modules/**",
     "playwright-report/**",
     "test-results/**",
+    "dist/**",
+    ".vinext/**",
+    ".wrangler/**",
+    "src/generated/**",
+    "worker-configuration.d.ts",
   ]),
 ]);

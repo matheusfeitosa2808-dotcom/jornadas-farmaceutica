@@ -23,5 +23,12 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/generated/prisma-cloudflare",
+    "src/server/db.cloudflare.ts",
+    "src/server/storage.cloudflare.ts",
+    "worker-configuration.d.ts"
+  ]
 }

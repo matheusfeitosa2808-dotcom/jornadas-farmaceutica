@@ -34,7 +34,7 @@ export default function Landing() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
-      const body = await response.json();
+      const body = (await response.json()) as any;
       if (!response.ok)
         throw new Error(body.error || "Não foi possível abrir o teste.");
       router.push(kind === "admin" ? "/admin" : "/app");

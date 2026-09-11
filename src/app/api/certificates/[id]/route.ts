@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { db } from "@/server/db";
+import { readPublicAsset } from "@/server/storage";
 import {
   getActor,
   errorResponse,
@@ -48,12 +47,8 @@ export async function GET(
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
     const [regularBytes, boldBytes] = await Promise.all([
-      readFile(
-        path.join(process.cwd(), "public", "fonts", "sansation-400.ttf"),
-      ),
-      readFile(
-        path.join(process.cwd(), "public", "fonts", "sansation-700.ttf"),
-      ),
+      readPublicAsset("/fonts/sansation-400.ttf"),
+      readPublicAsset("/fonts/sansation-700.ttf"),
     ]);
     const sans = await pdf.embedFont(regularBytes, { subset: true }),
       serif = sans,

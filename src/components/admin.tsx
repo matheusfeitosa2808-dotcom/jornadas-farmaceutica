@@ -1381,7 +1381,7 @@ function InputField({
                   method: "POST",
                   body: form,
                 });
-                const result = await response.json();
+                const result = (await response.json()) as any;
                 if (!response.ok)
                   throw new Error(result.error || "Falha no envio");
                 setValue(result.url);
@@ -2379,7 +2379,7 @@ function ImportPage() {
       form.set("file", file);
       form.set("editionId", data.edition.id);
       const res = await fetch("/api/import", { method: "POST", body: form });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       if (!res.ok) throw new Error(body.error);
       setJob(body);
     } catch (e: any) {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomBytes } from "node:crypto";
+import { saveUpload } from "@/server/storage";
 import {
   csrf,
   errorResponse,
@@ -34,21 +33,23 @@ export async function POST(req: NextRequest) {
         mime.startsWith("image/"),
         "Participantes podem enviar somente foto.",
       );
-    const bytes = Buffer.from(await file.arrayBuffer());
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const ascii = (start: number, end: number) =>
+      String.fromCharCode(...bytes.slice(start, end));
+    const startsWith = (signature: number[]) =>
+      signature.every((value, index) => bytes[index] === value);
     const signatureMatches =
       (mime === "image/png" &&
-        bytes
-          .subarray(0, 8)
-          .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) ||
+        startsWith([137, 80, 78, 71, 13, 10, 26, 10])) ||
       (mime === "image/jpeg" &&
         bytes[0] === 0xff &&
         bytes[1] === 0xd8 &&
         bytes[2] === 0xff) ||
       (mime === "image/webp" &&
-        bytes.subarray(0, 4).toString("ascii") === "RIFF" &&
-        bytes.subarray(8, 12).toString("ascii") === "WEBP") ||
+        ascii(0, 4) === "RIFF" &&
+        ascii(8, 12) === "WEBP") ||
       (mime === "application/pdf" &&
-        bytes.subarray(0, 5).toString("ascii") === "%PDF-");
+        ascii(0, 5) === "%PDF-");
     ensure(
       signatureMatches,
       "O conteúdo do arquivo não corresponde ao formato informado.",
@@ -59,11 +60,9 @@ export async function POST(req: NextRequest) {
         "image/webp": "webp",
         "application/pdf": "pdf",
       },
-      name = `${Date.now()}-${randomBytes(8).toString("hex")}.${ext[mime]}`,
-      dir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, name), bytes, { flag: "wx" });
-    return NextResponse.json({ ok: true, url: safeUrl(`/uploads/${name}`) });
+      name = `${Date.now()}-${randomBytes(8).toString("hex")}.${ext[mime]}`;
+    const url = await saveUpload(name, bytes, mime);
+    return NextResponse.json({ ok: true, url: safeUrl(url) });
   } catch (e) {
     return errorResponse(e);
   }

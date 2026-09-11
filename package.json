@@ -20,7 +20,7 @@
     "format": "prettier --write src tests prisma scripts *.json *.ts *.mjs *.md",
     "format:check": "prettier --check src tests prisma scripts *.json *.ts *.mjs *.md",
     "dev:vinext": "vinext dev --port 3001",
-    "build:vinext": "prisma generate --schema prisma/schema.postgresql.prisma && vinext build",
+    "build:vinext": "vinext build",
     "start:vinext": "wrangler dev --config dist/server/wrangler.json",
     "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },

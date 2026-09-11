@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { env } from "cloudflare:workers";
 
@@ -32,6 +33,7 @@ export async function insertParticipantsBulk(input: {
     const name = String(row.name || "").trim();
     const firstName = name.split(/\s+/)[0] || "";
     return {
+      id: randomUUID(),
       name,
       firstName,
       normalizedName: normalizeName(firstName),
@@ -63,7 +65,7 @@ export async function insertParticipantsBulk(input: {
         "updatedAt"
       )
       SELECT
-        gen_random_uuid()::text,
+        src."id",
         $1::text,
         src."name",
         src."firstName",
@@ -74,6 +76,7 @@ export async function insertParticipantsBulk(input: {
         NOW(),
         NOW()
       FROM jsonb_to_recordset($2::jsonb) AS src(
+        "id" text,
         "name" text,
         "firstName" text,
         "normalizedName" text,

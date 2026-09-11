@@ -104,6 +104,12 @@ export function Provider({ children }: { children: ReactNode }) {
           },
         );
 
+      if (importConfirm) {
+        toast(body.message || "Participantes importados.");
+        void refresh();
+        return body;
+      }
+
       // Atualiza uma única vez somente após uma ação explícita do usuário.
       await refresh();
       toast(body.message || "Alteração salva.");

@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,31 +11,42 @@ import {
 import { useJornadas } from "./provider";
 
 export default function Login({ kind }: { kind: "participant" | "admin" }) {
-  const router = useRouter();
   const { data } = useJornadas();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
 
-  const devAvailable = data?.devMode !== false;
-
   async function authenticate(
     values: Record<string, FormDataEntryValue | string>,
   ) {
+    if (busy) return;
     setBusy(true);
     setError("");
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
+
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind, ...values }),
+        signal: controller.signal,
       });
       const body = (await res.json()) as any;
       if (!res.ok) throw new Error(body.error || "Não foi possível entrar.");
-      router.replace(kind === "admin" ? "/admin" : "/app");
-      router.refresh();
+
+      window.location.replace(kind === "admin" ? "/admin" : "/app");
     } catch (e) {
-      setError((e as Error).message);
+      const message =
+        e instanceof DOMException && e.name === "AbortError"
+          ? "O servidor demorou demais para responder. Tente novamente."
+          : e instanceof Error
+            ? e.message
+            : "Não foi possível entrar.";
+      setError(message);
       setBusy(false);
+    } finally {
+      window.clearTimeout(timeout);
     }
   }
 
@@ -201,29 +211,27 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
               ? "Acesso exclusivo a participantes cadastrados."
               : "Acesso restrito à equipe autorizada."}
           </p>
-          {devAvailable && (
-            <aside className="dev-credentials">
-              <strong>ACESSO DE DEMONSTRAÇÃO · DEV</strong>
-              <button
-                className="dev-access-button"
-                type="button"
-                onClick={enterAsDev}
-                disabled={busy}
-              >
-                {kind === "admin" ? (
-                  <ShieldCheck size={18} />
-                ) : (
-                  <UserRound size={18} />
-                )}
-                <span>
-                  {busy
-                    ? "Entrando como DEV…"
-                    : `Entrar sem credenciais como DEV ${kind === "admin" ? "administrador" : "participante"}`}
-                </span>
-                <ArrowRight size={17} />
-              </button>
-            </aside>
-          )}
+          <aside className="dev-credentials">
+            <strong>ACESSO DE DEMONSTRAÇÃO · DEV</strong>
+            <button
+              className="dev-access-button"
+              type="button"
+              onClick={enterAsDev}
+              disabled={busy}
+            >
+              {kind === "admin" ? (
+                <ShieldCheck size={18} />
+              ) : (
+                <UserRound size={18} />
+              )}
+              <span>
+                {busy
+                  ? "Entrando como DEV…"
+                  : `Entrar sem credenciais como DEV ${kind === "admin" ? "administrador" : "participante"}`}
+              </span>
+              <ArrowRight size={17} />
+            </button>
+          </aside>
         </section>
       </section>
     </main>

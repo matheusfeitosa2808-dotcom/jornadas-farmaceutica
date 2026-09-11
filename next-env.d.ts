@@ -1,7 +1,6 @@
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
 import "vinext/types/augmentations";
-import "./.next/types/routes.d.ts";
 
-// NOTE: This file should not be edited
-// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+// NOTE: this file is intentionally kept independent from generated .next route types
+// so Cloudflare/Vinext typechecks do not depend on stale Next build artifacts.

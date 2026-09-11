@@ -166,7 +166,21 @@ export async function POST(req: NextRequest) {
       rows: parsed,
       errors: invalid,
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.status) return NextResponse.json({ error: e.message }, { status: e.status });
+
+    if (process.env.DEV_SEED === "true") {
+      return NextResponse.json(
+        {
+          error: e instanceof Error ? e.message : "Erro interno na prévia da importação.",
+          code: e?.code || e?.pgCode || "IMPORT_PREVIEW_INTERNAL",
+          detail: e?.detail,
+          constraint: e?.constraint,
+        },
+        { status: 500 },
+      );
+    }
+
     return errorResponse(e);
   }
 }

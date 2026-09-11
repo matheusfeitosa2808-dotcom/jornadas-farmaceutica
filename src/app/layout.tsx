@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Provider } from "@/components/provider";
 import Pwa from "@/components/pwa";
 import "./globals.css";
+import "./dev-hidden.css";
 export const metadata: Metadata = {
   title: {
     default: "Jornadas · Farmácia em movimento",

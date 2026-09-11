@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
+import { env } from "cloudflare:workers";
 
 type Queryer = (text: string, values?: unknown[]) => Promise<any>;
 type Relation = {
@@ -612,8 +613,18 @@ class Semaphore {
 
 const sockets = new Semaphore(4);
 function connectionString(): string {
+  const hyperdrive = (env as any)?.HYPERDRIVE?.connectionString;
+
+  if (hyperdrive) {
+    return hyperdrive;
+  }
+
   const value = process.env.DATABASE_URL;
-  if (!value) throw new Error("DATABASE_URL não configurada no Worker.");
+
+  if (!value) {
+    throw new Error("DATABASE_URL não configurada no Worker.");
+  }
+
   return value;
 }
 

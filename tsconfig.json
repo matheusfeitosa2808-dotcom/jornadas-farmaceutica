@@ -14,7 +14,10 @@
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": {
+      "@/server/db": ["./src/server/db.pg.ts"],
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "next-env.d.ts",

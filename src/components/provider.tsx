@@ -20,8 +20,10 @@ type Context = {
   setEditionId: (id: string) => void;
   editionId: string;
 };
+
 const JornadasContext = createContext<Context>(null!);
 export const useJornadas = () => useContext(JornadasContext);
+
 export function Provider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const scope = pathname.startsWith("/admin")
@@ -29,17 +31,21 @@ export function Provider({ children }: { children: ReactNode }) {
     : pathname.startsWith("/app")
       ? "participant"
       : "public";
+
   const [data, setData] = useState<any>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [editionId, setEditionId] = useState(""),
     [message, setMessage] = useState("");
+
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const toast = useCallback((text: string) => {
     setMessage(text);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setMessage(""), 5000);
   }, []);
+
   const refresh = useCallback(async () => {
     try {
       const res = await fetch(
@@ -56,20 +62,14 @@ export function Provider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, [scope, editionId]);
+
+  // Uma única carga quando o escopo ou a edição realmente muda.
+  // Sem polling, SSE, EventSource ou atualização automática contínua.
   useEffect(() => {
     setLoading(true);
-    refresh();
+    void refresh();
   }, [refresh]);
-  const actorId = data?.actor?.id;
-  useEffect(() => {
-    if (!actorId || scope !== "admin") return;
-    const events = new EventSource(
-      `/api/events?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`,
-    );
-    events.onmessage = () => refresh();
-    events.addEventListener("update", () => refresh());
-    return () => events.close();
-  }, [actorId, scope, editionId, refresh]);
+
   const action = async (actionName: string, payload: any = {}) => {
     try {
       const res = await fetch("/api/action", {
@@ -92,6 +92,8 @@ export function Provider({ children }: { children: ReactNode }) {
             conflicts: body.conflicts,
           },
         );
+
+      // Atualiza uma única vez somente após uma ação explícita do usuário.
       await refresh();
       toast(body.message || "Alteração salva.");
       return body;
@@ -100,6 +102,7 @@ export function Provider({ children }: { children: ReactNode }) {
       throw e;
     }
   };
+
   return (
     <JornadasContext.Provider
       value={{

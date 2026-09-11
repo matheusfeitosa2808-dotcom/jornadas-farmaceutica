@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const scope = req.nextUrl.searchParams.get("scope") || "public";
+    const mode = req.nextUrl.searchParams.get("mode") || "";
     const actor = await getActor(req, scope);
 
     return await transaction(async (db) => {
@@ -38,6 +39,16 @@ export async function GET(req: NextRequest) {
 
       const edition = await db.edition.findUnique({ where: { id: editionId } });
       if (!edition) throw new Error("Edição não encontrada");
+
+      if (scope === "admin" && actor?.type === "admin" && mode === "import") {
+        return NextResponse.json({
+          actor,
+          edition,
+          editions,
+          serverNow: new Date().toISOString(),
+          devMode: process.env.DEV_SEED === "true",
+        });
+      }
 
       const [
         categories,

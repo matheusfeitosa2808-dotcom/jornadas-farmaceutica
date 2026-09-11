@@ -117,7 +117,7 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
           </h1>
           <p>
             {kind === "admin"
-              ? "Entre com sua conta da organização."
+              ? "Entre com seu login ou e-mail da organização."
               : "Use o primeiro nome e o RA cadastrados pela organização."}
           </p>
           <form onSubmit={submit} className="stack">
@@ -168,12 +168,12 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
             ) : (
               <>
                 <label className="field">
-                  E-mail
+                  Login ou e-mail
                   <input
-                    name="email"
-                    type="email"
+                    name="login"
+                    type="text"
                     autoComplete="username"
-                    placeholder="seu.email@exemplo.com"
+                    placeholder="Seu login ou e-mail"
                     required
                     autoFocus
                   />

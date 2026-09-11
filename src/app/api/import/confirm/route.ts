@@ -87,7 +87,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Compatibilidade com prévias antigas que já tenham sido gravadas no banco.
     const result = await confirmImportBulk({ jobId, editionId });
     const message =
       result.skipped > 0
@@ -104,6 +103,19 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     if (e?.status)
       return NextResponse.json({ error: e.message }, { status: e.status });
+
+    if (process.env.DEV_SEED === "true") {
+      return NextResponse.json(
+        {
+          error: e instanceof Error ? e.message : "Erro interno na importação.",
+          code: e?.code || e?.pgCode || "IMPORT_INTERNAL",
+          detail: e?.detail,
+          constraint: e?.constraint,
+        },
+        { status: 500 },
+      );
+    }
+
     return errorResponse(e);
   }
 }

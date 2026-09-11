@@ -61,23 +61,20 @@ export async function POST(req: NextRequest) {
           id = participant.id;
         }
       } else {
+        const adminCredential = String(b.login || b.email || "")
+          .trim()
+          .toLowerCase();
         const credentialKey = createHash("sha256")
           .update(
             kind === "admin"
-              ? String(b.email || "")
-                  .trim()
-                  .toLowerCase()
+              ? adminCredential
               : `${String(b.editionId || "")}:${String(b.ra || "").trim()}`,
           )
           .digest("hex");
 
         if (kind === "admin") {
           const user = await tx.adminUser.findUnique({
-            where: {
-              email: String(b.email || "")
-                .trim()
-                .toLowerCase(),
-            },
+            where: { email: adminCredential },
           });
           if (
             !user ||

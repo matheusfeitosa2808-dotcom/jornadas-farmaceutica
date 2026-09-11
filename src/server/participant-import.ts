@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { env } from "cloudflare:workers";
 
@@ -29,6 +28,18 @@ export async function insertParticipantsBulk(input: {
 }) {
   if (!input.rows.length) return { inserted: 0 };
 
+  const rows = input.rows.map((row) => {
+    const name = String(row.name || "").trim();
+    const firstName = name.split(/\s+/)[0] || "";
+    return {
+      name,
+      firstName,
+      normalizedName: normalizeName(firstName),
+      ra: String(row.ra || "").trim(),
+      semester: Number(row.semester),
+    };
+  });
+
   const client = new Client({
     connectionString: connectionString(),
     connectionTimeoutMillis: 10_000,
@@ -37,43 +48,48 @@ export async function insertParticipantsBulk(input: {
 
   await client.connect();
   try {
-    await client.query("BEGIN");
-    const now = new Date();
-    const values: unknown[] = [];
-    const tuples = input.rows.map((row, index) => {
-      const firstName = String(row.name || "").trim().split(/\s+/)[0] || "";
-      const base = index * 10;
-      values.push(
-        randomUUID(),
-        input.editionId,
-        String(row.name || "").trim(),
-        firstName,
-        normalizeName(firstName),
-        String(row.ra || "").trim(),
-        Number(row.semester),
-        true,
-        now,
-        now,
-      );
-      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10})`;
-    });
-
     const result = await client.query(
-      `INSERT INTO "Participant" ("id", "editionId", "name", "firstName", "normalizedName", "ra", "semester", "active", "createdAt", "updatedAt")
-       VALUES ${tuples.join(", ")}
-       RETURNING "id"`,
-      values,
+      `
+      INSERT INTO "Participant" (
+        "id",
+        "editionId",
+        "name",
+        "firstName",
+        "normalizedName",
+        "ra",
+        "semester",
+        "active",
+        "createdAt",
+        "updatedAt"
+      )
+      SELECT
+        gen_random_uuid()::text,
+        $1::text,
+        src."name",
+        src."firstName",
+        src."normalizedName",
+        src."ra",
+        src."semester",
+        TRUE,
+        NOW(),
+        NOW()
+      FROM jsonb_to_recordset($2::jsonb) AS src(
+        "name" text,
+        "firstName" text,
+        "normalizedName" text,
+        "ra" text,
+        "semester" integer
+      )
+      WHERE src."name" <> ''
+        AND src."ra" <> ''
+        AND src."semester" >= 1
+      ON CONFLICT ("editionId", "ra") DO NOTHING
+      RETURNING "id"
+      `,
+      [input.editionId, JSON.stringify(rows)],
     );
 
-    await client.query("COMMIT");
     return { inserted: result.rowCount || 0 };
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // best effort
-    }
-    throw error;
   } finally {
     try {
       await client.end();

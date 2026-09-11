@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { db } from "@/server/db";
+import { createImportPreview } from "@/server/import-bulk";
 import {
   csrf,
   errorResponse,
@@ -8,6 +9,7 @@ import {
   requirePermission,
   ensure,
 } from "@/server/security";
+
 const aliases: Record<string, string> = {
   "nome completo": "name",
   nome: "name",
@@ -15,20 +17,25 @@ const aliases: Record<string, string> = {
   "registro academico": "ra",
   semestre: "semester",
 };
+
 const norm = (v: any) =>
   String(v ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+
 export async function POST(req: NextRequest) {
   try {
     csrf(req, false);
     const actor = await getActor(req, "admin");
     requirePermission(actor, "participants.write");
-    const form = await req.formData(),
-      file = form.get("file"),
-      editionId = String(form.get("editionId") || "");
+
+    const form = await req.formData();
+    const file = form.get("file");
+    const editionId = String(form.get("editionId") || "");
+
+    ensure(editionId, "Selecione uma edição antes de importar.");
     ensure(
       file instanceof File && file.size <= 5_000_000,
       "Envie um arquivo XLSX ou CSV de até 5 MB.",
@@ -41,13 +48,14 @@ export async function POST(req: NextRequest) {
       ].includes(file.type) || /\.(csv|xlsx)$/i.test(file.name),
       "Formato inválido.",
     );
+
     const rows: any[][] = [];
     if (/\.csv$/i.test(file.name) || file.type === "text/csv") {
-      const text = await file.text(),
-        lines = text
-          .replace(/^\uFEFF/, "")
-          .split(/\r?\n/)
-          .filter(Boolean);
+      const text = await file.text();
+      const lines = text
+        .replace(/^\uFEFF/, "")
+        .split(/\r?\n/)
+        .filter(Boolean);
       for (const line of lines) {
         const sep =
           (line.match(/;/g) || []).length > (line.match(/,/g) || []).length
@@ -70,12 +78,14 @@ export async function POST(req: NextRequest) {
         ),
       );
     }
+
     ensure(
       rows.length > 1,
       "O arquivo precisa de cabeçalho e ao menos uma linha.",
     );
-    const headers = rows[0].map(norm),
-      mapped = headers.map((h) => aliases[h]);
+
+    const headers = rows[0].map(norm);
+    const mapped = headers.map((h) => aliases[h]);
     ensure(
       mapped.includes("name") &&
         mapped.includes("ra") &&
@@ -83,24 +93,28 @@ export async function POST(req: NextRequest) {
       "Use as colunas Nome completo, RA e Semestre.",
     );
     ensure(mapped.every(Boolean), "Há coluna desconhecida no arquivo.");
+
     const existing = new Set(
-        (
-          await db.participant.findMany({
-            where: { editionId },
-            select: { ra: true },
-          })
-        ).map((x) => x.ra),
-      ),
-      seen = new Set<string>();
-    let valid = 0,
-      invalid = 0,
-      duplicates = 0;
+      (
+        await db.participant.findMany({
+          where: { editionId },
+          select: { ra: true },
+        })
+      ).map((x: any) => String(x.ra)),
+    );
+    const seen = new Set<string>();
+
+    let valid = 0;
+    let invalid = 0;
+    let duplicates = 0;
+
     const parsed = rows.slice(1).map((r, i) => {
       const value: any = {};
       mapped.forEach((k, j) => (value[k] = r[j]));
       value.name = String(value.name || "").trim();
       value.ra = String(value.ra || "").trim();
       value.semester = Number(value.semester);
+
       let error = "";
       if (!value.name) error = "Nome vazio";
       else if (!value.ra) error = "RA vazio";
@@ -112,31 +126,31 @@ export async function POST(req: NextRequest) {
           : "RA duplicado no arquivo";
         duplicates++;
       }
+
       seen.add(value.ra);
       if (error) invalid++;
       else valid++;
+
       return {
         row: i + 2,
         name: value.name,
         ra: value.ra,
         semester: Number.isFinite(value.semester) ? value.semester : null,
-        status: error ? "INVALID" : "VALID",
+        status: (error ? "INVALID" : "VALID") as "VALID" | "INVALID",
         error: error || null,
       };
     });
-    const job = await db.importJob.create({
-      data: {
-        editionId,
-        operatorId: actor.id,
-        filename: file.name,
-        status: "PREVIEW",
-        valid,
-        invalid,
-        duplicates,
-        rows: { create: parsed },
-      },
-      include: { rows: true },
+
+    const job = await createImportPreview({
+      editionId,
+      operatorId: actor.id,
+      filename: file.name,
+      valid,
+      invalid,
+      duplicates,
+      rows: parsed,
     });
+
     return NextResponse.json({ ...job, errors: invalid });
   } catch (e) {
     return errorResponse(e);

@@ -20,7 +20,7 @@ export default defineConfig({
     alias: [
       {
         find: "@/server/db",
-        replacement: path.resolve(process.cwd(), "src/server/db.cloudflare.ts"),
+        replacement: path.resolve(process.cwd(), "src/server/db.pg.ts"),
       },
       {
         find: "@/server/storage",

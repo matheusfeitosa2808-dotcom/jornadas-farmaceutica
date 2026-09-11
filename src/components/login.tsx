@@ -10,11 +10,15 @@ import {
   UserRound,
 } from "lucide-react";
 import { useJornadas } from "./provider";
+
 export default function Login({ kind }: { kind: "participant" | "admin" }) {
   const router = useRouter();
   const { data } = useJornadas();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+
+  const devAvailable = data?.devMode !== false;
+
   async function authenticate(
     values: Record<string, FormDataEntryValue | string>,
   ) {
@@ -35,26 +39,21 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
       setBusy(false);
     }
   }
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     await authenticate(Object.fromEntries(new FormData(e.currentTarget)));
   }
+
   async function enterAsDev() {
-    await authenticate(
-      kind === "admin"
-        ? {
-            kind: "admin",
-            email: "admin@jornadas.dev",
-            password: "Jornada@2026!",
-          }
-        : {
-            kind: "participant",
-            editionId: data?.edition?.id || data?.editions?.[0]?.id || "",
-            firstName: "Lívia",
-            ra: "48884",
-          },
-    );
+    await authenticate({
+      dev: "true",
+      ...(kind === "participant" && data?.edition?.id
+        ? { editionId: data.edition.id }
+        : {}),
+    });
   }
+
   return (
     <main id="main" className={`login-page login-${kind}`}>
       <div className="login-back-wrap">
@@ -202,7 +201,7 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
               ? "Acesso exclusivo a participantes cadastrados."
               : "Acesso restrito à equipe autorizada."}
           </p>
-          {data?.devMode && (
+          {devAvailable && (
             <aside className="dev-credentials">
               <strong>ACESSO DE DEMONSTRAÇÃO · DEV</strong>
               <button
@@ -217,8 +216,9 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
                   <UserRound size={18} />
                 )}
                 <span>
-                  Acessar como DEV{" "}
-                  {kind === "admin" ? "administrador" : "participante"}
+                  {busy
+                    ? "Entrando como DEV…"
+                    : `Entrar sem credenciais como DEV ${kind === "admin" ? "administrador" : "participante"}`}
                 </span>
                 <ArrowRight size={17} />
               </button>

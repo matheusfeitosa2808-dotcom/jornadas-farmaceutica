@@ -5,7 +5,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "./db";
+import { db } from "@/server/db";
 
 export class DomainError extends Error {
   constructor(

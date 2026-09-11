@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { db } from "@/server/db";
-import { createImportPreview } from "@/server/import-bulk";
 import {
   csrf,
   errorResponse,
@@ -141,17 +140,32 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const job = await createImportPreview({
+    const payload = {
+      editionId,
+      createdAt: Date.now(),
+      rows: parsed
+        .filter((row) => row.status === "VALID")
+        .map((row) => ({
+          name: row.name,
+          ra: row.ra,
+          semester: row.semester,
+        })),
+    };
+
+    const id = `ephemeral.${Buffer.from(JSON.stringify(payload), "utf8").toString("base64url")}`;
+
+    return NextResponse.json({
+      id,
       editionId,
       operatorId: actor.id,
       filename: file.name,
+      status: "PREVIEW",
       valid,
       invalid,
       duplicates,
       rows: parsed,
+      errors: invalid,
     });
-
-    return NextResponse.json({ ...job, errors: invalid });
   } catch (e) {
     return errorResponse(e);
   }

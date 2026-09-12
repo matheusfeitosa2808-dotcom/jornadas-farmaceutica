@@ -284,6 +284,7 @@ async function main() {
     ["Ecobag", 30, 4, false],
     ["Garrafa", 20, 5, false],
   ] as const;
+  const redemptionStartsAt = new Date("2026-09-24T04:00:00.000Z");
   for (let i = 0; i < rewards.length; i++) {
     const [name, total, min, guaranteed] = rewards[i];
     let reward = await db.rewardItem.findFirst({
@@ -300,7 +301,13 @@ async function main() {
           total,
           order: i,
           confirmationMinutes: 60,
+          redemptionStartsAt,
         },
+      });
+    else
+      reward = await db.rewardItem.update({
+        where: { id: reward.id },
+        data: { redemptionStartsAt },
       });
     if (!(await db.rewardRule.findFirst({ where: { rewardId: reward.id } })))
       await db.rewardRule.create({

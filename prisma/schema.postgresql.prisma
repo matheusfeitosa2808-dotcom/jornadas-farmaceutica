@@ -285,6 +285,7 @@ model RewardItem {
   active              Boolean             @default(true)
   order               Int                 @default(0)
   confirmationMinutes Int                 @default(60)
+  redemptionStartsAt  DateTime?
   exclusiveGroup      String?
   rules               RewardRule[]
   eligibilities       RewardEligibility[]

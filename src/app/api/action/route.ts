@@ -302,6 +302,7 @@ async function saveEntity(
       active: B(data.active, true),
       order: N(data.order),
       confirmationMinutes: N(data.confirmationMinutes, 60),
+      redemptionStartsAt: D(data.redemptionStartsAt),
       exclusiveGroup: data.exclusiveGroup || null,
     };
     result = id
@@ -799,6 +800,23 @@ export async function POST(req: NextRequest) {
               },
             });
             ensure(r, "Reserva indisponível.");
+            const reward = await tx.rewardItem.findUnique({
+              where: { id: r.rewardId },
+              include: { edition: true },
+            });
+            ensure(reward, "Brinde não encontrado.", "NOT_FOUND", 404);
+            const redemptionStartsAt = reward.redemptionStartsAt;
+            ensure(
+              !redemptionStartsAt || redemptionStartsAt.getTime() <= Date.now(),
+              `${reward.name} só poderá ser retirado a partir de ${new Intl.DateTimeFormat(
+                "pt-BR",
+                {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                  timeZone: reward.edition.timezone,
+                },
+              ).format(redemptionStartsAt || undefined)}.`,
+            );
             const del = await tx.rewardDelivery.create({
               data: {
                 editionId,

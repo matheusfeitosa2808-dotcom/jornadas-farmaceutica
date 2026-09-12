@@ -62,26 +62,22 @@ export default function Landing() {
       />
       <header className="landing-top">
         <img
-          className="official-logo landing-logo"
-          src={
-            data?.edition?.logoUrl ||
-            "/assets/brand/logo-jornada-2026-trimmed.webp"
-          }
-          alt="Jornada Farmacêutica — farmácia em movimento"
+          className="landing-logo"
+          src="/assets/brand/logo-jornadas.png"
+          alt="Jornadas"
         />
       </header>
       <main id="main" className="landing-main">
         <div className="landing-kicker">
-          <Sparkles size={16} /> CONHECIMENTO · CONEXÕES · FUTURO
+          <Sparkles size={16} /> INICIAR
         </div>
         <h1>
-          Seu passaporte para novos encontros.
-          <br />
-          <em>Conhecimento que acompanha você.</em>
+          Encontre sua jornada.
+          <em> Viva cada conquista.</em>
         </h1>
         <p>
-          Consulte a programação, registre suas conquistas e acompanhe cada
-          etapa da experiência.
+          Escolha a edição e entre para acompanhar programação, passaporte e
+          benefícios.
         </p>
         <label className="landing-edition-picker">
           <span>Edição</span>
@@ -136,35 +132,35 @@ export default function Landing() {
         )}
         {error && <p className="landing-error">{error}</p>}
       </main>
+      <section className="landing-partners" aria-label="Criação e apoiadores">
+        <article className="landing-partner-group landing-created-by">
+          <span>CRIADO POR</span>
+          <div className="landing-partner-logos">
+            <img
+              src="/assets/partners/logo-matheus-feitosa.png"
+              alt="Matheus Feitosa — designer gráfico"
+            />
+          </div>
+        </article>
+        <article className="landing-partner-group landing-supporters">
+          <span>APOIADORES</span>
+          <div className="landing-partner-logos">
+            <img src="/assets/partners/logo-candido.png" alt="Cândido" />
+            <img
+              src="/assets/partners/logo-heloisa.png"
+              alt="HLA Beleza Integrativa"
+            />
+            <img src="/assets/partners/logo-prosserv.png" alt="Prosserv" />
+          </div>
+        </article>
+      </section>
       <div className="landing-campus" aria-hidden="true">
         <img src="/assets/brand/cathedral-fachada-trimmed.webp" alt="" />
       </div>
       <footer className="landing-footer">
-        {data?.sponsors?.filter((s: any) => s.active).length > 0 && (
-          <div className="sponsors">
-            <span className="eyebrow">PATROCINADORES</span>
-            <div>
-              {data.sponsors
-                .filter((s: any) => s.active)
-                .map((s: any) => (
-                  <a
-                    key={s.id}
-                    href={s.link || undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {s.logoUrl ? <img src={s.logoUrl} alt={s.name} /> : s.name}
-                  </a>
-                ))}
-            </div>
-          </div>
-        )}
-        <div className="footer-line">
-          <span>
-            Site por <strong>Matheus Feitosa</strong>
-          </span>
-          <span>Auxílio financeiro: Candido e Heloisa</span>
-        </div>
+        <span>
+          Jornadas · experiências que conectam conhecimento e pessoas.
+        </span>
       </footer>
     </div>
   );

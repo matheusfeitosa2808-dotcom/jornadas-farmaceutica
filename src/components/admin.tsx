@@ -938,6 +938,13 @@ const configs: Record<string, EntityConfig> = {
         label: "Ou prazo absoluto para confirmar",
         type: "datetime-local",
       },
+      {
+        key: "redemptionStartsAt",
+        label: "Liberação para retirada",
+        type: "datetime-local",
+        wide: true,
+        help: "Personalize o dia e o horário em que a equipe poderá entregar este brinde.",
+      },
       { key: "exclusiveGroup", label: "Grupo de exclusividade (opcional)" },
       {
         key: "guaranteed",
@@ -968,6 +975,14 @@ const configs: Record<string, EntityConfig> = {
       { key: "stockAvailable", label: "Disponíveis" },
       { key: "stockReserved", label: "Reservados" },
       { key: "stockDelivered", label: "Entregues" },
+      {
+        key: "redemptionStartsAt",
+        label: "Retirada",
+        render: (r, d) =>
+          r.redemptionStartsAt
+            ? dt(r.redemptionStartsAt, d.edition.timezone)
+            : "Imediata",
+      },
       {
         key: "active",
         label: "Status",
@@ -2586,25 +2601,36 @@ function Deliveries() {
         </div>
         {p && (
           <div className="a-people-list">
-            {reserv.map((r) => (
-              <label key={r.id}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(r.id)}
-                  onChange={(e) =>
-                    setSelected(
-                      e.target.checked
-                        ? [...selected, r.id]
-                        : selected.filter((x) => x !== r.id),
-                    )
-                  }
-                />
-                <span>
-                  <strong>{find(data, "rewards", r.rewardId).name}</strong>
-                  <small>{labels[r.status] || r.status}</small>
-                </span>
-              </label>
-            ))}
+            {reserv.map((r) => {
+              const reward = find(data, "rewards", r.rewardId);
+              const locked =
+                reward.redemptionStartsAt &&
+                new Date(data.serverNow) < new Date(reward.redemptionStartsAt);
+              return (
+                <label key={r.id}>
+                  <input
+                    type="checkbox"
+                    disabled={locked}
+                    checked={selected.includes(r.id)}
+                    onChange={(e) =>
+                      setSelected(
+                        e.target.checked
+                          ? [...selected, r.id]
+                          : selected.filter((x) => x !== r.id),
+                      )
+                    }
+                  />
+                  <span>
+                    <strong>{reward.name}</strong>
+                    <small>
+                      {locked
+                        ? `Retirada a partir de ${dt(reward.redemptionStartsAt, data.edition.timezone)}`
+                        : labels[r.status] || r.status}
+                    </small>
+                  </span>
+                </label>
+              );
+            })}
           </div>
         )}
         <RunButton

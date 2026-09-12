@@ -1187,6 +1187,9 @@ function Rewards({ id }: { id?: string }) {
             ["PENDING", "AWAITING_CONFIRMATION", "SELECTED"].includes(status);
           const imageUrl = r.imageUrl || rewardImage(r.name);
           const required = rule?.minCheckins ?? data.edition.maxCheckins;
+          const redemptionLocked =
+            r.redemptionStartsAt &&
+            new Date(data.serverNow) < new Date(r.redemptionStartsAt);
           const c = rule?.categoryId
             ? data.categories.find((c: any) => c.id === rule.categoryId)
             : null;
@@ -1241,6 +1244,22 @@ function Rewards({ id }: { id?: string }) {
                   </span>
                   <span>A quantidade pode variar.</span>
                 </div>
+                {r.redemptionStartsAt && (
+                  <div className="reward-pickup-date">
+                    <CalendarDays size={16} />
+                    <span>
+                      {redemptionLocked
+                        ? "Retirada a partir de "
+                        : "Retirada liberada desde "}
+                      <b>
+                        {formatDate(
+                          r.redemptionStartsAt,
+                          data.edition.timezone,
+                        )}
+                      </b>
+                    </span>
+                  </div>
+                )}
                 {needsConfirm && (
                   <>
                     <p className="reward-deadline">
@@ -1274,8 +1293,9 @@ function Rewards({ id }: { id?: string }) {
                   reservation && (
                     <div className="reward-ready">
                       <CheckCircle2 size={18} />
-                      Seu brinde está confirmado. Apresente seu RA à equipe de
-                      retirada.
+                      {redemptionLocked
+                        ? `Seu brinde está confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
+                        : "Seu brinde está confirmado. Apresente seu RA à equipe de retirada."}
                     </div>
                   )}
                 {status === "DELIVERED" && (

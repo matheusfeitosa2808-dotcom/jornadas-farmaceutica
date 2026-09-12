@@ -289,6 +289,7 @@ test("@api jornada integrada: cadastro, conflito, presença, carimbo, sorteio, c
       total: 1,
       active: true,
       confirmationMinutes: 30,
+      redemptionStartsAt: "2099-09-24T04:00:00.000Z",
     });
     await save(fixture.admin, fixture.editionId, "rule", {
       rewardId,
@@ -318,6 +319,18 @@ test("@api jornada integrada: cadastro, conflito, presença, carimbo, sorteio, c
       "reservation.confirm",
       { reservationId: reservation.id },
     );
+    await expectFailure(fixture.admin, fixture.editionId, "delivery.create", {
+      reservationIds: [reservation.id],
+    });
+    await save(fixture.admin, fixture.editionId, "reward", {
+      id: rewardId,
+      name: "Garrafa QA DEV",
+      description: "Uma unidade para dois elegíveis.",
+      total: 1,
+      active: true,
+      confirmationMinutes: 30,
+      redemptionStartsAt: "2020-09-24T04:00:00.000Z",
+    });
     await action(fixture.admin, fixture.editionId, "delivery.create", {
       reservationIds: [reservation.id],
     });

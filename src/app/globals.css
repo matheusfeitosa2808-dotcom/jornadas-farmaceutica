@@ -3102,6 +3102,109 @@ img {
   }
 }
 
+/* Navegação inferior com carimbos oficiais */
+.bottom-nav {
+  padding: 6px 12px calc(8px + env(safe-area-inset-bottom));
+  align-items: end;
+  border-top-color: rgba(8, 59, 80, 0.16);
+  background: rgba(249, 246, 238, 0.985);
+}
+.bottom-nav a {
+  --nav-color: var(--ink);
+  min-width: 0;
+  min-height: 72px;
+  gap: 1px;
+  color: #777d7b;
+  font-size: 0.7rem;
+  line-height: 1;
+  transition:
+    color 180ms ease,
+    background 180ms ease;
+}
+.bottom-nav a:nth-child(1) {
+  --nav-color: #b18a3b;
+}
+.bottom-nav a:nth-child(2) {
+  --nav-color: #a77b25;
+}
+.bottom-nav a:nth-child(3) {
+  --nav-color: #083b50;
+}
+.bottom-nav a:nth-child(4) {
+  --nav-color: #4f7464;
+}
+.bottom-nav a:nth-child(5) {
+  --nav-color: #174f58;
+}
+.nav-icon-frame {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+.nav-stamp-icon {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
+  filter: grayscale(1) saturate(0) brightness(0.62) contrast(1.12);
+  opacity: 0.74;
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.bottom-nav a.selected {
+  color: var(--nav-color);
+  background: transparent;
+  font-weight: 800;
+}
+.bottom-nav a.selected .nav-icon-frame {
+  transform: translateY(-2px);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--nav-color) 9%, transparent) 0 58%,
+    transparent 60%
+  );
+}
+.bottom-nav a.selected .nav-stamp-icon {
+  filter: none;
+  opacity: 1;
+  transform: scale(1.1);
+}
+.bottom-nav a i {
+  bottom: -1px;
+  width: 24px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--nav-color);
+}
+
+@media (max-width: 430px) {
+  .participant-shell {
+    padding-bottom: 86px;
+  }
+  .bottom-nav {
+    padding-inline: 4px;
+  }
+  .bottom-nav a {
+    min-height: 68px;
+    font-size: 0.64rem;
+  }
+  .nav-icon-frame {
+    width: 44px;
+    height: 44px;
+  }
+  .nav-stamp-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
 @media (min-width: 901px) {
   .login-page {
     padding: 14px clamp(18px, 3vw, 34px) 18px;

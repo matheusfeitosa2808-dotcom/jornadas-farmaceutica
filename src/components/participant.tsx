@@ -15,7 +15,6 @@ import {
   Clock3,
   Download,
   Gift,
-  Home,
   Leaf,
   LogOut,
   MapPin,
@@ -23,7 +22,6 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
-  UserRound,
   Upload,
   WifiOff,
 } from "lucide-react";
@@ -40,11 +38,27 @@ import {
 } from "./ui";
 
 const navigation = [
-  { path: "", label: "Início", icon: Home },
-  { path: "programacao", label: "Programação", icon: CalendarDays },
-  { path: "passaporte", label: "Passaporte", icon: BookOpen },
-  { path: "brindes", label: "Brindes", icon: Gift },
-  { path: "perfil", label: "Perfil", icon: UserRound },
+  { path: "", label: "Início", icon: "/assets/navigation/nav-inicio.png" },
+  {
+    path: "programacao",
+    label: "Programação",
+    icon: "/assets/navigation/nav-programacao.png",
+  },
+  {
+    path: "passaporte",
+    label: "Passaporte",
+    icon: "/assets/navigation/nav-passaporte.png",
+  },
+  {
+    path: "brindes",
+    label: "Brindes",
+    icon: "/assets/navigation/nav-brindes.png",
+  },
+  {
+    path: "perfil",
+    label: "Perfil",
+    icon: "/assets/navigation/nav-perfil.png",
+  },
 ];
 function ownEnrollment(data: any, activityId: string) {
   return (data.enrollments || []).find(
@@ -194,14 +208,16 @@ export default function ParticipantApp({
         </footer>
       </div>
       <nav className="bottom-nav" aria-label="Navegação principal">
-        {navigation.map(({ path, label, icon: Icon }) => (
+        {navigation.map(({ path, label, icon }) => (
           <Link
             key={path}
             href={`/app${path ? "/" + path : ""}`}
             aria-current={section === path ? "page" : undefined}
             className={section === path ? "selected" : ""}
           >
-            <Icon size={21} />
+            <span className="nav-icon-frame" aria-hidden="true">
+              <img className="nav-stamp-icon" src={icon} alt="" />
+            </span>
             <span>{label}</span>
             {section === path && <i />}
           </Link>

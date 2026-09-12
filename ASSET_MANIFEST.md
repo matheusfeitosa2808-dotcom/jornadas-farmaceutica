@@ -36,5 +36,18 @@ Uso recomendado:
 - shell do app: minimalista, claro, limpo;
 - passaporte: área mais clássica/afetiva, com textura e selos;
 - dashboard admin: sóbrio, utilitário, desktop-first;
-- ícones funcionais comuns: SVG consistentes (Lucide/Phosphor ou equivalentes), não imagens raster;
+- ícones funcionais comuns: SVG consistentes (Lucide/Phosphor ou equivalentes), exceto os carimbos autorais da navegação móvel;
 - não transformar textos de interface em imagens.
+
+## Carimbos da navegação móvel
+
+Arquivos em `public/assets/navigation/`:
+
+- `nav-inicio.png` — portal institucional em dourado;
+- `nav-programacao.png` — calendário em ocre;
+- `nav-passaporte.png` — passaporte aberto em azul profundo;
+- `nav-brindes.png` — presente em verde institucional;
+- `nav-perfil.png` — perfil clássico em azul-petróleo.
+
+Os PNGs têm fundo transparente e proporção quadrada. No menu inferior, os
+itens inativos aparecem em cinza; a seleção restaura a cor original do carimbo.

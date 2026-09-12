@@ -542,7 +542,7 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
           <Search size={18} />
           <input
             aria-label="Buscar atividade"
-            placeholder="Buscar uma atividade"
+            placeholder="Buscar atividade"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -569,6 +569,7 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
       <div className="filter-chips" role="group" aria-label="Categorias">
         <button
           className={!category ? "active" : ""}
+          aria-pressed={!category}
           onClick={() => setCategory("")}
         >
           Todas
@@ -579,6 +580,7 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
             <button
               key={c.id}
               className={category === c.id ? "active" : ""}
+              aria-pressed={category === c.id}
               onClick={() => setCategory(c.id)}
             >
               <span style={{ background: c.color }} />
@@ -587,9 +589,9 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
           ))}
       </div>
       <div className="results-meta">
-        {activities.length}{" "}
+        <strong>{activities.length}</strong>{" "}
         {activities.length === 1 ? "atividade" : "atividades"}
-        {onlyMine ? " na sua jornada" : " nesta seleção"}
+        {onlyMine ? " na sua agenda" : " disponíveis"}
       </div>
       {activities.length ? (
         <div className="activity-grid">
@@ -645,6 +647,13 @@ function ActivityCard({ activity }: { activity: any }) {
     );
   const seats = Math.max(0, activity.capacity - (activity.enrolledCount || 0));
   const ended = new Date(data.serverNow) > new Date(activity.endAt);
+  const repeatsCategory = activity.title
+    .toLocaleLowerCase("pt-BR")
+    .startsWith(c.name.toLocaleLowerCase("pt-BR"));
+  const displayTitle = repeatsCategory
+    ? activity.title.slice(c.name.length).replace(/^[\s·:–—-]+/, "") ||
+      activity.title
+    : activity.title;
   return (
     <article
       className="activity-card card"
@@ -685,7 +694,7 @@ function ActivityCard({ activity }: { activity: any }) {
         ) : null}
       </div>
       <Link href={`/app/programacao/${activity.id}`} className="activity-title">
-        <h2>{activity.title}</h2>
+        <h2>{displayTitle}</h2>
       </Link>
       {speakers.length > 0 ? (
         <div className="speaker-mini">
@@ -702,7 +711,9 @@ function ActivityCard({ activity }: { activity: any }) {
       <ActivityMeta activity={activity} timezone={data.edition.timezone} />
       <div className="activity-card-bottom">
         <span>
-          {seats} de {activity.capacity} vagas
+          {seats === 0
+            ? "Sem vagas"
+            : `${seats} ${seats === 1 ? "vaga restante" : "vagas restantes"}`}
         </span>
         <Link href={`/app/programacao/${activity.id}`} className="text-link">
           Ver detalhes <ArrowRight size={17} />

@@ -2035,7 +2035,7 @@ body {
   line-height: 1;
   font-size: 1.1rem;
 }
-.participant-programacao .page-heading,
+:is(.participant-programacao, .participant-inscricoes) .page-heading,
 .participant-passaporte .passport-page-heading,
 .participant-brindes .page-heading,
 .participant-perfil .page-heading,
@@ -4036,6 +4036,277 @@ img {
   }
   .participant-passaporte .passport-progress-summary {
     min-width: 70px;
+  }
+}
+
+/* Programação limpa e compacta */
+:is(.participant-programacao, .participant-inscricoes) .schedule-toolbar {
+  grid-template-columns: minmax(0, 1fr) 172px auto;
+  gap: 8px;
+  margin: 0 0 9px;
+  padding: 9px;
+  border: 1px solid rgba(12, 61, 76, 0.18);
+  border-radius: 11px;
+  background: rgba(250, 247, 239, 0.74);
+  box-shadow: 0 4px 13px rgba(33, 43, 36, 0.05);
+}
+:is(.participant-programacao, .participant-inscricoes) .search-field,
+:is(.participant-programacao, .participant-inscricoes) .schedule-toolbar select,
+:is(.participant-programacao, .participant-inscricoes)
+  .schedule-toolbar
+  .button {
+  min-height: 42px;
+  height: 42px;
+  border-color: rgba(12, 61, 76, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.44);
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .schedule-toolbar
+  .button {
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+:is(.participant-programacao, .participant-inscricoes) .filter-chips {
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+:is(.participant-programacao, .participant-inscricoes) .filter-chips button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-color: rgba(12, 61, 76, 0.16);
+  border-radius: 8px;
+  background: rgba(250, 247, 239, 0.68);
+  font-size: 0.76rem;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .filter-chips
+  button.active {
+  border-color: var(--teal);
+  background: var(--teal);
+}
+:is(.participant-programacao, .participant-inscricoes) .results-meta {
+  margin: 11px 2px 9px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+:is(.participant-programacao, .participant-inscricoes) .results-meta strong {
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-card {
+  min-height: 0;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  column-gap: 13px;
+  align-items: start;
+  overflow: hidden;
+  border: 1px solid rgba(12, 61, 76, 0.18);
+  border-radius: 10px;
+  background: rgba(250, 247, 239, 0.78);
+  box-shadow: 0 3px 11px rgba(33, 43, 36, 0.055);
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-card::before {
+  inset: 8px auto 8px 7px;
+  width: 2px;
+  border-radius: 99px;
+  opacity: 0.7;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-stamp {
+  position: static;
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 64px;
+  height: 64px;
+  margin: 1px 0 0;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  > .row-between,
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  > .activity-title,
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  > .speaker-mini,
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  > .activity-excerpt {
+  grid-column: 2;
+  min-width: 0;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  > .row-between {
+  flex-wrap: wrap;
+  gap: 5px 8px;
+}
+:is(.participant-programacao, .participant-inscricoes) .category-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-card .badge {
+  padding: 4px 8px;
+  font-size: 0.62rem;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-title h2 {
+  margin: 7px 0 6px;
+  font-size: 1.18rem;
+  line-height: 1.12;
+}
+:is(.participant-programacao, .participant-inscricoes) .speaker-mini {
+  gap: 7px;
+  margin: 0;
+  font-size: 0.76rem;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .speaker-mini
+  .avatar.tiny {
+  width: 28px;
+  height: 28px;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-excerpt {
+  min-height: 0;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  .activity-meta {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  justify-content: start;
+  gap: 5px 14px;
+  margin-top: 12px;
+  padding: 11px 0;
+  border-top: 1px solid rgba(12, 61, 76, 0.11);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card
+  .activity-meta
+  span:last-child {
+  grid-column: 1 / -1;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-card-bottom {
+  grid-column: 1 / -1;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(12, 61, 76, 0.18);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-card-bottom
+  .text-link {
+  font-size: 0.74rem;
+}
+
+@media (max-width: 760px) {
+  :is(.participant-programacao, .participant-inscricoes) .schedule-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 1fr);
+    gap: 7px;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .schedule-toolbar
+    .search-field {
+    grid-column: 1 / -1;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .schedule-toolbar
+    select {
+    width: 100%;
+    min-width: 0;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .schedule-toolbar
+    .button {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 8px;
+    font-size: 0.76rem;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .filter-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .filter-chips button {
+    min-width: 0;
+    min-height: 34px;
+    padding: 5px 6px;
+    overflow: hidden;
+    font-size: 0.69rem;
+    text-overflow: ellipsis;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .filter-chips
+    button
+    span {
+    margin-right: 4px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .results-meta {
+    margin-top: 9px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-card {
+    grid-template-columns: 62px minmax(0, 1fr);
+    column-gap: 11px;
+    padding: 14px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-stamp {
+    width: 58px;
+    height: 58px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-title h2 {
+    font-size: 1.13rem;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .activity-card
+    .activity-meta {
+    margin-top: 10px;
+    padding: 9px 0;
+  }
+}
+
+@media (max-width: 390px) {
+  :is(.participant-programacao, .participant-inscricoes) .schedule-toolbar {
+    grid-template-columns: minmax(0, 1fr) 145px;
+  }
+  :is(.participant-programacao, .participant-inscricoes)
+    .schedule-toolbar
+    .button
+    svg {
+    display: none;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .filter-chips button {
+    font-size: 0.65rem;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-card {
+    grid-template-columns: 54px minmax(0, 1fr);
+    column-gap: 10px;
+    padding: 13px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-stamp {
+    width: 50px;
+    height: 50px;
+  }
+  :is(.participant-programacao, .participant-inscricoes) .activity-card .badge {
+    font-size: 0.58rem;
   }
 }
 

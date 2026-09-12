@@ -1307,10 +1307,7 @@ function Profile({ person }: { person: any }) {
   const { data, action, toast } = useJornadas();
   const router = useRouter();
   const [uploading, setUploading] = useState(false),
-    [pushStatus, setPushStatus] = useState(""),
-    [profileLayout, setProfileLayout] = useState<
-      "editorial" | "passaporte" | "compacto"
-    >("editorial");
+    [pushStatus, setPushStatus] = useState("");
   async function upload(file: File) {
     setUploading(true);
     try {
@@ -1367,34 +1364,7 @@ function Profile({ person }: { person: any }) {
   return (
     <>
       <PageHeading eyebrow="SEU ESPAÇO NA JORNADA" title="Meu perfil" />
-      {data.devMode && (
-        <aside
-          className="profile-layout-tester"
-          aria-label="Comparar layouts do perfil"
-        >
-          <span>COMPARAR PERFIL · DEV</span>
-          <div role="group" aria-label="Layout do perfil">
-            {(
-              [
-                ["editorial", "Editorial"],
-                ["passaporte", "Passaporte"],
-                ["compacto", "Compacto"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                type="button"
-                key={value}
-                className={profileLayout === value ? "active" : ""}
-                aria-pressed={profileLayout === value}
-                onClick={() => setProfileLayout(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </aside>
-      )}
-      <div className={`profile-layout profile-layout-${profileLayout}`}>
+      <div className="profile-layout profile-layout-editorial">
         <section className="profile-card card">
           <div className="profile-top">
             <Avatar name={person.name} url={person.photoUrl} size="large" />

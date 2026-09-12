@@ -3738,65 +3738,7 @@ img {
   }
 }
 
-@media (max-width: 760px) {
-  .profile-layout-compacto .profile-data {
-    grid-template-columns: 0.72fr 0.82fr 1.35fr;
-  }
-  .profile-layout-compacto .profile-data .badge {
-    max-width: 100%;
-    white-space: normal;
-    line-height: 1.12;
-  }
-}
-
-/* Comparador de composições do perfil (visível somente no modo DEV) */
-.profile-layout-tester {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin: 0 0 13px;
-  padding: 8px 9px 8px 14px;
-  border: 1px solid rgba(12, 61, 76, 0.18);
-  border-radius: 12px;
-  background: rgba(255, 253, 247, 0.82);
-  box-shadow: 0 5px 16px rgba(18, 47, 54, 0.05);
-}
-.profile-layout-tester > span,
-.profile-kicker {
-  color: var(--gold-dark);
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-}
-.profile-layout-tester > div {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  padding: 3px;
-  border-radius: 9px;
-  background: rgba(12, 61, 76, 0.07);
-}
-.profile-layout-tester button {
-  min-height: 32px;
-  padding: 5px 12px;
-  border: 0;
-  border-radius: 7px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease;
-}
-.profile-layout-tester button.active {
-  color: #fffdf7;
-  background: var(--ink);
-  box-shadow: 0 3px 9px rgba(12, 61, 76, 0.18);
-}
+/* Perfil editorial definitivo */
 .profile-layout {
   display: grid;
   gap: 13px;
@@ -3804,9 +3746,6 @@ img {
 .profile-layout .profile-card {
   position: relative;
   overflow: hidden;
-  transition:
-    background 180ms ease,
-    border-radius 180ms ease;
 }
 .profile-layout .profile-metrics {
   margin-top: 0;
@@ -3817,9 +3756,11 @@ img {
 .profile-kicker {
   display: block;
   margin-bottom: 3px;
+  color: var(--gold-dark);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
 }
-
-/* Editorial: retrato e nome conduzem a leitura. */
 .profile-layout-editorial .profile-card {
   padding: 30px;
   background:
@@ -3850,151 +3791,8 @@ img {
   gap: 0 24px;
 }
 
-/* Passaporte: bloco centralizado com ritmo de credencial. */
-.profile-layout-passaporte .profile-card {
-  padding: 30px;
-  border: 1px solid rgba(12, 61, 76, 0.34);
-  outline: 1px solid rgba(181, 139, 50, 0.38);
-  outline-offset: -9px;
-  background:
-    radial-gradient(
-        circle at 8px 8px,
-        rgba(12, 61, 76, 0.045) 1px,
-        transparent 1.3px
-      )
-      0 0 / 15px 15px,
-    var(--paper);
-}
-.profile-layout-passaporte .profile-top {
-  flex-direction: column;
-  gap: 11px;
-  padding-bottom: 22px;
-  text-align: center;
-  border-bottom-style: dashed;
-}
-.profile-layout-passaporte .profile-top > div:last-child {
-  display: grid;
-  justify-items: center;
-}
-.profile-layout-passaporte .profile-top h2 {
-  font-size: 2rem;
-  line-height: 1.04;
-}
-.profile-layout-passaporte .profile-data {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  text-align: center;
-}
-.profile-layout-passaporte .profile-data div {
-  padding: 15px 10px 9px;
-  border-right: 1px dashed rgba(12, 61, 76, 0.22);
-  border-bottom: 0;
-}
-.profile-layout-passaporte .profile-data div:last-child {
-  border-right: 0;
-}
-.profile-layout-passaporte .fine-print {
-  margin: 16px 0 0;
-  text-align: center;
-}
-.profile-layout-passaporte .profile-metrics {
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid rgba(12, 61, 76, 0.16);
-  border-radius: 9px;
-  background: var(--paper);
-  box-shadow: 0 8px 20px rgba(18, 47, 54, 0.07);
-}
-.profile-layout-passaporte .profile-metrics article {
-  border: 0;
-  border-right: 1px solid var(--line);
-  border-radius: 0;
-  box-shadow: none;
-}
-.profile-layout-passaporte .profile-metrics article:last-child {
-  border-right: 0;
-}
-
-/* Compacto: identidade e indicadores ocupam menos altura. */
-.profile-layout-compacto {
-  grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
-  align-items: stretch;
-}
-.profile-layout-compacto .profile-card {
-  display: grid;
-  grid-template-columns: 1fr;
-  padding: 22px;
-}
-.profile-layout-compacto .profile-top {
-  align-self: center;
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--line);
-}
-.profile-layout-compacto .avatar.large {
-  width: 76px;
-  height: 76px;
-}
-.profile-layout-compacto .profile-top h2 {
-  font-size: 1.65rem;
-  line-height: 1.04;
-}
-.profile-layout-compacto .profile-data {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0 18px;
-  align-content: center;
-}
-.profile-layout-compacto .profile-data div {
-  padding: 9px 0;
-}
-.profile-layout-compacto .fine-print {
-  grid-column: 1 / -1;
-  margin: 13px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
-.profile-layout-compacto .profile-metrics {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-self: stretch;
-  gap: 7px;
-}
-.profile-layout-compacto .profile-metrics article {
-  min-height: 0;
-  padding: 9px 6px;
-}
-.profile-layout-compacto .profile-metrics .shortcut-icon {
-  width: 37px;
-  height: 37px;
-}
-.profile-layout-compacto .profile-metrics .shortcut-icon svg {
-  width: 18px;
-  height: 18px;
-}
-.profile-layout-compacto .profile-metrics strong {
-  font-size: 1.45rem;
-}
-
-@media (max-width: 900px) {
-  .profile-layout-compacto {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 760px) {
-  .profile-layout-tester {
-    display: block;
-    padding: 10px;
-  }
-  .profile-layout-tester > span {
-    display: block;
-    margin: 1px 3px 8px;
-    text-align: center;
-  }
-  .profile-layout-tester button {
-    padding-inline: 7px;
-    font-size: 0.71rem;
-  }
-  .profile-layout-editorial .profile-card,
-  .profile-layout-passaporte .profile-card {
+  .profile-layout-editorial .profile-card {
     padding: 21px;
   }
   .profile-layout-editorial .profile-card::before {
@@ -4005,84 +3803,16 @@ img {
     gap: 15px;
     padding: 0 0 15px 3px;
   }
-  .profile-layout-editorial .profile-top h2,
-  .profile-layout-passaporte .profile-top h2 {
+  .profile-layout-editorial .profile-top h2 {
     font-size: 1.55rem;
   }
-  .profile-layout-editorial .profile-data,
-  .profile-layout-passaporte .profile-data {
+  .profile-layout-editorial .profile-data {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .profile-layout-editorial .profile-data div:last-child {
     grid-column: 1 / -1;
   }
-  .profile-layout-passaporte .profile-data div:nth-child(3) {
-    border-right: 0;
-  }
-  .profile-layout-passaporte .profile-data div:last-child {
-    grid-column: 1 / -1;
-    border-top: 1px dashed rgba(12, 61, 76, 0.22);
-  }
-  .profile-layout-passaporte .profile-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .profile-layout-passaporte .profile-metrics article {
-    min-height: 112px;
-    padding-inline: 3px;
-  }
-  .profile-layout-passaporte .profile-metrics small {
-    font-size: 0.66rem;
-  }
-  .profile-layout-passaporte .profile-metrics strong {
-    font-size: 1.45rem;
-  }
-  .profile-layout-compacto .profile-card {
-    grid-template-columns: 1fr;
-    padding: 17px;
-  }
-  .profile-layout-compacto .profile-top {
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--line);
-  }
-  .profile-layout-compacto .profile-data {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0 9px;
-  }
-  .profile-layout-compacto .profile-data dt {
-    font-size: 0.65rem;
-  }
-  .profile-layout-compacto .profile-data dd {
-    font-size: 0.82rem;
-  }
-  .profile-layout-compacto .profile-data .badge {
-    padding-inline: 7px;
-    font-size: 0.68rem;
-  }
-  .profile-layout-compacto .profile-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .profile-layout-compacto .profile-metrics article {
-    min-height: 102px;
-    padding-inline: 3px;
-  }
-  .profile-layout-compacto .profile-metrics small {
-    font-size: 0.62rem;
-  }
 }
-
-@media (max-width: 390px) {
-  .profile-layout-passaporte .profile-metrics,
-  .profile-layout-compacto .profile-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .profile-layout-passaporte .profile-metrics article:nth-child(2) {
-    border-right: 0;
-  }
-  .profile-layout-passaporte .profile-metrics article:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--line);
-  }
-}
-
 /* Escala tipográfica e ritmo das páginas do participante */
 .participant-shell {
   --participant-body-size: 0.95rem;

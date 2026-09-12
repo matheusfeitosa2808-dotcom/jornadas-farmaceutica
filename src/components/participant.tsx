@@ -988,49 +988,45 @@ function Passport({ person }: { person: any }) {
           Number(!!ownAttendance(data, a.id)) ||
         a.startAt.localeCompare(b.startAt),
     );
+  const stampGoal = Math.max(
+    Number(data.edition.maxCheckins) || activities.length || 1,
+    1,
+  );
+  const stampProgress = Math.min(100, (stamps.length / stampGoal) * 100);
   return (
     <>
-      <div className="passport-page-heading">
-        <PageHeading
-          eyebrow="CADA ENCONTRO DEIXA UMA MARCA"
-          title="Passaporte Digital"
-          description="Suas experiências, guardadas em cada carimbo."
-        />
-        <span className="passport-edition-tag">EDIÇÃO {data.edition.year}</span>
-      </div>
       <section className="passport">
-        <div className="passport-brand">
-          <img
-            src={
-              data.edition.logoUrl ||
-              "/assets/brand/logo-jornada-2026-trimmed.webp"
-            }
-            alt={data.edition.name}
-          />
-          <span>CONHECIMENTO · CONEXÕES · FUTURO</span>
-        </div>
         <div className="passport-identity">
           <Avatar name={person.name} url={person.photoUrl} />
-          <div>
-            <h2>{person.name}</h2>
-            <span>
-              RA {person.ra}
-              <i /> {person.semester}º semestre
+          <div className="passport-identity-copy">
+            <span className="passport-overline">
+              PASSAPORTE DO PARTICIPANTE
             </span>
+            <h2>{person.name}</h2>
+            <div className="passport-person-meta">
+              <span>RA {person.ra}</span>
+              <span>{person.semester}º semestre</span>
+            </div>
           </div>
-          <span className="identity-label">PARTICIPANTE</span>
+          <span className="identity-label">
+            <Check size={13} /> Ativa
+          </span>
         </div>
         <div className="passport-progress">
-          <div>
-            <BookOpen size={20} />
-            <h3>Carimbos da Jornada</h3>
+          <div className="passport-progress-copy">
+            <span className="passport-overline">PROGRESSO DA EDIÇÃO</span>
+            <h3>Carimbos conquistados</h3>
+            <p>Cada presença confirmada acrescenta uma marca à coleção.</p>
           </div>
           <span className="passport-progress-summary">
             <strong>
-              {stamps.length} de {data.edition.maxCheckins}
+              {stamps.length} de {stampGoal}
             </strong>
-            <small>atividades concluídas</small>
+            <small>concluídos</small>
           </span>
+          <div className="passport-progress-track" aria-hidden="true">
+            <span style={{ width: `${stampProgress}%` }} />
+          </div>
         </div>
         <div className="stamp-grid">
           {activities.map((a: any) => {
@@ -1082,7 +1078,9 @@ function Passport({ person }: { person: any }) {
                   {formatTime(a.startAt, data.edition.timezone)}
                 </span>
                 {stamp && (
-                  <span className="stamp-record">Presença confirmada</span>
+                  <span className="stamp-record">
+                    <Check size={11} /> Conquistado
+                  </span>
                 )}
               </Link>
             );
@@ -1096,9 +1094,8 @@ function Passport({ person }: { person: any }) {
         <div className="passport-note">
           <ShieldCheck size={18} />
           <span>
-            Este passaporte é a referência digital da sua presença.
-            <br />
-            Apresente-o à equipe para solicitar o carimbo físico.
+            Este passaporte registra suas presenças. Apresente-o à equipe para
+            solicitar o carimbo físico.
           </span>
         </div>
         <div className="passport-institution">

@@ -3738,6 +3738,307 @@ img {
   }
 }
 
+/* Passaporte minimalista */
+.participant-passaporte .reference-masthead h1 {
+  white-space: nowrap;
+}
+.participant-passaporte .passport {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.participant-passaporte .passport::before,
+.participant-passaporte .passport-brand {
+  display: none;
+}
+.participant-passaporte .passport-identity {
+  width: 100%;
+  margin: 0;
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid rgba(12, 61, 76, 0.24);
+  border-radius: 11px;
+  background:
+    linear-gradient(105deg, rgba(181, 139, 50, 0.09), transparent 42%),
+    rgba(250, 247, 239, 0.86);
+  box-shadow: 0 5px 16px rgba(33, 43, 36, 0.07);
+}
+.participant-passaporte .passport-identity .avatar {
+  width: 62px;
+  height: 62px;
+  border-color: rgba(181, 139, 50, 0.58);
+}
+.passport-identity-copy {
+  min-width: 0;
+}
+.passport-overline {
+  display: block;
+  color: var(--gold-dark);
+  font-size: 0.62rem !important;
+  font-weight: 800;
+  letter-spacing: 0.15em !important;
+}
+.participant-passaporte .passport-identity h2 {
+  margin: 3px 0 5px;
+  font-size: 1.75rem;
+  line-height: 1.04;
+}
+.passport-person-meta {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.passport-person-meta span {
+  color: var(--muted);
+  font-size: 0.78rem !important;
+  letter-spacing: 0.02em !important;
+}
+.passport-person-meta span + span::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 11px;
+  margin: 0 10px;
+  vertical-align: -1px;
+  background: rgba(12, 61, 76, 0.28);
+}
+.participant-passaporte .identity-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #285f4b;
+  background: rgba(132, 174, 147, 0.18);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase;
+}
+.participant-passaporte .passport-progress {
+  margin: 12px 0 0;
+  padding: 18px 20px 15px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 20px;
+  border: 1px solid rgba(12, 61, 76, 0.18);
+  border-radius: 11px;
+  background: rgba(250, 247, 239, 0.72);
+  box-shadow: 0 4px 13px rgba(33, 43, 36, 0.05);
+}
+.participant-passaporte .passport-progress-copy {
+  display: block;
+}
+.participant-passaporte .passport-progress h3 {
+  margin: 3px 0 2px;
+  font-size: 1.55rem;
+  line-height: 1.08;
+}
+.participant-passaporte .passport-progress p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.participant-passaporte .passport-progress-summary {
+  min-width: 82px;
+  align-items: flex-end;
+  color: var(--ink);
+}
+.participant-passaporte .passport-progress-summary strong {
+  color: var(--gold-dark);
+  font: 700 1.35rem/1 var(--font-serif);
+}
+.participant-passaporte .passport-progress-summary small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.59rem;
+  letter-spacing: 0.1em;
+}
+.passport-progress-track {
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(12, 61, 76, 0.1);
+}
+.passport-progress-track > span {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sage), #2f6b58);
+}
+.participant-passaporte .stamp-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  border: 0;
+}
+.participant-passaporte .stamp-cell {
+  min-width: 0;
+  min-height: 226px;
+  padding: 16px 11px 14px;
+  border: 1px solid rgba(12, 61, 76, 0.16);
+  border-radius: 10px;
+  justify-content: flex-start;
+  color: var(--ink);
+  background: rgba(250, 247, 239, 0.76);
+  box-shadow: 0 3px 10px rgba(33, 43, 36, 0.045);
+}
+.participant-passaporte .stamp-cell.earned {
+  border-color: rgba(181, 139, 50, 0.38);
+  background:
+    linear-gradient(150deg, rgba(181, 139, 50, 0.08), transparent 48%),
+    rgba(250, 247, 239, 0.86);
+}
+.participant-passaporte .stamp-art,
+.participant-passaporte .stamp-placeholder {
+  width: 86px;
+  height: 86px;
+  margin-bottom: 10px;
+}
+.participant-passaporte .stamp-placeholder {
+  opacity: 0.16;
+}
+.participant-passaporte .stamp-category {
+  color: var(--gold-dark);
+  font-size: 0.59rem;
+  letter-spacing: 0.09em;
+}
+.participant-passaporte .stamp-cell h3 {
+  margin: 5px 0 7px;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+.participant-passaporte .stamp-date {
+  margin-top: auto;
+  font-size: 0.63rem;
+  line-height: 1.35;
+}
+.participant-passaporte .stamp-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #285f4b;
+  background: rgba(132, 174, 147, 0.16);
+  font-size: 0.58rem;
+}
+.participant-passaporte .passport-note {
+  justify-content: flex-start;
+  max-width: 620px;
+  margin: 12px auto 0;
+  padding: 11px 14px;
+  border-left: 2px solid var(--sage);
+  border-radius: 0 8px 8px 0;
+  color: var(--muted);
+  background: rgba(87, 123, 103, 0.075);
+}
+.participant-passaporte .passport-institution {
+  height: 160px;
+  margin: 12px 0 0;
+  border: 1px solid rgba(12, 61, 76, 0.14);
+  border-radius: 10px;
+}
+.participant-passaporte .passport-institution img {
+  opacity: 0.4;
+  filter: grayscale(0.45) sepia(0.2);
+  object-position: center 43%;
+}
+.participant-passaporte .passport-institution::after {
+  background: linear-gradient(90deg, rgba(248, 242, 228, 0.5), transparent 65%);
+}
+.participant-passaporte .passport-institution span {
+  right: 20px;
+  bottom: 16px;
+}
+
+@media (max-width: 760px) {
+  .participant-passaporte .reference-masthead h1 {
+    font-size: clamp(1.65rem, 7vw, 1.9rem);
+    letter-spacing: 0.012em;
+  }
+  .participant-passaporte .passport-identity {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 17px;
+  }
+  .participant-passaporte .passport-identity .avatar {
+    width: 56px;
+    height: 56px;
+  }
+  .participant-passaporte .passport-identity h2 {
+    font-size: 1.38rem;
+  }
+  .participant-passaporte .identity-label {
+    grid-column: 2;
+    justify-self: start;
+    padding-block: 5px;
+  }
+  .participant-passaporte .passport-progress {
+    padding: 16px;
+    gap: 11px 12px;
+  }
+  .participant-passaporte .passport-progress h3 {
+    font-size: 1.3rem;
+  }
+  .participant-passaporte .passport-progress p {
+    display: none;
+  }
+  .participant-passaporte .passport-progress-summary strong {
+    font-size: 1.08rem !important;
+  }
+  .participant-passaporte .stamp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .participant-passaporte .stamp-cell {
+    min-height: 218px;
+    padding: 15px 10px 13px;
+  }
+  .participant-passaporte .stamp-art,
+  .participant-passaporte .stamp-placeholder {
+    width: 78px;
+    height: 78px;
+  }
+  .participant-passaporte .stamp-cell h3 {
+    font-size: 0.86rem;
+  }
+  .participant-passaporte .passport-note {
+    margin-top: 10px;
+  }
+  .participant-passaporte .passport-institution {
+    height: 138px;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 390px) {
+  .passport-person-meta {
+    display: grid;
+    gap: 1px;
+  }
+  .passport-person-meta span + span::before {
+    display: none;
+  }
+  .participant-passaporte .passport-progress h3 {
+    font-size: 1.16rem;
+  }
+  .participant-passaporte .passport-progress-summary {
+    min-width: 70px;
+  }
+}
+
 /* Perfil editorial definitivo */
 .profile-layout {
   display: grid;

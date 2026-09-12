@@ -3738,6 +3738,312 @@ img {
   }
 }
 
+/* Escala tipográfica e ritmo das páginas do participante */
+.participant-shell {
+  --participant-body-size: 0.95rem;
+  --participant-meta-size: 0.84rem;
+  --participant-caption-size: 0.74rem;
+}
+.participant-content {
+  color: var(--ink);
+  font-size: var(--participant-body-size);
+  line-height: 1.52;
+}
+.reference-masthead h1 {
+  margin-top: 8px;
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  line-height: 1.02;
+  letter-spacing: 0.018em;
+}
+.reference-masthead p {
+  max-width: 38rem;
+  margin-top: 9px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  letter-spacing: 0.14em;
+}
+.greeting h1 {
+  font-size: clamp(2.1rem, 5vw, 3rem);
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+}
+.greeting p {
+  margin-top: 6px;
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+.next-activity h2 {
+  font-size: clamp(1.75rem, 3.4vw, 2.35rem);
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+}
+.next-activity > p {
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+.section-heading {
+  margin-top: 24px;
+  margin-bottom: 11px;
+}
+.section-heading h2 {
+  font-size: 1.65rem;
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+}
+.home-stat small,
+.home-action small,
+.results-meta,
+.category-label,
+.badge {
+  line-height: 1.35;
+}
+.home-stat small,
+.home-action small {
+  font-size: 0.8rem;
+}
+.home-stat strong {
+  font-size: 1.42rem;
+  line-height: 1.08;
+}
+.home-action strong {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+.schedule-toolbar input,
+.schedule-toolbar select,
+.schedule-toolbar .button,
+.filter-chips button {
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+.results-meta {
+  margin: 2px 2px 12px;
+  font-size: 0.78rem;
+  letter-spacing: 0.025em;
+}
+.activity-title h2 {
+  font-size: 1.38rem;
+  line-height: 1.14;
+  letter-spacing: -0.008em;
+}
+.speaker-mini,
+.activity-excerpt,
+.activity-meta {
+  font-size: var(--participant-meta-size);
+  line-height: 1.48;
+}
+.activity-card-bottom {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.passport-identity h2 {
+  font-size: 1.75rem;
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+}
+.passport-identity > div > span {
+  font-size: var(--participant-meta-size);
+  line-height: 1.45;
+}
+.passport-progress h3 {
+  font-size: 1.48rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.passport-progress-summary strong {
+  font-size: 1.16rem !important;
+  line-height: 1.05;
+}
+.passport-progress-summary small {
+  font-size: 0.64rem;
+  line-height: 1.25;
+  letter-spacing: 0.07em;
+}
+.stamp-cell h3 {
+  font-size: 0.78rem;
+  line-height: 1.26;
+}
+.stamp-category {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+}
+.stamp-date {
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+.passport-note,
+.info-note {
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.reward-progress-strip {
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+.reward-card-content h2 {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: -0.008em;
+}
+.reward-card-content > p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.reward-rule {
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+.reward-availability {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.profile-top h2 {
+  font-size: 1.65rem;
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+}
+.profile-top p {
+  margin-top: 5px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.profile-data dt {
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+.profile-data dd {
+  margin-top: 3px;
+  font-size: 0.95rem;
+  line-height: 1.38;
+}
+.profile-metrics small {
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+.profile-link {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .participant-shell {
+    --participant-body-size: 0.94rem;
+    --participant-meta-size: 0.85rem;
+  }
+  .reference-masthead {
+    margin-bottom: 14px;
+  }
+  .reference-masthead h1 {
+    font-size: 2rem;
+  }
+  .reference-masthead p {
+    max-width: min(90%, 22rem);
+    font-size: 0.72rem;
+    letter-spacing: 0.115em;
+  }
+  .greeting h1 {
+    font-size: 2.1rem;
+  }
+  .greeting p {
+    font-size: 1rem;
+  }
+  .next-activity h2 {
+    margin-top: 14px;
+    font-size: 1.68rem;
+    line-height: 1.1;
+  }
+  .next-activity > p {
+    font-size: 0.94rem;
+  }
+  .next-activity .activity-meta {
+    margin-top: 15px;
+  }
+  .next-bottom {
+    margin-top: 16px;
+  }
+  .section-heading h2 {
+    font-size: 1.55rem;
+  }
+  .activity-title h2 {
+    margin-top: 7px;
+    font-size: 1.25rem;
+  }
+  .activity-card .activity-meta {
+    margin-top: 10px;
+    padding-block: 12px;
+  }
+  .passport-identity h2 {
+    font-size: 1.48rem;
+  }
+  .passport-progress h3 {
+    font-size: 1.28rem;
+  }
+  .passport-progress-summary strong {
+    font-size: 1.08rem !important;
+  }
+  .reward-progress-strip {
+    font-size: 0.9rem;
+  }
+  .reward-card-content h2 {
+    font-size: 1.28rem;
+  }
+  .reward-card-content > p {
+    font-size: 0.88rem;
+  }
+  .profile-top h2 {
+    font-size: 1.5rem;
+  }
+  .profile-top p {
+    font-size: 0.88rem;
+  }
+  .profile-data dt {
+    font-size: 0.75rem;
+  }
+  .profile-data dd {
+    font-size: 0.93rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .reference-masthead {
+    min-height: 210px;
+  }
+  .reference-masthead h1 {
+    font-size: 1.9rem;
+  }
+  .reference-masthead p {
+    font-size: 0.69rem;
+  }
+  .greeting {
+    margin-bottom: 12px;
+  }
+  .greeting h1 {
+    font-size: 2rem;
+  }
+  .next-activity {
+    padding: 18px;
+  }
+  .activity-title h2 {
+    font-size: 1.2rem;
+  }
+  .passport-progress {
+    padding-block: 14px;
+  }
+  .passport-progress h3 {
+    font-size: 1.2rem;
+  }
+  .passport-progress-summary strong {
+    font-size: 1.02rem !important;
+  }
+  .reward-card-content h2 {
+    font-size: 1.22rem;
+  }
+  .profile-top h2 {
+    font-size: 1.45rem;
+  }
+}
+
 @media (max-width: 520px) {
   .passport-progress {
     grid-template-columns: minmax(0, 1fr) 90px;

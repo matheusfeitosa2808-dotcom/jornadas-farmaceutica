@@ -916,6 +916,15 @@ test("@mobile participante entra pelo formulário e navega na programação e no
       0,
     );
     await expectNoHorizontalOverflow(page);
+    await page.getByRole("link", { name: "Perfil", exact: true }).click();
+    await expect(page).toHaveURL(/\/app\/perfil$/);
+    for (const layout of ["Editorial", "Passaporte", "Compacto"]) {
+      await page.getByRole("button", { name: layout, exact: true }).click();
+      await expect(
+        page.getByRole("button", { name: layout, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expectNoHorizontalOverflow(page);
+    }
   } finally {
     await finish(fixture);
   }

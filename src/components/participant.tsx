@@ -1307,7 +1307,10 @@ function Profile({ person }: { person: any }) {
   const { data, action, toast } = useJornadas();
   const router = useRouter();
   const [uploading, setUploading] = useState(false),
-    [pushStatus, setPushStatus] = useState("");
+    [pushStatus, setPushStatus] = useState(""),
+    [profileLayout, setProfileLayout] = useState<
+      "editorial" | "passaporte" | "compacto"
+    >("editorial");
   async function upload(file: File) {
     setUploading(true);
     try {
@@ -1364,91 +1367,121 @@ function Profile({ person }: { person: any }) {
   return (
     <>
       <PageHeading eyebrow="SEU ESPAÇO NA JORNADA" title="Meu perfil" />
-      <section className="profile-card card">
-        <div className="profile-top">
-          <Avatar name={person.name} url={person.photoUrl} size="large" />
-          <div>
-            <h2>{person.name}</h2>
-            <p>{data.edition.name}</p>
-            <label className="text-link photo-upload">
-              <Upload size={15} />
-              {uploading ? "Enviando…" : "Alterar foto"}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={uploading}
-                onChange={(e) =>
-                  e.target.files?.[0] && upload(e.target.files[0])
-                }
-              />
-            </label>
+      {data.devMode && (
+        <aside
+          className="profile-layout-tester"
+          aria-label="Comparar layouts do perfil"
+        >
+          <span>COMPARAR PERFIL · DEV</span>
+          <div role="group" aria-label="Layout do perfil">
+            {(
+              [
+                ["editorial", "Editorial"],
+                ["passaporte", "Passaporte"],
+                ["compacto", "Compacto"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                type="button"
+                key={value}
+                className={profileLayout === value ? "active" : ""}
+                aria-pressed={profileLayout === value}
+                onClick={() => setProfileLayout(value)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+        </aside>
+      )}
+      <div className={`profile-layout profile-layout-${profileLayout}`}>
+        <section className="profile-card card">
+          <div className="profile-top">
+            <Avatar name={person.name} url={person.photoUrl} size="large" />
+            <div>
+              <span className="profile-kicker">Participante</span>
+              <h2>{person.name}</h2>
+              <p>{data.edition.name}</p>
+              <label className="text-link photo-upload">
+                <Upload size={15} />
+                {uploading ? "Enviando…" : "Alterar foto"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={uploading}
+                  onChange={(e) =>
+                    e.target.files?.[0] && upload(e.target.files[0])
+                  }
+                />
+              </label>
+            </div>
+          </div>
+          <dl className="profile-data">
+            <div>
+              <dt>Nome completo</dt>
+              <dd>{person.name}</dd>
+            </div>
+            <div>
+              <dt>Registro acadêmico</dt>
+              <dd>{person.ra}</dd>
+            </div>
+            <div>
+              <dt>Semestre</dt>
+              <dd>{person.semester}º semestre</dd>
+            </div>
+            <div>
+              <dt>Participação</dt>
+              <dd>
+                <Badge tone="success">
+                  {person.active === false
+                    ? "Inativo"
+                    : "Participante cadastrado"}
+                </Badge>
+              </dd>
+            </div>
+          </dl>
+          <p className="fine-print">
+            Para corrigir nome, RA ou semestre, procure a organização.
+          </p>
+        </section>
+        <div className="profile-metrics">
+          <article className="card">
+            <span className="shortcut-icon">
+              <Ticket />
+            </span>
+            <small>Atividades inscritas</small>
+            <strong>
+              {
+                (data.enrollments || []).filter((e: any) =>
+                  ["ACTIVE", "COMPLETED"].includes(e.status),
+                ).length
+              }
+            </strong>
+          </article>
+          <article className="card">
+            <span className="shortcut-icon gold">
+              <CalendarDays />
+            </span>
+            <small>Presenças</small>
+            <strong>
+              {(data.attendances || []).filter((a: any) => a.checkinAt).length}
+            </strong>
+          </article>
+          <article className="card">
+            <span className="shortcut-icon">
+              <Sparkles />
+            </span>
+            <small>Carimbos</small>
+            <strong>{validStamps(data).length}</strong>
+          </article>
+          <article className="card">
+            <span className="shortcut-icon sage">
+              <BookOpen />
+            </span>
+            <small>Certificados</small>
+            <strong>{data.certificates?.length || 0}</strong>
+          </article>
         </div>
-        <dl className="profile-data">
-          <div>
-            <dt>Nome completo</dt>
-            <dd>{person.name}</dd>
-          </div>
-          <div>
-            <dt>Registro acadêmico</dt>
-            <dd>{person.ra}</dd>
-          </div>
-          <div>
-            <dt>Semestre</dt>
-            <dd>{person.semester}º semestre</dd>
-          </div>
-          <div>
-            <dt>Participação</dt>
-            <dd>
-              <Badge tone="success">
-                {person.active === false
-                  ? "Inativo"
-                  : "Participante cadastrado"}
-              </Badge>
-            </dd>
-          </div>
-        </dl>
-        <p className="fine-print">
-          Para corrigir nome, RA ou semestre, procure a organização.
-        </p>
-      </section>
-      <div className="profile-metrics">
-        <article className="card">
-          <span className="shortcut-icon">
-            <Ticket />
-          </span>
-          <small>Atividades inscritas</small>
-          <strong>
-            {
-              (data.enrollments || []).filter((e: any) =>
-                ["ACTIVE", "COMPLETED"].includes(e.status),
-              ).length
-            }
-          </strong>
-        </article>
-        <article className="card">
-          <span className="shortcut-icon gold">
-            <CalendarDays />
-          </span>
-          <small>Presenças</small>
-          <strong>
-            {(data.attendances || []).filter((a: any) => a.checkinAt).length}
-          </strong>
-        </article>
-        <article className="card">
-          <span className="shortcut-icon">
-            <Sparkles />
-          </span>
-          <small>Carimbos</small>
-          <strong>{validStamps(data).length}</strong>
-        </article>
-        <article className="card">
-          <span className="shortcut-icon sage">
-            <BookOpen />
-          </span>
-          <small>Certificados</small>
-          <strong>{data.certificates?.length || 0}</strong>
-        </article>
       </div>
       <div className="profile-links">
         <Link href="/app/certificados" className="profile-link card">

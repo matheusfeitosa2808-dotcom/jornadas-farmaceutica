@@ -37,6 +37,11 @@
     "src/generated/prisma-cloudflare",
     "src/server/db.cloudflare.ts",
     "src/server/storage.cloudflare.ts",
+    "src/server/password.cloudflare.ts",
+    "src/server/ratelimit.cloudflare.ts",
+    "src/realtime/EditionHub.ts",
+    "src/server/publish.cloudflare.ts",
+    "src/worker-entry.ts",
     "worker-configuration.d.ts"
   ]
 }

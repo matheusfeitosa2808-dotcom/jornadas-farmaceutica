@@ -29,6 +29,27 @@ export default defineConfig({
           "src/server/storage.cloudflare.ts",
         ),
       },
+      {
+        find: "@/server/password",
+        replacement: path.resolve(
+          process.cwd(),
+          "src/server/password.cloudflare.ts",
+        ),
+      },
+      {
+        find: "@/server/ratelimit",
+        replacement: path.resolve(
+          process.cwd(),
+          "src/server/ratelimit.cloudflare.ts",
+        ),
+      },
+      {
+        find: "@/server/publish",
+        replacement: path.resolve(
+          process.cwd(),
+          "src/server/publish.cloudflare.ts",
+        ),
+      },
       { find: "sharp", replacement: path.resolve(process.cwd(), "empty-stub.js") },
     ],
   },

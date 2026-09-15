@@ -1,11 +1,7 @@
-import {
-  createHash,
-  randomBytes,
-  scryptSync,
-  timingSafeEqual,
-} from "node:crypto";
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
+export { hashPassword, verifyPassword, needsRehash } from "@/server/password";
 
 export class DomainError extends Error {
   constructor(
@@ -42,17 +38,6 @@ export const normalizeName = (name: string) =>
     .toLowerCase();
 export const tokenHash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-export function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  return `scrypt$${salt}$${scryptSync(password, salt, 64).toString("hex")}`;
-}
-export function verifyPassword(password: string, hash: string) {
-  const [algorithm, salt, expected] = hash.split("$");
-  if (algorithm !== "scrypt" || !salt || !expected) return false;
-  const actual = scryptSync(password, salt, 64);
-  const target = Buffer.from(expected, "hex");
-  return target.length === actual.length && timingSafeEqual(target, actual);
-}
 export const permissionsList = [
   "editions.write",
   "participants.read",
@@ -173,33 +158,6 @@ export function csrf(request: NextRequest, json = true) {
       "CONTENT_TYPE",
       415,
     );
-}
-const buckets = new Map<string, { count: number; until: number }>();
-export function rateLimit(
-  request: NextRequest,
-  key: string,
-  limit = 60,
-  windowMs = 60000,
-) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  const id = `${key}:${ip}`;
-  const now = Date.now();
-  const bucket = buckets.get(id);
-  if (!bucket || bucket.until <= now)
-    buckets.set(id, { count: 1, until: now + windowMs });
-  else {
-    bucket.count++;
-    ensure(
-      bucket.count <= limit,
-      "Muitas tentativas. Aguarde um minuto.",
-      "RATE_LIMIT",
-      429,
-    );
-  }
-  if (buckets.size > 5000)
-    for (const [entry, value] of buckets)
-      if (value.until < now) buckets.delete(entry);
 }
 export function errorResponse(error: unknown) {
   if (error instanceof DomainError)

@@ -11,12 +11,12 @@ describe("regras centrais", () => {
   it("normaliza nome do login sem depender de caixa ou acento", () => {
     expect(normalizeName("  LÍVIA ")).toBe("livia");
   });
-  it("protege senha administrativa com salt e comparação segura", () => {
-    const a = hashPassword("Jornada@2026!"),
-      b = hashPassword("Jornada@2026!");
+  it("protege senha administrativa com salt e comparação segura", async () => {
+    const a = await hashPassword("Jornada@2026!"),
+      b = await hashPassword("Jornada@2026!");
     expect(a).not.toBe(b);
-    expect(verifyPassword("Jornada@2026!", a)).toBe(true);
-    expect(verifyPassword("errada", a)).toBe(false);
+    expect(await verifyPassword("Jornada@2026!", a)).toBe(true);
+    expect(await verifyPassword("errada", a)).toBe(false);
   });
   it("detecta sobreposição e permite atividades contíguas", () => {
     const t = new Date("2026-10-23T18:30:00Z");

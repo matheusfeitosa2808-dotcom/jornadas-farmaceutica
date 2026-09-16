@@ -6,6 +6,25 @@ type StoredFile = {
   etag?: string;
 };
 
+type R2ObjectLike = {
+  httpMetadata?: { contentType?: string };
+  httpEtag: string;
+  arrayBuffer(): Promise<ArrayBuffer>;
+};
+type R2BucketLike = {
+  put(
+    key: string,
+    value: Uint8Array,
+    options?: { httpMetadata?: { contentType: string } },
+  ): Promise<unknown>;
+  get(key: string): Promise<R2ObjectLike | null>;
+};
+type Env = {
+  UPLOADS: R2BucketLike;
+  ASSETS: { fetch(request: Request): Promise<Response> };
+};
+
+const bindings = () => env as unknown as Env;
 const keyFor = (name: string) => `uploads/${name}`;
 
 export async function saveUpload(
@@ -13,7 +32,7 @@ export async function saveUpload(
   bytes: Uint8Array,
   contentType: string,
 ) {
-  await env.UPLOADS.put(keyFor(name), bytes, {
+  await bindings().UPLOADS.put(keyFor(name), bytes, {
     httpMetadata: { contentType },
   });
   return `/api/files/${encodeURIComponent(name)}`;
@@ -23,7 +42,7 @@ export async function readStoredFile(
   name: string,
 ): Promise<StoredFile | null> {
   if (!/^[a-zA-Z0-9._-]+$/.test(name)) return null;
-  const object = await env.UPLOADS.get(keyFor(name));
+  const object = await bindings().UPLOADS.get(keyFor(name));
   if (!object) return null;
   return {
     body: new Uint8Array(await object.arrayBuffer()),
@@ -40,7 +59,7 @@ export async function readPublicAsset(pathname: string) {
     if (!stored) throw new Error("Arquivo não encontrado.");
     return stored.body;
   }
-  const response = await env.ASSETS.fetch(
+  const response = await bindings().ASSETS.fetch(
     new Request(new URL(pathname, "https://assets.local")),
   );
   if (!response.ok) throw new Error("Arquivo estático não encontrado.");

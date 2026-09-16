@@ -3179,7 +3179,7 @@ export default function AdminApp({
             <span className="a-header-bell">
               <Bell size={19} />
             </span>
-            <span>
+            <span className="a-header-identity">
               <strong>{data.actor.name}</strong>
               <small>{labels[data.actor.role] || data.actor.role}</small>
             </span>

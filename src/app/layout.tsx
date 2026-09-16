@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Provider } from "@/components/provider";
 import Pwa from "@/components/pwa";
+import InstallApp from "@/components/install-app";
 import "./globals.css";
 import "./dev-hidden.css";
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({
         </a>
         <Provider>{children}</Provider>
         <Pwa />
+        <InstallApp />
       </body>
     </html>
   );

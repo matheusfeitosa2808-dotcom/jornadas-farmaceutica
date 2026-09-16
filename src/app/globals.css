@@ -366,6 +366,49 @@ textarea:focus {
   color: white;
   font-size: 1.2rem;
 }
+.install-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  margin: 0 auto;
+  max-width: 480px;
+  background: #103d44;
+  color: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+  animation: toast-in 0.2s;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.install-banner p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.install-banner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.install-banner-primary {
+  background: #64caa9;
+  color: #0b2b30;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-weight: 600;
+}
+.install-banner-dismiss {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 10px;
+  padding: 9px 14px;
+}
 .modal {
   border: 0;
   border-radius: 18px;

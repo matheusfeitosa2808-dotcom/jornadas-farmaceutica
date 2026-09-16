@@ -18,13 +18,21 @@ const hub = (editionId: string) => {
   return ns.get(ns.idFromName(editionId));
 };
 
-/** Use dentro das rotas de mutação. Não bloqueia a resposta HTTP. */
+/**
+ * Use dentro das rotas de mutação. Não bloqueia a resposta HTTP e nunca deve
+ * derrubar a escrita que já foi commitada só porque o aviso de tempo real
+ * falhou (DO fora do ar, binding com problema, etc.).
+ */
 export function publish(event: RealtimeEvent): void {
-  (
-    hub(event.editionId) as never as {
-      publish(e: RealtimeEvent): Promise<void>;
-    }
-  )
-    .publish(event)
-    .catch((error) => console.error("[jornadas/realtime]", error));
+  try {
+    (
+      hub(event.editionId) as never as {
+        publish(e: RealtimeEvent): Promise<void>;
+      }
+    )
+      .publish(event)
+      .catch((error) => console.error("[jornadas/realtime]", error));
+  } catch (error) {
+    console.error("[jornadas/realtime]", error);
+  }
 }

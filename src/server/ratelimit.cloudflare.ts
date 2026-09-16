@@ -18,13 +18,30 @@ const clientIp = (request: Request) =>
   request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
   "local";
 
+/**
+ * Se o binding falhar (erro de infra, não "limite excedido"), deixa passar
+ * em vez de derrubar a operação inteira. Rate limit é proteção, não pode
+ * virar um ponto único de falha para todo /api/action e /api/auth.
+ */
+async function checkedLimit(
+  limiter: Limiter,
+  key: string,
+): Promise<boolean> {
+  try {
+    return (await limiter.limit({ key })).success;
+  } catch (error) {
+    console.error("[jornadas/ratelimit]", error);
+    return true;
+  }
+}
+
 /** Use no /api/auth. */
 export async function guardLogin(
   request: Request,
   identifier?: string,
 ): Promise<void> {
   const key = `login:${clientIp(request)}:${identifier ?? ""}`;
-  const { success } = await (env as unknown as Env).LOGIN_LIMIT.limit({ key });
+  const success = await checkedLimit((env as unknown as Env).LOGIN_LIMIT, key);
   ensure(success, "Muitas tentativas. Aguarde um minuto.", "RATE_LIMIT", 429);
 }
 
@@ -33,8 +50,7 @@ export async function guardAction(
   request: Request,
   actorId: string,
 ): Promise<void> {
-  const { success } = await (env as unknown as Env).ACTION_LIMIT.limit({
-    key: `action:${actorId || clientIp(request)}`,
-  });
+  const key = `action:${actorId || clientIp(request)}`;
+  const success = await checkedLimit((env as unknown as Env).ACTION_LIMIT, key);
   ensure(success, "Muitas tentativas. Aguarde um minuto.", "RATE_LIMIT", 429);
 }

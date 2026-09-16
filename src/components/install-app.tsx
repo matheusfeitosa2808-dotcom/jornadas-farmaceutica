@@ -22,17 +22,17 @@ const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches ||
   (window.navigator as { standalone?: boolean }).standalone === true;
 
-const isIosSafari = () => {
-  const ua = navigator.userAgent;
-  const ios =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
-  return ios && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-};
+const isIos = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+
+/** Só o Safari de verdade tem o botão Compartilhar → Adicionar à Tela de Início. */
+const isIosSafari = () =>
+  isIos() && !/CriOS|FxiOS|EdgiOS|OPiOS|Instagram|FBAN|FBAV/.test(navigator.userAgent);
 
 export default function InstallApp() {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
-  const [showIosHint, setShowIosHint] = useState(false);
+  const [iosHint, setIosHint] = useState<"safari" | "other" | null>(null);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -50,12 +50,12 @@ export default function InstallApp() {
     };
     const onInstalled = () => {
       setPrompt(null);
-      setShowIosHint(false);
+      setIosHint(null);
     };
 
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
-    if (isIosSafari()) setShowIosHint(true);
+    if (isIos()) setIosHint(isIosSafari() ? "safari" : "other");
 
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
@@ -80,7 +80,7 @@ export default function InstallApp() {
     if (outcome === "dismissed") dismiss();
   };
 
-  if (dismissed || (!prompt && !showIosHint)) return null;
+  if (dismissed || (!prompt && !iosHint)) return null;
 
   return (
     <aside className="install-banner" aria-label="Instalar o app Jornadas" role="complementary">
@@ -96,12 +96,21 @@ export default function InstallApp() {
             </button>
           </div>
         </>
-      ) : (
+      ) : iosHint === "safari" ? (
         <>
           <p>
             Para instalar no iPhone: toque em Compartilhar na barra do Safari e
             escolha Adicionar à Tela de Início.
           </p>
+          <div className="install-banner-actions">
+            <button type="button" className="install-banner-dismiss" onClick={dismiss}>
+              Entendi
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p>Para instalar no iPhone, abra este link no Safari e toque em Compartilhar → Adicionar à Tela de Início.</p>
           <div className="install-banner-actions">
             <button type="button" className="install-banner-dismiss" onClick={dismiss}>
               Entendi

@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,24 +15,17 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/server/db": ["./src/server/db.pg.ts"],
+      "@/*": ["./src/*"]
     }
   },
   "include": [
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "vite.config.ts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",
@@ -48,11 +37,6 @@
     "src/generated/prisma-cloudflare",
     "src/server/db.cloudflare.ts",
     "src/server/storage.cloudflare.ts",
-    "src/server/password.cloudflare.ts",
-    "src/server/ratelimit.cloudflare.ts",
-    "src/realtime/EditionHub.ts",
-    "src/server/publish.cloudflare.ts",
-    "src/worker-entry.ts",
     "worker-configuration.d.ts"
   ]
 }

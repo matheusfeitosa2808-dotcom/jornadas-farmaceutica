@@ -22,9 +22,6 @@ export async function saveUpload(
   bytes: Uint8Array,
   contentType: string,
 ) {
-  // O disco local não guarda metadata como o R2. O nome sempre carrega a
-  // extensão validada por quem chamou (ver /api/upload), então o tipo é
-  // recuperado a partir dela em readStoredFile.
   void contentType;
   const directory = publicPath("uploads");
   await mkdir(directory, { recursive: true });
@@ -32,21 +29,13 @@ export async function saveUpload(
   return `/api/files/${encodeURIComponent(name)}`;
 }
 
-const mimeByExtension: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  webp: "image/webp",
-  pdf: "application/pdf",
-};
-
-export async function readStoredFile(name: string): Promise<StoredFile | null> {
+export async function readStoredFile(
+  name: string,
+  contentType = "application/octet-stream",
+): Promise<StoredFile | null> {
   if (!/^[a-zA-Z0-9._-]+$/.test(name)) return null;
   try {
-    const body = await readFile(publicPath(`uploads/${name}`));
-    const extension = name.split(".").pop()?.toLowerCase() ?? "";
-    const contentType = mimeByExtension[extension] ?? "application/octet-stream";
-    return { body, contentType };
+    return { body: await readFile(publicPath(`uploads/${name}`)), contentType };
   } catch {
     return null;
   }

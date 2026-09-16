@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { db, transaction } from "@/server/db";
 import {
   csrf,
   errorResponse,
   ensure,
   normalizeName,
-  needsRehash,
-  hashPassword,
+  rateLimit,
   tokenHash,
   verifyPassword,
 } from "@/server/security";
-import { guardLogin } from "@/server/ratelimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,31 +64,29 @@ export async function POST(req: NextRequest) {
         const adminCredential = String(b.login || b.email || "")
           .trim()
           .toLowerCase();
-        const credentialKey =
-          kind === "admin"
-            ? adminCredential
-            : `${String(b.editionId || "")}:${String(b.ra || "").trim()}`;
+        const credentialKey = createHash("sha256")
+          .update(
+            kind === "admin"
+              ? adminCredential
+              : `${String(b.editionId || "")}:${String(b.ra || "").trim()}`,
+          )
+          .digest("hex");
 
         if (kind === "admin") {
           const user = await tx.adminUser.findUnique({
             where: { email: adminCredential },
           });
-          const valid =
-            user?.active &&
-            (await verifyPassword(String(b.password || ""), user.passwordHash));
-          if (!valid) {
-            await guardLogin(req, `${kind}:${credentialKey}`);
+          if (
+            !user ||
+            !user.active ||
+            !verifyPassword(String(b.password || ""), user.passwordHash)
+          ) {
+            rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
             throw Object.assign(new Error("Credenciais inválidas."), {
               status: 401,
             });
           }
-          if (needsRehash(user!.passwordHash)) {
-            await tx.adminUser.update({
-              where: { id: user!.id },
-              data: { passwordHash: await hashPassword(String(b.password)) },
-            });
-          }
-          id = user!.id;
+          id = user.id;
         } else {
           const participant = await tx.participant.findFirst({
             where: {
@@ -101,7 +97,7 @@ export async function POST(req: NextRequest) {
             },
           });
           if (!participant) {
-            await guardLogin(req, `${kind}:${credentialKey}`);
+            rateLimit(req, `login:${kind}:${credentialKey}`, 12, 60000);
             throw Object.assign(
               new Error("Nome ou RA não conferem com o cadastro."),
               { status: 401 },

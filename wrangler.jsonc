@@ -5,7 +5,7 @@
     "compatibility_flags":  [
                                 "nodejs_compat"
                             ],
-    "main":  "src/worker-entry.ts",
+    "main":  "vinext/server/fetch-handler",
     "assets":  {
                    "directory":  "dist/client",
                    "not_found_handling":  "none",
@@ -33,17 +33,5 @@
                            "binding":  "HYPERDRIVE",
                            "id":  "ad753ce1f6974eb0afca790428bb60f3"
                        }
-                   ],
-    "durable_objects":  {
-                            "bindings":  [
-                                             { "name":  "EDITION_HUB", "class_name":  "EditionHub" }
-                                         ]
-                        },
-    "migrations":  [
-                       { "tag":  "v1", "new_sqlite_classes":  ["EditionHub"] }
-                   ],
-    "ratelimits":  [
-                       { "name":  "LOGIN_LIMIT", "namespace_id":  "1001", "simple":  { "limit":  10, "period":  60 } },
-                       { "name":  "ACTION_LIMIT", "namespace_id":  "1002", "simple":  { "limit":  120, "period":  60 } }
                    ]
 }

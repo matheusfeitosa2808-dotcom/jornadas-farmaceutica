@@ -321,22 +321,22 @@ async function main() {
   }
   await db.adminUser.upsert({
     where: { email: "admin@jornadas.dev" },
-    update: { passwordHash: await hashPassword("Jornada@2026!") },
+    update: { passwordHash: hashPassword("Jornada@2026!") },
     create: {
       name: "Admin Geral DEV",
       email: "admin@jornadas.dev",
-      passwordHash: await hashPassword("Jornada@2026!"),
+      passwordHash: hashPassword("Jornada@2026!"),
       role: "ADMIN_GENERAL",
       permissions: JSON.stringify(permissionsList),
     },
   });
   await db.adminUser.upsert({
     where: { email: "operador@jornadas.dev" },
-    update: { passwordHash: await hashPassword("Jornada@2026!") },
+    update: { passwordHash: hashPassword("Jornada@2026!") },
     create: {
       name: "Operador DEV",
       email: "operador@jornadas.dev",
-      passwordHash: await hashPassword("Jornada@2026!"),
+      passwordHash: hashPassword("Jornada@2026!"),
       role: "OPERATOR",
       permissions: JSON.stringify(rolePermissions.OPERATOR),
     },

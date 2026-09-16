@@ -26,8 +26,7 @@ import {
   promoteWaitlist,
   swapEnrollment,
 } from "@/server/domain";
-import { publish } from "@/server/publish";
-import { guardAction } from "@/server/ratelimit";
+import { publish } from "@/server/events";
 const D = (v: any) => (v ? new Date(v) : null),
   N = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d),
   B = (v: any, d = false) => (v === undefined ? d : Boolean(v));
@@ -364,7 +363,7 @@ async function saveEntity(
         String(data.password).length >= 10,
         "A senha deve ter ao menos 10 caracteres.",
       );
-      v.passwordHash = await hashPassword(data.password);
+      v.passwordHash = hashPassword(data.password);
     }
     if (id) result = await tx.adminUser.update({ where: { id }, data: v });
     else {
@@ -395,7 +394,6 @@ export async function POST(req: NextRequest) {
           : "participant",
       actor = await getActor(req, scope);
     ensure(actor, "Faça login para continuar.", "UNAUTHORIZED", 401);
-    await guardAction(req, actor.id);
     const editionId = String(body.editionId || actor.editionId || "");
     if (actor.type === "participant") requireParticipant(actor, editionId);
     let result: any,
@@ -1064,7 +1062,7 @@ export async function POST(req: NextRequest) {
           throw new Error("Ação não reconhecida.");
       }
     });
-    publish({ type: "state.changed", editionId });
+    publish(editionId);
     const flat =
       result && typeof result === "object" && !Array.isArray(result)
         ? result

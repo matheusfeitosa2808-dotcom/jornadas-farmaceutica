@@ -9,7 +9,6 @@ import {
   ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
-import { connectRealtime } from "@/realtime/client";
 
 type Context = {
   data: any;
@@ -87,20 +86,6 @@ export function Provider({ children }: { children: ReactNode }) {
     setLoading(true);
     void refresh();
   }, [refresh]);
-
-  // Avisa quando OUTRO cliente mudou algo (a própria ação já chama refresh
-  // acima). Um WebSocket por aba, coalescido no servidor a cada 1s — não é
-  // polling: fica ocioso até o Durable Object mandar um lote.
-  const activeEditionId = data?.edition?.id || editionId;
-  useEffect(() => {
-    if (isLogin || scope === "public" || !activeEditionId) return;
-    return connectRealtime({
-      scope,
-      editionId: activeEditionId,
-      onEvents: () => void refresh(),
-      onResync: () => void refresh(),
-    });
-  }, [isLogin, scope, activeEditionId, refresh]);
 
   const action = async (actionName: string, payload: any = {}) => {
     try {

@@ -3013,6 +3013,66 @@ img {
   margin: 10px;
 }
 
+/* Janelas de desktop baixas: encolhe o card em vez de deixá-lo cortar ou
+   forçar rolagem da página. */
+@media (min-width: 901px) and (max-height: 860px) {
+  .login-page {
+    padding: clamp(10px, 2vh, 20px);
+  }
+  .login-stage {
+    min-height: 0;
+    max-height: calc(100svh - 32px);
+  }
+  .login-visual {
+    padding: clamp(18px, 3vh, 34px) clamp(24px, 3vw, 48px);
+  }
+  .login-visual .login-logo {
+    width: min(300px, 70%);
+    margin: 0;
+  }
+  .login-visual-copy {
+    margin-top: clamp(14px, 2.5vh, 32px);
+  }
+  .login-visual-copy h2 {
+    font-size: clamp(1.5rem, 2.6vw, 2.3rem);
+    margin: 8px 0;
+  }
+  .login-cathedral {
+    height: 90px;
+    opacity: 0.24;
+  }
+  .login-panel {
+    padding: clamp(18px, 3vh, 34px) clamp(28px, 4vw, 52px);
+  }
+  .login-panel .login-symbol {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+  .login-panel h1 {
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+    margin: 4px 0 6px;
+  }
+  .login-panel form {
+    margin-top: 14px;
+    gap: 8px;
+  }
+  .login-panel .field {
+    gap: 3px;
+  }
+  .login-panel .field input,
+  .login-panel .field select {
+    min-height: 42px;
+  }
+  .login-panel .button {
+    min-height: 42px;
+  }
+  .login-help,
+  .dev-credentials {
+    margin-top: 8px;
+  }
+}
+
 @media (max-width: 900px) {
   .login-page {
     padding: 16px;

@@ -282,6 +282,7 @@ test("@api administração: exclui atividade sem histórico e edita brinde sem p
     const rewardId = await save(fixture.admin, fixture.editionId, "reward", {
       name: "Brinde QA DEV",
       description: "Primeira descrição",
+      imageUrl: "/assets/stamps/selo-5.webp",
       total: 2,
       confirmationMinutes: 30,
       active: true,
@@ -290,6 +291,7 @@ test("@api administração: exclui atividade sem histórico e edita brinde sem p
       id: rewardId,
       name: "Brinde atualizado QA DEV",
       description: "Descrição editada",
+      imageUrl: "/assets/stamps/selo-6.webp",
       stockTotal: 3,
       confirmationMinutes: 45,
       active: false,
@@ -301,10 +303,21 @@ test("@api administração: exclui atividade sem histórico e edita brinde sem p
     ).toMatchObject({
       name: "Brinde atualizado QA DEV",
       description: "Descrição editada",
+      imageUrl: "/assets/stamps/selo-6.webp",
       stockTotal: 3,
       confirmationMinutes: 45,
       active: false,
     });
+    await save(fixture.admin, fixture.editionId, "reward", {
+      id: rewardId,
+      name: "Brinde atualizado QA DEV",
+      imageUrl: "",
+    });
+    expect(
+      (await state(fixture.admin, fixture.editionId)).rewards.find(
+        (item) => item.id === rewardId,
+      )?.imageUrl,
+    ).toBeNull();
     await expectFailure(fixture.admin, fixture.editionId, "entity.save", {
       entity: "reward",
       data: { id: rewardId, name: "Estoque inválido", stockTotal: -1 },

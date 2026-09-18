@@ -1205,12 +1205,14 @@ function InputField({
   setValue,
   data,
   editionId,
+  onUploadChange,
 }: {
   field: Field;
   value: any;
   setValue: (v: any) => void;
   data: Row;
   editionId?: string;
+  onUploadChange?: (uploading: boolean) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -1338,35 +1340,82 @@ function InputField({
           </aside>
         </div>
       ) : field.type === "upload" ? (
-        <div className="a-upload-field">
-          {value && (
-            <div className="a-upload-current">
-              {!String(value).endsWith(".pdf") ? (
-                <img src={value} alt="Arquivo atual" />
+        <div
+          className={`a-upload-field ${field.key === "imageUrl" ? "a-reward-photo-editor" : ""}`}
+        >
+          {field.key === "imageUrl" ? (
+            <div className="a-reward-photo-preview">
+              {value ? (
+                <img src={String(value)} alt="Foto atual do brinde" />
               ) : (
-                <FileSpreadsheet size={28} />
+                <div className="a-reward-photo-empty" aria-hidden="true">
+                  <Gift size={34} strokeWidth={1.4} />
+                </div>
               )}
-              <a href={value} target="_blank" rel="noreferrer">
-                Abrir arquivo atual
-              </a>
-              <button
-                className="a-text-button"
-                type="button"
-                onClick={() => setValue("")}
-              >
-                Remover
-              </button>
+              <div className="a-reward-photo-details">
+                <strong>
+                  {value ? "Foto atual do brinde" : "Brinde sem foto"}
+                </strong>
+                <span>
+                  PNG, JPEG ou WebP, até 5 MB. A imagem mantém suas proporções.
+                </span>
+                <div className="a-reward-photo-actions">
+                  <label className="a-photo-upload-button" htmlFor={id}>
+                    <Upload size={16} aria-hidden="true" />
+                    {uploading
+                      ? "Enviando foto…"
+                      : value
+                        ? "Trocar foto"
+                        : "Adicionar foto"}
+                  </label>
+                  {value && (
+                    <button
+                      className="a-text-button"
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => setValue("")}
+                    >
+                      Remover foto
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          ) : (
+            value && (
+              <div className="a-upload-current">
+                {!String(value).endsWith(".pdf") ? (
+                  <img src={value} alt="Arquivo atual" />
+                ) : (
+                  <FileSpreadsheet size={28} />
+                )}
+                <a href={value} target="_blank" rel="noreferrer">
+                  Abrir arquivo atual
+                </a>
+                <button
+                  className="a-text-button"
+                  type="button"
+                  onClick={() => setValue("")}
+                >
+                  Remover
+                </button>
+              </div>
+            )
           )}
           <input
             id={id}
             type="file"
+            className={
+              field.key === "imageUrl" ? "a-photo-file-input" : undefined
+            }
             accept={field.accept || "image/png,image/jpeg,image/webp"}
             disabled={uploading}
             onChange={async (e) => {
-              const file = e.target.files?.[0];
+              const input = e.currentTarget;
+              const file = input.files?.[0];
               if (!file) return;
               setUploading(true);
+              onUploadChange?.(true);
               setUploadError("");
               try {
                 const form = new FormData();
@@ -1384,11 +1433,19 @@ function InputField({
                 setUploadError(e.message);
               } finally {
                 setUploading(false);
+                onUploadChange?.(false);
+                input.value = "";
               }
             }}
           />
-          {uploading && <small>Enviando arquivo…</small>}
-          {uploadError && <p className="error">{uploadError}</p>}
+          {uploading && field.key !== "imageUrl" && (
+            <small>Enviando arquivo…</small>
+          )}
+          {uploadError && (
+            <p className="error" role="alert">
+              {uploadError}
+            </p>
+          )}
         </div>
       ) : (
         <input
@@ -1447,9 +1504,11 @@ function EntityForm({
     ),
   );
   const [busy, setBusy] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0);
   const [error, setError] = useState("");
   const [conflicts, setConflicts] = useState<Row[]>([]);
   async function save(force = false) {
+    if (pendingUploads > 0) return;
     setBusy(true);
     setError("");
     try {
@@ -1516,6 +1575,11 @@ function EntityForm({
                 value={values[f.key]}
                 setValue={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
                 data={data || {}}
+                onUploadChange={(uploading) =>
+                  setPendingUploads((count) =>
+                    Math.max(0, count + (uploading ? 1 : -1)),
+                  )
+                }
               />
             ))}
           </div>
@@ -1543,7 +1607,7 @@ function EntityForm({
               <button
                 type="button"
                 className="secondary"
-                disabled={busy}
+                disabled={busy || pendingUploads > 0}
                 onClick={() => void save(true)}
               >
                 Confirmar alteração com os conflitos apresentados
@@ -1555,8 +1619,16 @@ function EntityForm({
           <button className="secondary" type="button" onClick={onClose}>
             Cancelar
           </button>
-          <button className="button" type="submit" disabled={busy}>
-            {busy ? "Salvando…" : "Salvar"}
+          <button
+            className="button"
+            type="submit"
+            disabled={busy || pendingUploads > 0}
+          >
+            {busy
+              ? "Salvando…"
+              : pendingUploads > 0
+                ? "Aguarde o envio…"
+                : "Salvar"}
           </button>
         </div>
       </form>

@@ -3,6 +3,7 @@ import { Provider } from "@/components/provider";
 import Pwa from "@/components/pwa";
 import InstallApp from "@/components/install-app";
 import "./globals.css";
+import "./motion.css";
 import "./dev-hidden.css";
 export const metadata: Metadata = {
   title: {

@@ -26,6 +26,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useJornadas } from "./provider";
+import LoadingScreen from "./loading-screen";
 import {
   ActivityMeta,
   Avatar,
@@ -111,13 +112,7 @@ export default function ParticipantApp({
   id?: string;
 }) {
   const { data, loading, error, refresh } = useJornadas();
-  if (loading && !data)
-    return (
-      <main className="app-loading" aria-busy="true">
-        <Leaf className="loading-leaf" />
-        <p>Preparando sua jornada…</p>
-      </main>
-    );
+  if (loading && !data) return <LoadingScreen />;
   if (!data?.actor || data.actor.type !== "participant")
     return (
       <main id="main" className="empty page">

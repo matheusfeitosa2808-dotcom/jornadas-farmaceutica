@@ -41,7 +41,9 @@ import {
   X,
 } from "lucide-react";
 import { useJornadas } from "@/components/provider";
+import LoadingScreen from "@/components/loading-screen";
 import "./admin.css";
+import "./admin-motion.css";
 
 type Row = Record<string, any>;
 type Option = { value: string; label: string };
@@ -3071,7 +3073,7 @@ export default function AdminApp({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   if (loading && !data)
-    return <div className="a-loading">Preparando a administração…</div>;
+    return <LoadingScreen message="Preparando a administração…" />;
   if (!data?.actor || data.actor.type !== "admin")
     return (
       <main className="empty page">

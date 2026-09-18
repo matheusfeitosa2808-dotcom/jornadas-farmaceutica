@@ -1,0 +1,53 @@
+.a-sidebar nav a,
+.a-logout,
+.a-menu,
+.a-brand button,
+.a-stamp-picker button {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color var(--motion-fast) var(--motion-ease-out),
+    background-color var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+.a-sidebar nav a:active,
+.a-logout:active,
+.a-menu:active,
+.a-brand button:active,
+.a-stamp-picker button:active {
+  transform: scale(0.97);
+  transition-duration: var(--motion-press);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .a-stamp-picker button:hover,
+  .a-panel:hover,
+  .a-metric:hover {
+    border-color: rgba(8, 59, 80, 0.34);
+  }
+}
+
+@media (max-width: 760px) {
+  .a-sidebar {
+    left: 0;
+    transform: translateX(-105%);
+    transition: transform 260ms var(--motion-ease-drawer);
+  }
+
+  .a-sidebar.open {
+    left: 0;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a-sidebar,
+  .a-sidebar nav a,
+  .a-logout,
+  .a-menu,
+  .a-brand button,
+  .a-stamp-picker button {
+    transition: none !important;
+  }
+}

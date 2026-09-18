@@ -1,0 +1,259 @@
+:root {
+  --motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-press: 120ms;
+  --motion-fast: 180ms;
+}
+
+/* Loading is the one persistent motion: it communicates that work is ongoing. */
+.journey-loading {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  text-align: center;
+  background: radial-gradient(circle at center, #fffdf7 0, var(--paper) 72%);
+}
+
+.journey-loading__content {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+
+.journey-loading__coin {
+  width: clamp(96px, 26vw, 128px);
+  aspect-ratio: 1;
+  perspective: 600px;
+  filter: drop-shadow(0 14px 13px rgba(89, 64, 22, 0.18));
+}
+
+.journey-loading__spin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: journey-coin-turn 2.4s linear infinite;
+  will-change: transform;
+}
+
+.journey-loading__face {
+  position: absolute;
+  inset: 0;
+  border: 6px solid #c69b3b;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  background: #fffaf0 url("/assets/brand/higia-medallion-gold.png") center /
+    165% no-repeat;
+  box-shadow:
+    inset 0 0 0 2px #f9e9b9,
+    inset 0 0 12px rgba(119, 78, 13, 0.16),
+    0 0 0 1px #8e6626;
+}
+
+.journey-loading__face--front {
+  transform: translateZ(5px);
+}
+
+.journey-loading__face--back {
+  transform: rotateY(180deg) translateZ(5px);
+}
+
+.journey-loading__message {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+@keyframes journey-coin-turn {
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+/* Short page entrances preserve direction without delaying reading. */
+.page-enter {
+  animation: journey-page-in 240ms var(--motion-ease-out) both;
+}
+
+.landing-logo {
+  animation: journey-mark-in 320ms var(--motion-ease-out) both;
+}
+
+.landing-main,
+.landing-partners {
+  animation: journey-page-in 320ms var(--motion-ease-out) both;
+}
+
+.landing-partners {
+  animation-delay: 60ms;
+}
+
+.login-visual,
+.login-panel {
+  animation: journey-page-in 300ms var(--motion-ease-out) both;
+}
+
+.login-panel {
+  animation-delay: 50ms;
+}
+
+@keyframes journey-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes journey-mark-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Press feedback begins with pointer-down; hover lift is desktop-only. */
+.button,
+.secondary,
+.ghost,
+.icon-button,
+.profile-link,
+.filter-chips button,
+.bottom-nav a {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    color var(--motion-fast) var(--motion-ease-out),
+    background-color var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-fast) var(--motion-ease-out);
+}
+
+.button:active:not(:disabled),
+.secondary:active:not(:disabled),
+.ghost:active:not(:disabled),
+.icon-button:active:not(:disabled),
+.profile-link:active,
+.filter-chips button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: var(--motion-press);
+}
+
+.bottom-nav a .nav-icon-frame {
+  transition: transform var(--motion-fast) var(--motion-ease-out);
+}
+
+.bottom-nav a:active .nav-icon-frame,
+.bottom-nav a.selected:active .nav-icon-frame {
+  transform: translateY(1px) scale(0.92);
+  transition-duration: var(--motion-press);
+}
+
+.modal[open] {
+  animation: journey-modal-in 220ms var(--motion-ease-out) both;
+}
+
+.modal[open]::backdrop {
+  animation: journey-scrim-in 200ms var(--motion-ease-out) both;
+}
+
+@keyframes journey-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes journey-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .activity-card,
+  .home-stat,
+  .home-action,
+  .reward-card,
+  .profile-link {
+    transition:
+      transform var(--motion-fast) var(--motion-ease-out),
+      border-color var(--motion-fast) var(--motion-ease-out),
+      box-shadow var(--motion-fast) var(--motion-ease-out);
+  }
+
+  .activity-card:hover,
+  .home-stat:hover,
+  .home-action:hover,
+  .reward-card:hover,
+  .profile-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(31, 45, 42, 0.11);
+  }
+}
+
+@media (hover: none) {
+  .button:hover:not(:disabled) {
+    background-color: var(--teal);
+  }
+
+  .button.light:hover:not(:disabled) {
+    background-color: white;
+  }
+
+  .secondary:hover:not(:disabled) {
+    background-color: transparent;
+  }
+
+  .button:hover:not(:disabled),
+  .secondary:hover:not(:disabled),
+  .ghost:hover:not(:disabled),
+  .activity-card:hover,
+  .profile-link:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .button:active:not(:disabled),
+  .secondary:active:not(:disabled),
+  .ghost:active:not(:disabled),
+  .profile-link:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-loading__spin,
+  .page-enter,
+  .landing-logo,
+  .landing-main,
+  .landing-partners,
+  .login-visual,
+  .login-panel,
+  .modal[open],
+  .modal[open]::backdrop {
+    animation: none !important;
+  }
+
+  .journey-loading__spin {
+    will-change: auto;
+  }
+}

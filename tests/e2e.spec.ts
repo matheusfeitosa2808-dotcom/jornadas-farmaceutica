@@ -241,6 +241,79 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(width.document).toBeLessThanOrEqual(width.viewport + 1);
 }
 
+test("@api administração: exclui atividade sem histórico e edita brinde sem perder estoque comprometido", async () => {
+  const fixture = await makeFixture();
+  try {
+    const unusedActivity = await activity(fixture, {
+      title: "Palestra removível QA DEV",
+    });
+    await action(fixture.admin, fixture.editionId, "activity.delete", {
+      activityId: unusedActivity,
+      reason: "Correção da programação de teste",
+    });
+    expect(
+      (await state(fixture.admin, fixture.editionId)).activities.some(
+        (item) => item.id === unusedActivity,
+      ),
+    ).toBeFalsy();
+
+    const enrolledActivity = await activity(fixture, {
+      title: "Palestra com inscrição QA DEV",
+    });
+    const participant = await participantClient(fixture);
+    await action(participant, fixture.editionId, "enrollment.create", {
+      activityId: enrolledActivity,
+    });
+    const blocked = await fixture.admin.post("/api/action", {
+      data: {
+        action: "activity.delete",
+        editionId: fixture.editionId,
+        activityId: enrolledActivity,
+        reason: "Correção da programação de teste",
+      },
+    });
+    expect(blocked.status(), await blocked.text()).toBe(409);
+    expect(
+      (await state(fixture.admin, fixture.editionId)).activities.some(
+        (item) => item.id === enrolledActivity,
+      ),
+    ).toBeTruthy();
+
+    const rewardId = await save(fixture.admin, fixture.editionId, "reward", {
+      name: "Brinde QA DEV",
+      description: "Primeira descrição",
+      total: 2,
+      confirmationMinutes: 30,
+      active: true,
+    });
+    await save(fixture.admin, fixture.editionId, "reward", {
+      id: rewardId,
+      name: "Brinde atualizado QA DEV",
+      description: "Descrição editada",
+      stockTotal: 3,
+      confirmationMinutes: 45,
+      active: false,
+    });
+    expect(
+      (await state(fixture.admin, fixture.editionId)).rewards.find(
+        (item) => item.id === rewardId,
+      ),
+    ).toMatchObject({
+      name: "Brinde atualizado QA DEV",
+      description: "Descrição editada",
+      stockTotal: 3,
+      confirmationMinutes: 45,
+      active: false,
+    });
+    await expectFailure(fixture.admin, fixture.editionId, "entity.save", {
+      entity: "reward",
+      data: { id: rewardId, name: "Estoque inválido", stockTotal: -1 },
+    });
+  } finally {
+    await finish(fixture);
+  }
+});
+
 test("@api jornada integrada: cadastro, conflito, presença, carimbo, sorteio, confirmação, entrega e Excel", async () => {
   const fixture = await makeFixture();
   try {
@@ -319,6 +392,10 @@ test("@api jornada integrada: cadastro, conflito, presença, carimbo, sorteio, c
       "reservation.confirm",
       { reservationId: reservation.id },
     );
+    await expectFailure(fixture.admin, fixture.editionId, "entity.save", {
+      entity: "reward",
+      data: { id: rewardId, name: "Estoque indevido", stockTotal: 0 },
+    });
     await expectFailure(fixture.admin, fixture.editionId, "delivery.create", {
       reservationIds: [reservation.id],
     });

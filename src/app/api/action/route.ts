@@ -35,7 +35,10 @@ async function rewardStock(tx: any, rewardId: string) {
   ensure(r, "Brinde não encontrado.", "NOT_FOUND", 404);
   const reserved = await tx.rewardReservation.aggregate({
       _sum: { quantity: true },
-      where: { rewardId, status: { in: ["RESERVED", "CONFIRMED"] } },
+      where: {
+        rewardId,
+        status: { in: ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"] },
+      },
     }),
     delivered = await tx.rewardDelivery.aggregate({
       _sum: { quantity: true },
@@ -227,6 +230,10 @@ async function saveEntity(
       ? await tx.speaker.update({ where: { id }, data: v })
       : await tx.speaker.create({ data: v });
   } else if (entity === "activity") {
+    if (id) {
+      const existing = await tx.activity.findFirst({ where: { id, editionId } });
+      ensure(existing, "Atividade não encontrada nesta edição.", "NOT_FOUND", 404);
+    }
     const startAt = D(data.startAt)!,
       endAt = D(data.endAt)!;
     ensure(startAt < endAt, "O fim deve ocorrer depois do início.");
@@ -302,17 +309,61 @@ async function saveEntity(
           },
         });
   } else if (entity === "reward") {
+    const current = id
+      ? await tx.rewardItem.findFirst({ where: { id, editionId } })
+      : null;
+    if (id)
+      ensure(current, "Brinde não encontrado nesta edição.", "NOT_FOUND", 404);
+    const rewardName = String(data.name ?? current?.name ?? "").trim();
+    const total = Number(data.stockTotal ?? data.total ?? current?.total ?? 0);
+    const confirmationMinutes = Number(
+      data.confirmationMinutes ?? current?.confirmationMinutes ?? 30,
+    );
+    ensure(rewardName, "Informe o nome do brinde.");
+    ensure(
+      Number.isSafeInteger(total) && total >= 0,
+      "O estoque total deve ser um número inteiro não negativo.",
+    );
+    ensure(
+      Number.isSafeInteger(confirmationMinutes) && confirmationMinutes >= 1,
+      "O prazo de confirmação deve ser de pelo menos 1 minuto.",
+    );
+    if (id) {
+      const [reserved, delivered] = await Promise.all([
+        tx.rewardReservation.aggregate({
+          _sum: { quantity: true },
+          where: {
+            rewardId: id,
+            editionId,
+            status: {
+              in: ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"],
+            },
+          },
+        }),
+        tx.rewardDelivery.aggregate({
+          _sum: { quantity: true },
+          where: { rewardId: id, editionId, status: "DELIVERED" },
+        }),
+      ]);
+      const committed =
+        Number(reserved._sum.quantity || 0) +
+        Number(delivered._sum.quantity || 0);
+      ensure(
+        total >= committed,
+        `Este brinde já tem ${committed} unidade(s) reservadas ou entregues. O estoque total não pode ser menor que isso.`,
+      );
+    }
     const v = {
       editionId,
-      name: data.name,
-      description: data.description || "",
-      imageUrl: safeUrl(data.imageUrl),
-      total: N(data.total ?? data.stockTotal),
-      active: B(data.active, true),
-      order: N(data.order),
-      confirmationMinutes: N(data.confirmationMinutes, 60),
-      redemptionStartsAt: D(data.redemptionStartsAt),
-      exclusiveGroup: data.exclusiveGroup || null,
+      name: rewardName,
+      description: data.description ?? current?.description ?? "",
+      imageUrl: safeUrl(data.imageUrl ?? current?.imageUrl),
+      total,
+      active: B(data.active, current?.active ?? true),
+      order: N(data.order, current?.order ?? 0),
+      confirmationMinutes,
+      redemptionStartsAt: D(data.redemptionStartsAt ?? current?.redemptionStartsAt),
+      exclusiveGroup: data.exclusiveGroup ?? current?.exclusiveGroup ?? null,
     };
     result = id
       ? await tx.rewardItem.update({ where: { id }, data: v })
@@ -548,6 +599,55 @@ export async function POST(req: NextRequest) {
             result,
             body.reason,
           );
+          break;
+        }
+        case "activity.delete": {
+          requirePermission(actor, "activities.write");
+          const reason = String(body.reason || "").trim();
+          ensure(reason.length >= 5, "Informe o motivo da exclusão.");
+          const activity = await tx.activity.findFirst({
+            where: { id: String(body.activityId || ""), editionId },
+          });
+          ensure(activity, "Atividade não encontrada nesta edição.", "NOT_FOUND", 404);
+          const [enrollments, waitlist, attendances, stamps, certificates, rules] =
+            await Promise.all([
+              tx.enrollment.count({ where: { activityId: activity.id } }),
+              tx.waitlistEntry.count({ where: { activityId: activity.id } }),
+              tx.attendance.count({ where: { activityId: activity.id } }),
+              tx.passportStamp.count({ where: { activityId: activity.id } }),
+              tx.certificate.count({ where: { activityId: activity.id } }),
+              tx.rewardRule.count({ where: { activityId: activity.id } }),
+            ]);
+          ensure(
+            !(
+              enrollments ||
+              waitlist ||
+              attendances ||
+              stamps ||
+              certificates ||
+              rules
+            ),
+            "Esta atividade já possui inscrições, presenças, certificados ou regras vinculadas. Cancele-a para preservar o histórico, ou remova os vínculos antes de excluir.",
+            "ACTIVITY_HAS_HISTORY",
+            409,
+          );
+          await tx.activitySpeaker.deleteMany({
+            where: { activityId: activity.id },
+          });
+          await tx.activity.delete({ where: { id: activity.id } });
+          await audit(
+            tx,
+            actor,
+            editionId,
+            "activity.delete",
+            "Activity",
+            activity.id,
+            activity,
+            undefined,
+            reason,
+          );
+          result = { id: activity.id };
+          message = "Atividade excluída.";
           break;
         }
         case "edition.duplicate": {

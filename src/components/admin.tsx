@@ -34,6 +34,7 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
+  Trash2,
   Upload,
   UserRound,
   Users,
@@ -358,12 +359,14 @@ function ReasonButton({
   run,
   className = "a-text-button",
   extra,
+  confirmLabel = "Confirmar alteração",
 }: {
   title: string;
   children: ReactNode;
   run: (reason: string) => Promise<any>;
   className?: string;
   extra?: ReactNode;
+  confirmLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -401,7 +404,7 @@ function ReasonButton({
                 setOpen(false);
               }}
             >
-              Confirmar alteração
+              {confirmLabel}
             </RunButton>
           </div>
         </Dialog>
@@ -920,10 +923,11 @@ const configs: Record<string, EntityConfig> = {
       },
       {
         key: "stockTotal",
-        label: "Estoque total inicial",
+        label: "Estoque total",
         type: "number",
         min: 0,
         default: 0,
+        help: "Ao editar, mantenha ao menos a quantidade já reservada ou entregue.",
       },
       { key: "order", label: "Ordem de exibição", type: "number", default: 0 },
       {
@@ -934,11 +938,6 @@ const configs: Record<string, EntityConfig> = {
         default: 30,
       },
       {
-        key: "confirmationDeadline",
-        label: "Ou prazo absoluto para confirmar",
-        type: "datetime-local",
-      },
-      {
         key: "redemptionStartsAt",
         label: "Liberação para retirada",
         type: "datetime-local",
@@ -946,12 +945,6 @@ const configs: Record<string, EntityConfig> = {
         help: "Personalize o dia e o horário em que a equipe poderá entregar este brinde.",
       },
       { key: "exclusiveGroup", label: "Grupo de exclusividade (opcional)" },
-      {
-        key: "guaranteed",
-        label: "Brinde básico garantido quando elegível",
-        type: "checkbox",
-        default: false,
-      },
       { key: "active", label: "Brinde ativo", type: "checkbox", default: true },
     ],
     columns: [
@@ -1607,11 +1600,12 @@ function EntityManager({
       render: (r: Row) => (
         <div className="a-row-actions">
           <button
-            className="a-icon-button"
+            className={config.entity === "reward" ? "a-edit-reward" : "a-icon-button"}
             aria-label={`Editar ${name(r)}`}
             onClick={() => setEditing(r)}
           >
             <Pencil size={16} />
+            {config.entity === "reward" && <span>Editar</span>}
           </button>
           {config.entity === "edition" && <DuplicateEdition row={r} />}
           {config.entity === "activity" && r.status !== "CANCELLED" && (
@@ -1623,6 +1617,26 @@ function EntityManager({
               }}
             >
               Cancelar
+            </ReasonButton>
+          )}
+          {config.entity === "activity" && (
+            <ReasonButton
+              title={`Excluir atividade: ${r.title}`}
+              className="a-text-button a-delete-action"
+              confirmLabel="Excluir atividade"
+              extra={
+                <p className="a-delete-warning">
+                  <Trash2 size={18} />
+                  A exclusão remove esta atividade da programação. Se houver
+                  inscrições, presenças, certificados ou regras de brinde
+                  vinculadas, use o cancelamento para preservar o histórico.
+                </p>
+              }
+              run={async (reason) => {
+                await action("activity.delete", { activityId: r.id, reason });
+              }}
+            >
+              <Trash2 size={15} /> Excluir
             </ReasonButton>
           )}
         </div>

@@ -143,7 +143,9 @@ export async function GET(req: NextRequest) {
             .filter(
               (x: any) =>
                 x.rewardId === r.id &&
-                ["RESERVED", "CONFIRMED"].includes(x.status),
+                ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"].includes(
+                  x.status,
+                ),
             )
             .reduce((n: number, x: any) => n + x.quantity, 0),
           delivered = deliveriesAll

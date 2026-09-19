@@ -48,6 +48,7 @@ import {
   isFarmaArena,
   isLegacyFarmaArenaStamp,
 } from "@/lib/farma-arena";
+import { readApiResponse } from "@/lib/api-response";
 import "./admin.css";
 import "./admin-motion.css";
 
@@ -1465,9 +1466,10 @@ function InputField({
                   method: "POST",
                   body: form,
                 });
-                const result = (await response.json()) as any;
-                if (!response.ok)
-                  throw new Error(result.error || "Falha no envio");
+                const result = await readApiResponse<any>(
+                  response,
+                  "Não foi possível enviar a imagem.",
+                );
                 setValue(result.url);
               } catch (e: any) {
                 setUploadError(e.message);
@@ -2510,8 +2512,10 @@ function ImportPage() {
       form.set("file", file);
       form.set("editionId", data.edition.id);
       const res = await fetch("/api/import", { method: "POST", body: form });
-      const body = (await res.json()) as any;
-      if (!res.ok) throw new Error(body.error);
+      const body = await readApiResponse<any>(
+        res,
+        "Não foi possível analisar o arquivo.",
+      );
       setJob(body);
     } catch (e: any) {
       toast(e.message);

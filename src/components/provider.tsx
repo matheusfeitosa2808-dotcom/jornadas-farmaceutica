@@ -9,6 +9,7 @@ import {
   ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
+import { readApiResponse } from "@/lib/api-response";
 
 type Context = {
   data: any;
@@ -62,8 +63,10 @@ export function Provider({ children }: { children: ReactNode }) {
         cache: "no-store",
         signal: controller.signal,
       });
-      const body = (await res.json()) as any;
-      if (!res.ok) throw new Error(body.error || "Não foi possível atualizar.");
+      const body = await readApiResponse<any>(
+        res,
+        "Não foi possível atualizar.",
+      );
       setData(body);
       setError("");
     } catch (e) {
@@ -109,16 +112,10 @@ export function Provider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       });
-      const body = (await res.json()) as any;
-      if (!res.ok)
-        throw Object.assign(
-          new Error(body.error || "Não foi possível concluir."),
-          {
-            code: body.code,
-            details: body.details,
-            conflicts: body.conflicts,
-          },
-        );
+      const body = await readApiResponse<any>(
+        res,
+        "Não foi possível concluir.",
+      );
 
       toast(body.message || "Alteração salva.");
 

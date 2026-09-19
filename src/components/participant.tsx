@@ -666,7 +666,16 @@ function ActivityCard({ activity }: { activity: any }) {
       <div
         className={`activity-stamp${farmaArena ? " activity-stamp--farma-arena" : ""}`}
       >
+        {farmaArena && (
+          <img
+            className="activity-stamp-fire"
+            src="/assets/effects/farma-arena-fire.webp"
+            alt=""
+            aria-hidden="true"
+          />
+        )}
         <img
+          className="activity-stamp-art"
           src={
             farmaArena
               ? "/assets/stamps/selo-3.webp"

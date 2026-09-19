@@ -5000,95 +5000,44 @@ img {
 /* Ícone comemorativo da Farma Arena */
 .activity-stamp.activity-stamp--farma-arena {
   position: relative;
-  isolation: isolate;
   overflow: visible;
 }
-.activity-stamp--farma-arena::before,
-.activity-stamp--farma-arena::after {
+.activity-stamp--farma-arena::before {
   content: "";
   position: absolute;
-  pointer-events: none;
-  transform-origin: 50% 82%;
-  clip-path: polygon(
-    50% 0%,
-    61% 29%,
-    77% 12%,
-    73% 46%,
-    96% 38%,
-    82% 68%,
-    100% 86%,
-    0% 86%,
-    18% 68%,
-    4% 38%,
-    27% 46%,
-    23% 12%,
-    39% 29%
-  );
-}
-.activity-stamp--farma-arena::before {
-  z-index: -2;
-  inset: -23% -18% -8%;
-  opacity: 0.74;
-  background:
-    radial-gradient(
-      ellipse at 50% 82%,
-      rgba(255, 211, 91, 0.98) 0 18%,
-      rgba(235, 89, 27, 0.9) 34%,
-      rgba(132, 8, 20, 0.82) 56%,
-      transparent 72%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(184, 14, 25, 0.94),
-      rgba(246, 135, 31, 0.94) 58%,
-      rgba(255, 209, 77, 0.96)
-    );
-  animation: farma-arena-flame-outer 1.45s
-    cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
-}
-.activity-stamp--farma-arena::after {
-  z-index: -1;
-  inset: -10% -5% 2%;
-  opacity: 0.68;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 221, 111, 0.9),
-    rgba(246, 116, 22, 0.86) 48%,
-    rgba(151, 10, 18, 0.76)
-  );
-  animation: farma-arena-flame-inner 1.1s
-    cubic-bezier(0.77, 0, 0.175, 1) -0.35s infinite alternate;
-}
-.activity-stamp--farma-arena img {
-  position: relative;
   z-index: 1;
+  width: 79%;
+  height: 79%;
+  left: 10.5%;
+  top: 10.5%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: rgba(249, 245, 235, 0.98);
+  box-shadow: 0 0 17px rgba(224, 91, 24, 0.55);
+}
+.activity-stamp--farma-arena .activity-stamp-fire {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  width: 164%;
+  height: 164%;
+  pointer-events: none;
+  object-fit: contain;
+  opacity: 1;
+  filter: saturate(1.08) contrast(1.04);
+  transform: translate3d(-50%, -50%, 0);
+}
+.activity-stamp--farma-arena .activity-stamp-art {
+  position: relative;
+  z-index: 2;
   transform: translateZ(0);
 }
-@keyframes farma-arena-flame-outer {
-  from {
-    opacity: 0.58;
-    transform: translate3d(0, 3%, 0) scale(0.96, 0.94) rotate(-1.5deg);
-  }
-  to {
-    opacity: 0.86;
-    transform: translate3d(0, -4%, 0) scale(1.03, 1.06) rotate(1.5deg);
-  }
-}
-@keyframes farma-arena-flame-inner {
-  from {
-    opacity: 0.48;
-    transform: translate3d(0, 2%, 0) scale(0.94, 0.96) rotate(1.25deg);
-  }
-  to {
-    opacity: 0.76;
-    transform: translate3d(0, -3%, 0) scale(1.02, 1.04) rotate(-1.25deg);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .activity-stamp--farma-arena::before,
-  .activity-stamp--farma-arena::after {
-    animation: none !important;
-    opacity: 0.62;
-    transform: none;
+  .activity-stamp--farma-arena .activity-stamp-fire {
+    display: none;
+  }
+  .activity-stamp--farma-arena::before {
+    box-shadow: 0 0 14px rgba(224, 91, 24, 0.45);
   }
 }

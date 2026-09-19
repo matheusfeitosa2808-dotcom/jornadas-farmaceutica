@@ -5084,6 +5084,11 @@ img {
   margin: 4px;
 }
 
+/* Mantém as chamas ancoradas ao selo quando o cartão troca para CSS Grid. */
+.farma-arena-badge.activity-stamp {
+  position: relative;
+}
+
 @keyframes farma-arena-fire-breathe {
   from {
     opacity: 0.9;

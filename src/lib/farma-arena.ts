@@ -1,9 +1,6 @@
 export const FARMA_ARENA_STAMP_URL =
   "/assets/stamps/farma-arena-2026-v2.webp";
 
-export const FARMA_ARENA_FIRE_URL =
-  "/assets/effects/farma-arena-fire-v2.webp";
-
 function normalized(value: unknown) {
   return String(value || "")
     .normalize("NFD")

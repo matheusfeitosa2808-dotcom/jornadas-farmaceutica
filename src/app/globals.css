@@ -4997,7 +4997,7 @@ img {
   }
 }
 
-/* Carimbo especial da Farma Arena: arte cacheada por versão + fogo orgânico. */
+/* Carimbo especial da Farma Arena: medalhão com brilho dourado discreto. */
 .farma-arena-badge {
   position: relative;
   display: inline-grid;
@@ -5009,29 +5009,14 @@ img {
 .farma-arena-badge::before {
   content: "";
   position: absolute;
-  z-index: 1;
-  inset: 10.5%;
+  z-index: 0;
+  inset: 7%;
   border-radius: 50%;
   pointer-events: none;
-  background: rgba(249, 245, 235, 0.98);
-  box-shadow: 0 0 17px rgba(224, 91, 24, 0.55);
-}
-.farma-arena-badge > .farma-arena-badge__fire {
-  position: absolute;
-  z-index: 0;
-  left: 50%;
-  top: 50%;
-  width: 176%;
-  height: 176%;
-  max-width: none;
-  pointer-events: none;
-  object-fit: contain;
-  opacity: 1;
-  filter: saturate(1.12) contrast(1.06);
-  transform: translate3d(-50%, -50%, 0) scale(0.98) rotate(-1deg);
-  transform-origin: 50% 50%;
-  animation: farma-arena-fire-breathe 1.35s ease-in-out infinite alternate;
-  will-change: transform, opacity;
+  background: rgba(249, 245, 235, 0.72);
+  box-shadow:
+    0 0 10px rgba(209, 166, 59, 0.5),
+    0 0 20px rgba(169, 51, 37, 0.2);
 }
 .farma-arena-badge > .farma-arena-badge__art {
   position: relative;
@@ -5084,30 +5069,16 @@ img {
   margin: 4px;
 }
 
-/* Mantém as chamas ancoradas ao selo quando o cartão troca para CSS Grid. */
+/* Mantém o brilho ancorado ao selo quando o cartão troca para CSS Grid. */
 .farma-arena-badge.activity-stamp {
   position: relative;
 }
 
-@keyframes farma-arena-fire-breathe {
-  from {
-    opacity: 0.9;
-    transform: translate3d(-50%, -50%, 0) scale(0.98) rotate(-1deg);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(-50%, -50%, 0) scale(1.035) rotate(1deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .farma-arena-badge > .farma-arena-badge__fire {
-    animation: none;
-    opacity: 0.9;
-    transform: translate3d(-50%, -50%, 0);
-  }
   .farma-arena-badge::before {
-    box-shadow: 0 0 14px rgba(224, 91, 24, 0.45);
+    box-shadow:
+      0 0 10px rgba(209, 166, 59, 0.5),
+      0 0 20px rgba(169, 51, 37, 0.2);
   }
 }
 

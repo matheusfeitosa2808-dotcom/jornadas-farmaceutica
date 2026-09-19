@@ -5039,6 +5039,31 @@ img {
   transform: translateZ(0);
 }
 
+.detail-hero--farma-arena {
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-hero--farma-arena > :not(.detail-farma-arena-stamp) {
+  position: relative;
+  z-index: 2;
+}
+
+.detail-farma-arena-stamp {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: clamp(24px, 6vw, 80px);
+  width: clamp(150px, 19vw, 250px);
+  height: clamp(150px, 19vw, 250px);
+  transform: translateY(-50%);
+}
+
+.detail-hero--farma-arena h1,
+.detail-hero--farma-arena .activity-meta {
+  max-width: calc(100% - clamp(180px, 24vw, 310px));
+}
+
 .a-stamp-picker .farma-arena-badge {
   width: 96px;
   height: 96px;
@@ -5062,5 +5087,24 @@ img {
   }
   .farma-arena-badge::before {
     box-shadow: 0 0 14px rgba(224, 91, 24, 0.45);
+  }
+}
+
+@media (max-width: 700px) {
+  .detail-farma-arena-stamp {
+    top: 25px;
+    right: 20px;
+    width: 92px;
+    height: 92px;
+    transform: none;
+  }
+
+  .detail-hero--farma-arena h1,
+  .detail-hero--farma-arena .activity-meta {
+    max-width: 100%;
+  }
+
+  .detail-hero--farma-arena h1 {
+    padding-right: 78px;
   }
 }

@@ -321,11 +321,18 @@ function ParticipantHome({ person }: { person: any }) {
                     ? "ACONTECENDO AGORA"
                     : "SUA PRÓXIMA ATIVIDADE"}
                 </span>
-                <img
-                  className="next-stamp"
-                  src={resolvedStampUrl(categoryOf(data, next), next)}
-                  alt={`Carimbo de ${categoryOf(data, next).name}`}
-                />
+                {isFarmaArena(categoryOf(data, next), next) ? (
+                  <FarmaArenaStamp
+                    className="next-stamp"
+                    alt={`Carimbo especial de ${categoryOf(data, next).name}`}
+                  />
+                ) : (
+                  <img
+                    className="next-stamp"
+                    src={resolvedStampUrl(categoryOf(data, next), next)}
+                    alt={`Carimbo de ${categoryOf(data, next).name}`}
+                  />
+                )}
               </div>
               <h2>{next.title}</h2>
               <p>
@@ -736,6 +743,7 @@ function ActivityDetail({ id }: { id: string }) {
   const activity = data.activities?.find((a: any) => a.id === id);
   if (!activity) return <Empty title="Atividade não encontrada" />;
   const c = categoryOf(data, activity),
+    farmaArena = isFarmaArena(c, activity),
     enrollment = ownEnrollment(data, id),
     attendance = ownAttendance(data, id),
     waiting = data.waitlist?.find(
@@ -768,7 +776,15 @@ function ActivityDetail({ id }: { id: string }) {
       <Link className="back-link" href="/app/programacao">
         <ArrowLeft size={17} /> Programação
       </Link>
-      <section className="detail-hero">
+      <section
+        className={`detail-hero${farmaArena ? " detail-hero--farma-arena" : ""}`}
+      >
+        {farmaArena && (
+          <FarmaArenaStamp
+            className="detail-farma-arena-stamp"
+            alt="Carimbo especial da Farma Arena"
+          />
+        )}
         <span className="category-label">
           <i style={{ background: c.color }} />
           {c.name}

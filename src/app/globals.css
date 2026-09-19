@@ -3223,9 +3223,13 @@ img {
 .landing-partner-logos img {
   display: block;
   width: auto;
-  max-width: min(29%, 190px);
+  max-width: min(22%, 170px);
   height: 48px;
   object-fit: contain;
+}
+.landing-partner-logos .landing-partner-logo--on-ok {
+  height: 58px;
+  mix-blend-mode: multiply;
 }
 .landing-created-by img {
   width: min(220px, 92%);
@@ -3250,8 +3254,11 @@ img {
     gap: 14px;
   }
   .landing-partner-logos img {
-    max-width: 29%;
+    max-width: 22%;
     height: 40px;
+  }
+  .landing-partner-logos .landing-partner-logo--on-ok {
+    height: 48px;
   }
   .landing-created-by img {
     width: min(190px, 78%);

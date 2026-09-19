@@ -88,6 +88,11 @@ export default function Landing() {
               alt="HLA Beleza Integrativa"
             />
             <img src="/assets/partners/logo-prosserv.png" alt="Prosserv" />
+            <img
+              className="landing-partner-logo--on-ok"
+              src="/assets/partners/logo-on-ok.png"
+              alt="On Ok Marketing e Vendas"
+            />
           </div>
         </article>
       </section>

@@ -87,6 +87,12 @@ function categoryOf(data: any, activity: any) {
     {}
   );
 }
+function isFarmaArenaActivity(category: any, activity: any) {
+  return `${category?.name || ""} ${activity?.title || ""}`
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[\s·:–—-]+/g, "")
+    .includes("farmaarena");
+}
 function speakersOf(data: any, activity: any) {
   return (
     activity.speakers?.map((s: any) => s.speaker || s) ||
@@ -634,6 +640,7 @@ function PageHeading({
 function ActivityCard({ activity }: { activity: any }) {
   const { data } = useJornadas();
   const c = categoryOf(data, activity),
+    farmaArena = isFarmaArenaActivity(c, activity),
     speakers = speakersOf(data, activity),
     enrollment = ownEnrollment(data, activity.id),
     attendance = ownAttendance(data, activity.id),
@@ -656,9 +663,15 @@ function ActivityCard({ activity }: { activity: any }) {
         { "--category-color": c.color || "var(--teal)" } as React.CSSProperties
       }
     >
-      <div className="activity-stamp">
+      <div
+        className={`activity-stamp${farmaArena ? " activity-stamp--farma-arena" : ""}`}
+      >
         <img
-          src={activity.stampUrl || c.stampUrl}
+          src={
+            farmaArena
+              ? "/assets/stamps/selo-3.webp"
+              : activity.stampUrl || c.stampUrl
+          }
           alt={`Carimbo de ${c.name}`}
         />
       </div>

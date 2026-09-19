@@ -58,6 +58,8 @@ type Field = {
   default?: any;
   wide?: boolean;
   min?: number;
+  max?: number;
+  step?: number;
   accept?: string;
 };
 type EntityConfig = {
@@ -568,8 +570,22 @@ const configs: Record<string, EntityConfig> = {
       "Pessoas inscritas na edição e o acompanhamento de cada jornada.",
     fields: [
       { key: "fullName", label: "Nome completo", required: true, wide: true },
-      { key: "ra", label: "RA", required: true },
-      { key: "semester", label: "Semestre", required: true },
+      {
+        key: "ra",
+        label: "RA",
+        required: true,
+        help: "Informe somente o registro acadêmico, sem espaços.",
+      },
+      {
+        key: "semester",
+        label: "Semestre",
+        type: "number",
+        required: true,
+        min: 1,
+        max: 20,
+        step: 1,
+        help: "Use apenas o número do semestre, por exemplo: 6.",
+      },
       {
         key: "photoUrl",
         label: "Foto do participante",
@@ -1460,7 +1476,8 @@ function InputField({
           }
           required={field.required}
           min={field.min}
-          step={field.type === "number" ? "any" : undefined}
+          max={field.max}
+          step={field.type === "number" ? (field.step ?? "any") : undefined}
           onChange={(e) =>
             setValue(
               field.type === "number"
@@ -1674,7 +1691,9 @@ function EntityManager({
       render: (r: Row) => (
         <div className="a-row-actions">
           <button
-            className={config.entity === "reward" ? "a-edit-reward" : "a-icon-button"}
+            className={
+              config.entity === "reward" ? "a-edit-reward" : "a-icon-button"
+            }
             aria-label={`Editar ${name(r)}`}
             onClick={() => setEditing(r)}
           >
@@ -1700,10 +1719,10 @@ function EntityManager({
               confirmLabel="Excluir atividade"
               extra={
                 <p className="a-delete-warning">
-                  <Trash2 size={18} />
-                  A exclusão remove esta atividade da programação. Se houver
-                  inscrições, presenças, certificados ou regras de brinde
-                  vinculadas, use o cancelamento para preservar o histórico.
+                  <Trash2 size={18} />A exclusão remove esta atividade da
+                  programação. Se houver inscrições, presenças, certificados ou
+                  regras de brinde vinculadas, use o cancelamento para preservar
+                  o histórico.
                 </p>
               }
               run={async (reason) => {

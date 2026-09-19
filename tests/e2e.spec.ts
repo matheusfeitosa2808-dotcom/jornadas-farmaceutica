@@ -141,8 +141,7 @@ async function makeFixture(): Promise<Fixture> {
     const ra = `${unique.replaceAll("-", "")}${index}`;
     const name = `${firstName} QA DEV ${unique}`;
     const id = await save(admin, editionId, "participant", {
-      name,
-      firstName,
+      fullName: name,
       ra,
       semester: "8",
       active: true,

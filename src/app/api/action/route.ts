@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { transaction } from "@/server/db";
 import {
   getActor,
@@ -178,11 +178,33 @@ async function saveEntity(
       ? await tx.edition.update({ where: { id }, data: v })
       : await tx.edition.create({ data: v });
   } else if (entity === "participant") {
-    const name = String(data.fullName || data.name || "").trim(),
-      ra = String(data.ra || "").trim();
+    const name = String(data.fullName || data.name || "")
+        .trim()
+        .replace(/\s+/g, " "),
+      ra = String(data.ra || "")
+        .trim()
+        .replace(/\s+/g, ""),
+      semester = N(data.semester);
     ensure(
-      name && ra && N(data.semester) > 0,
+      name &&
+        ra &&
+        Number.isSafeInteger(semester) &&
+        semester >= 1 &&
+        semester <= 20,
       "Nome, RA e semestre são obrigatórios.",
+    );
+    const existing = await tx.participant.findFirst({
+      where: {
+        editionId,
+        ra,
+        ...(id ? { id: { not: id } } : {}),
+      },
+    });
+    ensure(
+      !existing,
+      `O RA ${ra} já está cadastrado nesta edição. Abra o cadastro existente para editá-lo.`,
+      "DUPLICATE",
+      409,
     );
     const firstName = name.split(/\s+/)[0];
     const v = {
@@ -191,13 +213,26 @@ async function saveEntity(
       firstName,
       normalizedName: normalizeName(firstName),
       ra,
-      semester: N(data.semester),
+      semester,
       photoUrl: safeUrl(data.photoUrl),
       active: B(data.active, true),
     };
-    result = id
-      ? await tx.participant.update({ where: { id }, data: v })
-      : await tx.participant.create({ data: v });
+    if (id) {
+      const current = await tx.participant.findFirst({
+        where: { id, editionId },
+      });
+      ensure(
+        current,
+        "Participante não encontrado nesta edição.",
+        "NOT_FOUND",
+        404,
+      );
+      result = await tx.participant.update({ where: { id }, data: v });
+    } else {
+      result = await tx.participant.create({
+        data: { id: randomUUID(), ...v },
+      });
+    }
   } else if (entity === "category") {
     const v = {
       editionId,

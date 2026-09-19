@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { useJornadas } from "./provider";
 import LoadingScreen from "./loading-screen";
+import FarmaArenaStamp from "./farma-arena-stamp";
+import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
 import {
   ActivityMeta,
   Avatar,
@@ -86,12 +88,6 @@ function categoryOf(data: any, activity: any) {
     (data.categories || []).find((c: any) => c.id === activity.categoryId) ||
     {}
   );
-}
-function isFarmaArenaActivity(category: any, activity: any) {
-  return `${category?.name || ""} ${activity?.title || ""}`
-    .toLocaleLowerCase("pt-BR")
-    .replace(/[\s·:–—-]+/g, "")
-    .includes("farmaarena");
 }
 function speakersOf(data: any, activity: any) {
   return (
@@ -327,7 +323,7 @@ function ParticipantHome({ person }: { person: any }) {
                 </span>
                 <img
                   className="next-stamp"
-                  src={next.stampUrl || categoryOf(data, next).stampUrl}
+                  src={resolvedStampUrl(categoryOf(data, next), next)}
                   alt={`Carimbo de ${categoryOf(data, next).name}`}
                 />
               </div>
@@ -453,7 +449,7 @@ function ParticipantHome({ person }: { person: any }) {
           return (
             <Link href="/app/passaporte" key={stamp.id}>
               <img
-                src={activity?.stampUrl || category.stampUrl}
+                src={resolvedStampUrl(category, activity)}
                 alt={`Carimbo ${category.name}`}
               />
               <strong>{category.name}</strong>
@@ -640,7 +636,7 @@ function PageHeading({
 function ActivityCard({ activity }: { activity: any }) {
   const { data } = useJornadas();
   const c = categoryOf(data, activity),
-    farmaArena = isFarmaArenaActivity(c, activity),
+    farmaArena = isFarmaArena(c, activity),
     speakers = speakersOf(data, activity),
     enrollment = ownEnrollment(data, activity.id),
     attendance = ownAttendance(data, activity.id),
@@ -663,27 +659,20 @@ function ActivityCard({ activity }: { activity: any }) {
         { "--category-color": c.color || "var(--teal)" } as React.CSSProperties
       }
     >
-      <div
-        className={`activity-stamp${farmaArena ? " activity-stamp--farma-arena" : ""}`}
-      >
-        {farmaArena && (
-          <img
-            className="activity-stamp-fire"
-            src="/assets/effects/farma-arena-fire.webp"
-            alt=""
-            aria-hidden="true"
-          />
-        )}
-        <img
-          className="activity-stamp-art"
-          src={
-            farmaArena
-              ? "/assets/stamps/selo-3.webp"
-              : activity.stampUrl || c.stampUrl
-          }
-          alt={`Carimbo de ${c.name}`}
+      {farmaArena ? (
+        <FarmaArenaStamp
+          className="activity-stamp"
+          alt={`Carimbo especial de ${c.name}`}
         />
-      </div>
+      ) : (
+        <div className="activity-stamp">
+          <img
+            className="activity-stamp-art"
+            src={resolvedStampUrl(c, activity)}
+            alt={`Carimbo de ${c.name}`}
+          />
+        </div>
+      )}
       <div className="row-between">
         <span className="category-label">
           <i />
@@ -1060,7 +1049,7 @@ function Passport({ person }: { person: any }) {
           {activities.map((a: any) => {
             const stamp = stamps.find((s: any) => s.activityId === a.id);
             const c = categoryOf(data, a);
-            const image = a.stampUrl || c.stampUrl;
+            const image = resolvedStampUrl(c, a);
             const repeatsCategory = a.title
               .toLocaleLowerCase("pt-BR")
               .startsWith(c.name.toLocaleLowerCase("pt-BR"));

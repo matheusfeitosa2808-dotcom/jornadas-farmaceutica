@@ -42,6 +42,12 @@ import {
 } from "lucide-react";
 import { useJornadas } from "@/components/provider";
 import LoadingScreen from "@/components/loading-screen";
+import FarmaArenaStamp from "@/components/farma-arena-stamp";
+import {
+  FARMA_ARENA_STAMP_URL,
+  isFarmaArena,
+  isLegacyFarmaArenaStamp,
+} from "@/lib/farma-arena";
 import "./admin.css";
 import "./admin-motion.css";
 
@@ -720,7 +726,12 @@ const configs: Record<string, EntityConfig> = {
         key: "stampUrl",
         label: "Selo",
         render: (r) =>
-          r.stampUrl ? (
+          isFarmaArena(r) ? (
+            <FarmaArenaStamp
+              className="a-stamp-mini"
+              alt={`Selo especial ${r.name}`}
+            />
+          ) : r.stampUrl ? (
             <img
               className="a-stamp-mini"
               src={r.stampUrl}
@@ -1325,17 +1336,26 @@ function InputField({
               [10, "Mobilidade"],
               [11, "Futuro"],
             ].map(([n, label]) => {
-              const url = `/assets/stamps/selo-${n}.webp`;
+              const url =
+                n === 3
+                  ? FARMA_ARENA_STAMP_URL
+                  : `/assets/stamps/selo-${n}.webp`;
+              const selected =
+                value === url || (n === 3 && isLegacyFarmaArenaStamp(value));
               return (
                 <button
                   key={n}
                   type="button"
                   aria-label={`${label}, selo ${n}`}
-                  aria-pressed={value === url}
-                  className={value === url ? "selected" : ""}
+                  aria-pressed={selected}
+                  className={selected ? "selected" : ""}
                   onClick={() => setValue(url)}
                 >
-                  <img src={url} alt={`Selo oficial ${label}`} />
+                  {n === 3 ? (
+                    <FarmaArenaStamp alt={`Selo oficial ${label}`} />
+                  ) : (
+                    <img src={url} alt={`Selo oficial ${label}`} />
+                  )}
                   <span>{label}</span>
                 </button>
               );
@@ -1344,7 +1364,11 @@ function InputField({
           <aside className="a-stamp-preview">
             <strong>Pré-visualização do carimbo selecionado</strong>
             {value ? (
-              <img src={value} alt="Carimbo selecionado" />
+              isLegacyFarmaArenaStamp(value) ? (
+                <FarmaArenaStamp alt="Carimbo especial da Farma Arena" />
+              ) : (
+                <img src={value} alt="Carimbo selecionado" />
+              )
             ) : (
               <div className="a-preview-empty">
                 Use o selo padrão da categoria

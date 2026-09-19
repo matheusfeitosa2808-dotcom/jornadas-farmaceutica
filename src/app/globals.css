@@ -4997,47 +4997,70 @@ img {
   }
 }
 
-/* Ícone comemorativo da Farma Arena */
-.activity-stamp.activity-stamp--farma-arena {
+/* Carimbo especial da Farma Arena: arte cacheada por versão + fogo orgânico. */
+.farma-arena-badge {
   position: relative;
+  display: inline-grid;
+  place-items: center;
+  aspect-ratio: 1;
   overflow: visible;
+  isolation: isolate;
 }
-.activity-stamp--farma-arena::before {
+.farma-arena-badge::before {
   content: "";
   position: absolute;
   z-index: 1;
-  width: 79%;
-  height: 79%;
-  left: 10.5%;
-  top: 10.5%;
+  inset: 10.5%;
   border-radius: 50%;
   pointer-events: none;
   background: rgba(249, 245, 235, 0.98);
   box-shadow: 0 0 17px rgba(224, 91, 24, 0.55);
 }
-.activity-stamp--farma-arena .activity-stamp-fire {
+.farma-arena-badge > .farma-arena-badge__fire {
   position: absolute;
   z-index: 0;
   left: 50%;
   top: 50%;
-  width: 164%;
-  height: 164%;
+  width: 168%;
+  height: 168%;
   pointer-events: none;
   object-fit: contain;
   opacity: 1;
   filter: saturate(1.08) contrast(1.04);
   transform: translate3d(-50%, -50%, 0);
 }
-.activity-stamp--farma-arena .activity-stamp-art {
+.farma-arena-badge > .farma-arena-badge__art {
   position: relative;
   z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   transform: translateZ(0);
 }
+
+.a-stamp-picker .farma-arena-badge {
+  width: 96px;
+  height: 96px;
+}
+
+.a-stamp-preview .farma-arena-badge {
+  width: min(100%, 260px);
+  height: auto;
+}
+
+.a-stamp-mini.farma-arena-badge {
+  width: 46px;
+  height: 46px;
+  margin: 4px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .activity-stamp--farma-arena .activity-stamp-fire {
-    display: none;
+  .farma-arena-badge > .farma-arena-badge__fire {
+    animation-play-state: paused;
+    opacity: 0.78;
   }
-  .activity-stamp--farma-arena::before {
+  .farma-arena-badge::before {
     box-shadow: 0 0 14px rgba(224, 91, 24, 0.45);
   }
 }

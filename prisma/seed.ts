@@ -234,6 +234,110 @@ async function main() {
       },
     });
   const livia = participants["48884"];
+  await db.arenaConfig.upsert({
+    where: { editionId: edition.id },
+    update: {},
+    create: {
+      editionId: edition.id,
+      enabled: true,
+      logoUrl: "/assets/stamps/farma-arena-2026-v2.webp",
+      accentColor: "#981e27",
+      rankingEnabled: true,
+      xpReleaseMode: "MANUAL",
+      firstPlaceTitle: "Rei da Jornada",
+      secondPlaceTitle: "Guerreiro da Jornada",
+      thirdPlaceTitle: "Desafiante da Jornada",
+    },
+  });
+  const arenaChallengesData = [
+    [
+      "Cálculo Relâmpago",
+      "calculo-relampago",
+      "CONHECIMENTO",
+      "INDIVIDUAL",
+      120,
+    ],
+    [
+      "Interações Medicamentosas",
+      "interacoes-medicamentosas",
+      "PRÁTICA",
+      "TEAM",
+      180,
+    ],
+    ["Stop da Bula", "stop-da-bula", "CONHECIMENTO", "TEAM", 160],
+    ["Quem Sou Eu?", "quem-sou-eu", "CRIATIVIDADE", "INDIVIDUAL", 140],
+    ["Semáforo da Dispensação", "semaforo-dispensacao", "PRÁTICA", "TEAM", 200],
+    [
+      "Quiz Verdadeiro ou Falso",
+      "quiz-verdadeiro-falso",
+      "CONHECIMENTO",
+      "TEAM",
+      170,
+    ],
+    ["Roleta Farmacêutica", "roleta-farmaceutica", "ESTRATÉGIA", "TEAM", 150],
+    [
+      "7 Erros da Receita",
+      "sete-erros-receita",
+      "CONHECIMENTO",
+      "INDIVIDUAL",
+      110,
+    ],
+    [
+      "Imagem & Ação Farmacêutica",
+      "imagem-acao-farmaceutica",
+      "INTEGRAÇÃO",
+      "TEAM",
+      130,
+    ],
+    ["Desafio por QR Code", "desafio-qr-code", "ESTRATÉGIA", "TEAM", 300],
+  ] as const;
+  const arenaChallenges: any[] = [];
+  for (let i = 0; i < arenaChallengesData.length; i++) {
+    const [title, slug, category, mode, xpReward] = arenaChallengesData[i];
+    arenaChallenges.push(
+      await db.arenaChallenge.upsert({
+        where: { editionId_slug: { editionId: edition.id, slug } },
+        update: {},
+        create: {
+          editionId: edition.id,
+          title,
+          slug,
+          category,
+          mode,
+          xpReward,
+          description:
+            "Uma experiência rápida que combina ciência, colaboração e decisão.",
+          instructions:
+            "Participe no espaço da Farma Arena e apresente o resultado à equipe de validação.",
+          minTeamSize: mode === "TEAM" ? 2 : 1,
+          maxTeamSize: mode === "TEAM" ? 5 : 1,
+          order: i,
+        },
+      }),
+    );
+  }
+  const demoXp = [620, 510, 430, 340, 260];
+  for (let i = 0; i < people.length; i++) {
+    const participant = participants[people[i][2]];
+    await db.xpTransaction.upsert({
+      where: {
+        idempotencyKey: `seed-arena-xp:${edition.id}:${participant.id}`,
+      },
+      update: { balanceDelta: demoXp[i], rankingDelta: demoXp[i] },
+      create: {
+        editionId: edition.id,
+        participantId: participant.id,
+        type: "EARN",
+        balanceDelta: demoXp[i],
+        rankingDelta: demoXp[i],
+        sourceType: "SEED",
+        sourceId: arenaChallenges[i].id,
+        description: "Pontuação demonstrativa da Farma Arena",
+        idempotencyKey: `seed-arena-xp:${edition.id}:${participant.id}`,
+        createdBy: "seed",
+      },
+    });
+  }
   for (const a of [past, live, lecture])
     await db.enrollment.upsert({
       where: {
@@ -319,6 +423,27 @@ async function main() {
         },
       });
   }
+  const xpReward = await db.rewardItem.findFirst({
+    where: { editionId: edition.id, name: "Kit Campeão da Arena" },
+  });
+  if (!xpReward)
+    await db.rewardItem.create({
+      data: {
+        editionId: edition.id,
+        name: "Kit Campeão da Arena",
+        description:
+          "Uma lembrança exclusiva para quem transformou desafios em conquistas.",
+        imageUrl: "/assets/rewards/garrafa.webp",
+        total: 25,
+        active: true,
+        order: 20,
+        confirmationMinutes: 1440,
+        redemptionStartsAt,
+        redemptionMode: "XP_STORE",
+        xpCost: 300,
+        maxPerParticipant: 1,
+      },
+    });
   await db.adminUser.upsert({
     where: { email: "admin@jornadas.dev" },
     update: { passwordHash: hashPassword("Jornada@2026!") },

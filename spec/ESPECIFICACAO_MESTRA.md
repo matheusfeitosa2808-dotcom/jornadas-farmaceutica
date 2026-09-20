@@ -1583,12 +1583,15 @@ Barra inferior:
 ```text
 Início
 Programação
-Passaporte
-Brindes
+Farma Arena
+Ranking
 Perfil
 ```
 
-Não incluir FarmaArena fixamente.
+A Farma Arena e o Ranking fazem parte da navegação principal. A regra anterior
+que impedia a presença fixa da Farma Arena foi substituída pela especificação
+Farma Arena V2. Passaporte, Brindes, Certificados e Inscrições continuam
+disponíveis por atalhos e rotas contextuais.
 
 ---
 
@@ -1600,6 +1603,11 @@ Não incluir FarmaArena fixamente.
 
 /app
 /app/programacao
+/app/arena
+/app/arena/desafios
+/app/arena/desempenho
+/app/arena/loja
+/app/ranking
 /app/programacao/:activityId
 /app/inscricoes
 /app/passaporte

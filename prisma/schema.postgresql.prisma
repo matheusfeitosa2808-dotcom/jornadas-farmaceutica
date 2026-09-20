@@ -41,6 +41,11 @@ model Edition {
   activities             Activity[]
   rewards                RewardItem[]
   sponsors               Sponsor[]
+  arenaConfig            ArenaConfig?
+  arenaChallenges        ArenaChallenge[]
+  arenaCompletions       ArenaCompletion[]
+  arenaAwards            ArenaXpAward[]
+  xpTransactions         XpTransaction[]
 }
 
 model Participant {
@@ -68,6 +73,9 @@ model Participant {
   recipients        NotificationRecipient[]
   sessions          Session[]
   pushSubscriptions PushSubscription[]
+  arenaCompletions  ArenaCompletion[]
+  arenaAwards       ArenaXpAward[]
+  xpTransactions    XpTransaction[]
 
   @@unique([editionId, ra])
 }
@@ -289,11 +297,135 @@ model RewardItem {
   confirmationMinutes Int                 @default(60)
   redemptionStartsAt  DateTime?
   exclusiveGroup      String?
+  redemptionMode      String              @default("ELIGIBILITY")
+  xpCost              Int                 @default(0)
+  maxPerParticipant   Int                 @default(1)
   rules               RewardRule[]
   eligibilities       RewardEligibility[]
   draws               RewardDraw[]
   reservations        RewardReservation[]
   deliveries          RewardDelivery[]
+}
+
+model ArenaConfig {
+  id                    String   @id @default(cuid())
+  editionId             String   @unique
+  edition               Edition  @relation(fields: [editionId], references: [id])
+  enabled               Boolean  @default(true)
+  logoUrl               String?
+  accentColor           String   @default("#9f2f2f")
+  rankingEnabled        Boolean  @default(true)
+  rankingVisibility     String   @default("AUTHENTICATED")
+  firstPlaceTitle       String   @default("Rei da Jornada")
+  secondPlaceTitle      String   @default("Guerreiro da Jornada")
+  thirdPlaceTitle       String   @default("Desafiante da Jornada")
+  transitionEffect      String   @default("EMBER_STAMP")
+  xpReleaseMode         String   @default("MANUAL")
+  xpReleaseDelaySeconds Int      @default(0)
+  combinePendingAwards  Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model ArenaChallenge {
+  id                           String            @id @default(cuid())
+  editionId                    String
+  edition                      Edition           @relation(fields: [editionId], references: [id])
+  title                        String
+  slug                         String
+  description                  String            @default("")
+  instructions                 String            @default("")
+  iconUrl                      String?
+  xpReward                     Int               @default(100)
+  mode                         String            @default("INDIVIDUAL")
+  validationMode               String            @default("OPERATOR")
+  minTeamSize                  Int               @default(1)
+  maxTeamSize                  Int               @default(1)
+  repeatable                   Boolean           @default(false)
+  maxCompletionsPerParticipant Int               @default(1)
+  startsAt                     DateTime?
+  endsAt                       DateTime?
+  category                     String            @default("CONHECIMENTO")
+  active                       Boolean           @default(true)
+  order                        Int               @default(0)
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+  completions                  ArenaCompletion[]
+  awards                       ArenaXpAward[]
+
+  @@unique([editionId, slug])
+  @@index([editionId, active, order])
+}
+
+model ArenaCompletion {
+  id            String         @id @default(cuid())
+  editionId     String
+  edition       Edition        @relation(fields: [editionId], references: [id])
+  challengeId   String
+  challenge     ArenaChallenge @relation(fields: [challengeId], references: [id])
+  participantId String
+  participant   Participant    @relation(fields: [participantId], references: [id])
+  teamSessionId String?
+  completedAt   DateTime       @default(now())
+  validatedBy   String
+  status        String         @default("VALID")
+  xpAwarded     Int            @default(0)
+  reason        String?
+  createdAt     DateTime       @default(now())
+  award         ArenaXpAward?
+
+  @@index([editionId, participantId, status])
+  @@index([challengeId, participantId, status])
+}
+
+model ArenaXpAward {
+  id                   String          @id @default(cuid())
+  editionId            String
+  edition              Edition         @relation(fields: [editionId], references: [id])
+  participantId        String
+  participant          Participant     @relation(fields: [participantId], references: [id])
+  challengeId          String
+  challenge            ArenaChallenge  @relation(fields: [challengeId], references: [id])
+  completionId         String          @unique
+  completion           ArenaCompletion @relation(fields: [completionId], references: [id])
+  amount               Int
+  status               String          @default("PENDING")
+  releaseMode          String          @default("MANUAL")
+  releaseAt            DateTime?
+  releasedAt           DateTime?
+  releasedBy           String?
+  xpTransactionId      String?         @unique
+  transaction          XpTransaction?  @relation(fields: [xpTransactionId], references: [id])
+  animationStatus      String          @default("QUEUED")
+  animationDeliveredAt DateTime?
+  animationSeenAt      DateTime?
+  animationVariant     String          @default("STANDARD")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([editionId, status, releaseAt])
+  @@index([participantId, animationStatus])
+}
+
+model XpTransaction {
+  id             String        @id @default(cuid())
+  editionId      String
+  edition        Edition       @relation(fields: [editionId], references: [id])
+  participantId  String
+  participant    Participant   @relation(fields: [participantId], references: [id])
+  type           String
+  balanceDelta   Int
+  rankingDelta   Int
+  sourceType     String
+  sourceId       String
+  description    String        @default("")
+  idempotencyKey String        @unique
+  createdBy      String
+  createdAt      DateTime      @default(now())
+  award          ArenaXpAward?
+
+  @@index([editionId, participantId, createdAt])
+  @@index([editionId, rankingDelta])
 }
 
 model RewardRule {

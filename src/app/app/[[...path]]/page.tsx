@@ -5,5 +5,7 @@ export default async function Page({
   params: Promise<{ path?: string[] }>;
 }) {
   const { path = [] } = await params;
-  return <ParticipantApp section={path[0] || ""} id={path[1]} />;
+  return (
+    <ParticipantApp section={path[0] || ""} id={path[1]} detailId={path[2]} />
+  );
 }

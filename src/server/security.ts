@@ -69,13 +69,24 @@ export const permissionsList = [
   "reports.export",
   "audit.read",
   "users.manage",
+  "arena.read",
+  "arena.manage",
+  "arena.validate",
+  "arena.release_xp",
+  "arena.adjust_xp",
 ];
 export const rolePermissions: Record<string, string[]> = {
   ADMIN_GENERAL: permissionsList,
   ORGANIZATION: permissionsList.filter(
     (p) => !["users.manage", "editions.write", "audit.read"].includes(p),
   ),
-  OPERATOR: ["participants.read", "activities.read", "attendance.register"],
+  OPERATOR: [
+    "participants.read",
+    "activities.read",
+    "attendance.register",
+    "arena.read",
+    "arena.validate",
+  ],
 };
 export function hasPermission(actor: Actor | null, permission: string) {
   return (

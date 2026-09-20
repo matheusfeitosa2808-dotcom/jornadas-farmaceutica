@@ -20,6 +20,7 @@ export default defineConfig([
     "dist/**",
     ".vinext/**",
     ".wrangler/**",
+    "preview-farma-arena/**",
     "src/generated/**",
     "worker-configuration.d.ts",
   ]),

@@ -27,6 +27,18 @@ import {
   swapEnrollment,
 } from "@/server/domain";
 import { publish } from "@/server/events";
+import {
+  adjustArenaXp,
+  cancelArenaAward,
+  cancelXpPurchase,
+  completeArenaChallenge,
+  markArenaAwardSeen,
+  purchaseXpReward,
+  releaseArenaAwards,
+  releaseScheduledArenaAwards,
+  revokeArenaCompletion,
+  scheduleArenaAward,
+} from "@/server/arena";
 const D = (v: any) => (v ? new Date(v) : null),
   N = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d),
   B = (v: any, d = false) => (v === undefined ? d : Boolean(v));
@@ -125,13 +137,15 @@ async function saveEntity(
     actor,
     entity === "user"
       ? "users.manage"
-      : entity === "edition"
-        ? "editions.write"
-        : entity === "participant"
-          ? "participants.write"
-          : ["reward", "rule"].includes(entity)
-            ? "rewards.manage"
-            : "activities.write",
+      : ["arenaConfig", "arenaChallenge"].includes(entity)
+        ? "arena.manage"
+        : entity === "edition"
+          ? "editions.write"
+          : entity === "participant"
+            ? "participants.write"
+            : ["reward", "rule"].includes(entity)
+              ? "rewards.manage"
+              : "activities.write",
   );
   let result: any;
   if (entity === "edition") {
@@ -266,8 +280,15 @@ async function saveEntity(
       : await tx.speaker.create({ data: v });
   } else if (entity === "activity") {
     if (id) {
-      const existing = await tx.activity.findFirst({ where: { id, editionId } });
-      ensure(existing, "Atividade não encontrada nesta edição.", "NOT_FOUND", 404);
+      const existing = await tx.activity.findFirst({
+        where: { id, editionId },
+      });
+      ensure(
+        existing,
+        "Atividade não encontrada nesta edição.",
+        "NOT_FOUND",
+        404,
+      );
     }
     const startAt = D(data.startAt)!,
       endAt = D(data.endAt)!;
@@ -343,6 +364,99 @@ async function saveEntity(
             },
           },
         });
+  } else if (entity === "arenaConfig") {
+    const current = await tx.arenaConfig.findUnique({ where: { editionId } });
+    const releaseMode = String(
+      data.xpReleaseMode ?? current?.xpReleaseMode ?? "MANUAL",
+    );
+    ensure(
+      ["IMMEDIATE", "MANUAL", "SCHEDULED"].includes(releaseMode),
+      "Modo de liberação inválido.",
+    );
+    const v = {
+      editionId,
+      enabled: B(data.enabled, current?.enabled ?? true),
+      logoUrl: safeUrl(data.logoUrl ?? current?.logoUrl),
+      accentColor: data.accentColor ?? current?.accentColor ?? "#9f2f2f",
+      rankingEnabled: B(data.rankingEnabled, current?.rankingEnabled ?? true),
+      rankingVisibility:
+        data.rankingVisibility ?? current?.rankingVisibility ?? "AUTHENTICATED",
+      firstPlaceTitle: String(
+        data.firstPlaceTitle ?? current?.firstPlaceTitle ?? "Rei da Jornada",
+      ).trim(),
+      secondPlaceTitle: String(
+        data.secondPlaceTitle ??
+          current?.secondPlaceTitle ??
+          "Guerreiro da Jornada",
+      ).trim(),
+      thirdPlaceTitle: String(
+        data.thirdPlaceTitle ??
+          current?.thirdPlaceTitle ??
+          "Desafiante da Jornada",
+      ).trim(),
+      transitionEffect:
+        data.transitionEffect ?? current?.transitionEffect ?? "EMBER_STAMP",
+      xpReleaseMode: releaseMode,
+      xpReleaseDelaySeconds: Math.max(
+        0,
+        N(data.xpReleaseDelaySeconds ?? current?.xpReleaseDelaySeconds),
+      ),
+      combinePendingAwards: B(
+        data.combinePendingAwards,
+        current?.combinePendingAwards ?? false,
+      ),
+    };
+    result = await tx.arenaConfig.upsert({
+      where: { editionId },
+      create: v,
+      update: v,
+    });
+  } else if (entity === "arenaChallenge") {
+    const current = id
+      ? await tx.arenaChallenge.findFirst({ where: { id, editionId } })
+      : null;
+    if (id)
+      ensure(current, "Desafio não encontrado nesta edição.", "NOT_FOUND", 404);
+    const xpReward = N(data.xpReward, 100);
+    const minTeamSize = Math.max(1, N(data.minTeamSize, 1));
+    const maxTeamSize = Math.max(
+      minTeamSize,
+      N(data.maxTeamSize, data.mode === "TEAM" ? 5 : 1),
+    );
+    ensure(String(data.title || "").trim(), "Informe o nome do desafio.");
+    ensure(
+      Number.isSafeInteger(xpReward) && xpReward > 0,
+      "O XP deve ser um inteiro positivo.",
+    );
+    const v = {
+      editionId,
+      title: String(data.title).trim(),
+      slug: String(data.slug || current?.slug || data.title)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, "-"),
+      description: String(data.description || ""),
+      instructions: String(data.instructions || ""),
+      iconUrl: safeUrl(data.iconUrl),
+      xpReward,
+      mode: data.mode === "TEAM" ? "TEAM" : "INDIVIDUAL",
+      validationMode: "OPERATOR",
+      minTeamSize,
+      maxTeamSize,
+      repeatable: B(data.repeatable),
+      maxCompletionsPerParticipant: Math.max(
+        1,
+        N(data.maxCompletionsPerParticipant, 1),
+      ),
+      startsAt: D(data.startsAt),
+      endsAt: D(data.endsAt),
+      category: String(data.category || "CONHECIMENTO"),
+      active: B(data.active, true),
+      order: N(data.order),
+    };
+    result = id
+      ? await tx.arenaChallenge.update({ where: { id }, data: v })
+      : await tx.arenaChallenge.create({ data: v });
   } else if (entity === "reward") {
     const current = id
       ? await tx.rewardItem.findFirst({ where: { id, editionId } })
@@ -397,8 +511,17 @@ async function saveEntity(
       active: B(data.active, current?.active ?? true),
       order: N(data.order, current?.order ?? 0),
       confirmationMinutes,
-      redemptionStartsAt: D(data.redemptionStartsAt ?? current?.redemptionStartsAt),
+      redemptionStartsAt: D(
+        data.redemptionStartsAt ?? current?.redemptionStartsAt,
+      ),
       exclusiveGroup: data.exclusiveGroup ?? current?.exclusiveGroup ?? null,
+      redemptionMode:
+        data.redemptionMode ?? current?.redemptionMode ?? "ELIGIBILITY",
+      xpCost: Math.max(0, N(data.xpCost ?? current?.xpCost)),
+      maxPerParticipant: Math.max(
+        1,
+        N(data.maxPerParticipant ?? current?.maxPerParticipant, 1),
+      ),
     };
     result = id
       ? await tx.rewardItem.update({ where: { id }, data: v })
@@ -494,6 +617,120 @@ export async function POST(req: NextRequest) {
             editionId,
             actor,
           );
+          break;
+        case "arena.challenge.complete":
+          result = await completeArenaChallenge(
+            tx,
+            editionId,
+            String(body.challengeId || ""),
+            [String(body.ra || "")],
+            actor,
+          );
+          message = result.releases?.length
+            ? "Resultado confirmado e XP liberado."
+            : "Resultado confirmado. O XP aguarda liberação.";
+          break;
+        case "arena.challenge.completeTeam":
+          result = await completeArenaChallenge(
+            tx,
+            editionId,
+            String(body.challengeId || ""),
+            Array.isArray(body.ras) ? body.ras : [],
+            actor,
+          );
+          message = result.releases?.length
+            ? "Equipe confirmada e XP liberado."
+            : "Equipe confirmada. O XP aguarda liberação.";
+          break;
+        case "arena.challenge.revoke":
+          result = await revokeArenaCompletion(
+            tx,
+            editionId,
+            String(body.completionId || ""),
+            String(body.reason || ""),
+            actor,
+          );
+          message = "Conclusão revogada e XP compensado.";
+          break;
+        case "arena.award.release":
+          result = (
+            await releaseArenaAwards(
+              tx,
+              editionId,
+              [String(body.awardId || "")],
+              actor,
+            )
+          )[0];
+          message = result?.alreadyReleased
+            ? "Este XP já estava liberado."
+            : "XP liberado.";
+          break;
+        case "arena.award.releaseBatch":
+          result = await releaseArenaAwards(
+            tx,
+            editionId,
+            Array.isArray(body.awardIds) ? body.awardIds : [],
+            actor,
+          );
+          message = `${result.length} prêmio(s) processado(s).`;
+          break;
+        case "arena.award.schedule":
+          result = await scheduleArenaAward(
+            tx,
+            editionId,
+            String(body.awardId || ""),
+            D(body.releaseAt)!,
+            actor,
+          );
+          message = "Liberação agendada.";
+          break;
+        case "arena.award.cancel":
+          result = await cancelArenaAward(
+            tx,
+            editionId,
+            String(body.awardId || ""),
+            String(body.reason || ""),
+            actor,
+          );
+          message = "Prêmio cancelado.";
+          break;
+        case "arena.award.seen":
+          result = await markArenaAwardSeen(
+            tx,
+            editionId,
+            String(body.awardId || ""),
+            actor,
+          );
+          message = "Conquista vista.";
+          break;
+        case "arena.xp.adjust":
+          result = await adjustArenaXp(
+            tx,
+            editionId,
+            String(body.participantId || ""),
+            N(body.amount),
+            String(body.reason || ""),
+            actor,
+          );
+          message = "XP ajustado.";
+          break;
+        case "reward.purchase":
+          result = await purchaseXpReward(
+            tx,
+            editionId,
+            String(body.rewardId || ""),
+            actor,
+          );
+          message = "Item reservado com XP.";
+          break;
+        case "reward.purchase.cancel":
+          result = await cancelXpPurchase(
+            tx,
+            editionId,
+            String(body.reservationId || ""),
+            actor,
+          );
+          message = "Resgate cancelado e XP devolvido.";
           break;
         case "enrollment.create":
           requireParticipant(actor, editionId);
@@ -643,16 +880,27 @@ export async function POST(req: NextRequest) {
           const activity = await tx.activity.findFirst({
             where: { id: String(body.activityId || ""), editionId },
           });
-          ensure(activity, "Atividade não encontrada nesta edição.", "NOT_FOUND", 404);
-          const [enrollments, waitlist, attendances, stamps, certificates, rules] =
-            await Promise.all([
-              tx.enrollment.count({ where: { activityId: activity.id } }),
-              tx.waitlistEntry.count({ where: { activityId: activity.id } }),
-              tx.attendance.count({ where: { activityId: activity.id } }),
-              tx.passportStamp.count({ where: { activityId: activity.id } }),
-              tx.certificate.count({ where: { activityId: activity.id } }),
-              tx.rewardRule.count({ where: { activityId: activity.id } }),
-            ]);
+          ensure(
+            activity,
+            "Atividade não encontrada nesta edição.",
+            "NOT_FOUND",
+            404,
+          );
+          const [
+            enrollments,
+            waitlist,
+            attendances,
+            stamps,
+            certificates,
+            rules,
+          ] = await Promise.all([
+            tx.enrollment.count({ where: { activityId: activity.id } }),
+            tx.waitlistEntry.count({ where: { activityId: activity.id } }),
+            tx.attendance.count({ where: { activityId: activity.id } }),
+            tx.passportStamp.count({ where: { activityId: activity.id } }),
+            tx.certificate.count({ where: { activityId: activity.id } }),
+            tx.rewardRule.count({ where: { activityId: activity.id } }),
+          ]);
           ensure(
             !(
               enrollments ||
@@ -689,7 +937,13 @@ export async function POST(req: NextRequest) {
           requirePermission(actor, "editions.write");
           const src = await tx.edition.findUniqueOrThrow({
             where: { id: body.sourceEditionId },
-            include: { categories: true, sponsors: true },
+            include: {
+              categories: true,
+              sponsors: true,
+              arenaConfig: true,
+              arenaChallenges: true,
+              rewards: true,
+            },
           });
           result = await tx.edition.create({
             data: {
@@ -741,8 +995,66 @@ export async function POST(req: NextRequest) {
                     })),
                   }
                 : undefined,
+              arenaChallenges: {
+                create: src.arenaChallenges.map((challenge: any) => ({
+                  title: challenge.title,
+                  slug: challenge.slug,
+                  description: challenge.description,
+                  instructions: challenge.instructions,
+                  iconUrl: challenge.iconUrl,
+                  xpReward: challenge.xpReward,
+                  mode: challenge.mode,
+                  validationMode: challenge.validationMode,
+                  minTeamSize: challenge.minTeamSize,
+                  maxTeamSize: challenge.maxTeamSize,
+                  repeatable: challenge.repeatable,
+                  maxCompletionsPerParticipant:
+                    challenge.maxCompletionsPerParticipant,
+                  startsAt: challenge.startsAt,
+                  endsAt: challenge.endsAt,
+                  category: challenge.category,
+                  active: challenge.active,
+                  order: challenge.order,
+                })),
+              },
+              rewards: {
+                create: src.rewards
+                  .filter((reward: any) => reward.redemptionMode === "XP_STORE")
+                  .map((reward: any) => ({
+                    name: reward.name,
+                    description: reward.description,
+                    imageUrl: reward.imageUrl,
+                    total: reward.total,
+                    active: reward.active,
+                    order: reward.order,
+                    confirmationMinutes: reward.confirmationMinutes,
+                    redemptionStartsAt: reward.redemptionStartsAt,
+                    exclusiveGroup: reward.exclusiveGroup,
+                    redemptionMode: "XP_STORE",
+                    xpCost: reward.xpCost,
+                    maxPerParticipant: reward.maxPerParticipant,
+                  })),
+              },
             },
           });
+          if (src.arenaConfig)
+            await tx.arenaConfig.create({
+              data: {
+                editionId: result.id,
+                enabled: src.arenaConfig.enabled,
+                logoUrl: src.arenaConfig.logoUrl,
+                accentColor: src.arenaConfig.accentColor,
+                rankingEnabled: src.arenaConfig.rankingEnabled,
+                rankingVisibility: src.arenaConfig.rankingVisibility,
+                firstPlaceTitle: src.arenaConfig.firstPlaceTitle,
+                secondPlaceTitle: src.arenaConfig.secondPlaceTitle,
+                thirdPlaceTitle: src.arenaConfig.thirdPlaceTitle,
+                transitionEffect: src.arenaConfig.transitionEffect,
+                xpReleaseMode: src.arenaConfig.xpReleaseMode,
+                xpReleaseDelaySeconds: src.arenaConfig.xpReleaseDelaySeconds,
+                combinePendingAwards: src.arenaConfig.combinePendingAwards,
+              },
+            });
           await audit(
             tx,
             actor,
@@ -1189,8 +1501,17 @@ export async function POST(req: NextRequest) {
             },
             data: { status: "EXPIRED" },
           });
+          const scheduledAwards = await releaseScheduledArenaAwards(
+            tx,
+            editionId,
+            actor,
+          );
           await recalc(tx, editionId);
-          result = { noShows: noshow, expired: exp.count };
+          result = {
+            noShows: noshow,
+            expired: exp.count,
+            releasedArenaAwards: scheduledAwards.length,
+          };
           break;
         }
         default:

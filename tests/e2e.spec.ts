@@ -66,9 +66,15 @@ async function action(
   actionName: string,
   data: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
-  const response = await api.post("/api/action", {
-    data: { action: actionName, editionId, ...data },
-  });
+  const importConfirm = actionName === "import.confirm";
+  const response = await api.post(
+    importConfirm ? "/api/import/confirm" : "/api/action",
+    {
+      data: importConfirm
+        ? { editionId, jobId: data.jobId }
+        : { action: actionName, editionId, ...data },
+    },
+  );
   expect(
     response.ok(),
     `${actionName}: ${response.status()} ${await response.text()}`,
@@ -97,6 +103,18 @@ async function state(
 ): Promise<State> {
   const response = await api.get(
     `/api/state?scope=${scope}&editionId=${encodeURIComponent(editionId)}`,
+  );
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return response.json();
+}
+
+async function arenaState(
+  api: APIRequestContext,
+  editionId: string,
+  scope: "admin" | "participant" = "participant",
+): Promise<any> {
+  const response = await api.get(
+    `/api/arena?scope=${scope}&editionId=${encodeURIComponent(editionId)}`,
   );
   expect(response.ok(), await response.text()).toBeTruthy();
   return response.json();
@@ -625,7 +643,7 @@ test("@api última vaga concorrente e troca com rollback preservam ocupação", 
   }
 });
 
-test("@api check-in tardio, geração única de carimbo e certificado bloqueado antes do fim da edição", async () => {
+test("@api check-in tardio, geração única de carimbo e liberação administrativa do certificado", async () => {
   const fixture = await makeFixture();
   try {
     const participant = await participantClient(fixture);
@@ -671,10 +689,16 @@ test("@api check-in tardio, geração única de carimbo e certificado bloqueado 
           item.participantId === fixture.participants[0].id,
       ),
     ).toHaveLength(1);
-    await expectFailure(fixture.admin, fixture.editionId, "certificate.issue", {
-      participantId: fixture.participants[0].id,
-      activityId: late,
-    });
+    const certificate = await action(
+      fixture.admin,
+      fixture.editionId,
+      "certificate.issue",
+      {
+        participantId: fixture.participants[0].id,
+        activityId: late,
+      },
+    );
+    expect(certificate.status).toBe("RELEASED");
     const closed = await activity(fixture, {
       startAt: new Date(Date.now() - 26 * 60_000).toISOString(),
       endAt: new Date(Date.now() + 1_800_000).toISOString(),
@@ -986,7 +1010,190 @@ test("@api check-out libera certificado, validação pública e cancelamento de 
   }
 });
 
-test("@mobile participante entra pelo formulário e navega na programação e no passaporte", async ({
+test("@api Farma Arena mantém XP, ranking, permissões e resgates consistentes", async () => {
+  const fixture = await makeFixture();
+  try {
+    await save(fixture.admin, fixture.editionId, "arenaConfig", {
+      enabled: true,
+      rankingEnabled: true,
+      xpReleaseMode: "MANUAL",
+      combinePendingAwards: false,
+    });
+    const challengeId = await save(
+      fixture.admin,
+      fixture.editionId,
+      "arenaChallenge",
+      {
+        title: "Cálculo Relâmpago QA DEV",
+        description: "Desafio individual automatizado.",
+        instructions: "Validar o resultado com a equipe.",
+        xpReward: 125,
+        mode: "INDIVIDUAL",
+        active: true,
+      },
+    );
+    const participant = await participantClient(fixture);
+    const operator = await authenticateAdmin(true);
+    fixture.clients.push(operator);
+
+    await expectFailure(
+      participant,
+      fixture.editionId,
+      "arena.challenge.complete",
+      { challengeId, ra: fixture.participants[0].ra },
+      [403],
+    );
+
+    const completion = await action(
+      operator,
+      fixture.editionId,
+      "arena.challenge.complete",
+      { challengeId, ra: fixture.participants[0].ra },
+    );
+    const awardId = (completion.awards as Array<{ id: string }>)[0].id;
+    const completionId = (completion.completions as Array<{ id: string }>)[0]
+      .id;
+
+    const pending = await arenaState(
+      participant,
+      fixture.editionId,
+      "participant",
+    );
+    expect(pending).toMatchObject({ myXpTotal: 0, myXpAvailable: 0 });
+    expect(pending.awards).toContainEqual(
+      expect.objectContaining({ id: awardId, status: "PENDING" }),
+    );
+
+    await expectFailure(
+      operator,
+      fixture.editionId,
+      "arena.award.release",
+      { awardId },
+      [403],
+    );
+    const released = await action(
+      fixture.admin,
+      fixture.editionId,
+      "arena.award.release",
+      { awardId },
+    );
+    expect(released).toMatchObject({
+      xpDelta: 125,
+      xpTotalBefore: 0,
+      xpTotalAfter: 125,
+      xpAvailableBefore: 0,
+      xpAvailableAfter: 125,
+    });
+    const repeated = await action(
+      fixture.admin,
+      fixture.editionId,
+      "arena.award.release",
+      { awardId },
+    );
+    expect(repeated.alreadyReleased).toBe(true);
+
+    const earned = await arenaState(
+      participant,
+      fixture.editionId,
+      "participant",
+    );
+    expect(earned).toMatchObject({ myXpTotal: 125, myXpAvailable: 125 });
+    expect(earned.pendingRevealAwards).toHaveLength(1);
+    expect(JSON.stringify(earned.ranking)).not.toContain(
+      fixture.participants[0].ra,
+    );
+    await action(participant, fixture.editionId, "arena.award.seen", {
+      awardId,
+    });
+    expect(
+      (
+        await arenaState(participant, fixture.editionId, "participant")
+      ).pendingRevealAwards,
+    ).toHaveLength(0);
+
+    const teamChallengeId = await save(
+      fixture.admin,
+      fixture.editionId,
+      "arenaChallenge",
+      {
+        title: "Equipe Atômica QA DEV",
+        xpReward: 50,
+        mode: "TEAM",
+        minTeamSize: 2,
+        maxTeamSize: 3,
+        active: true,
+      },
+    );
+    await expectFailure(
+      operator,
+      fixture.editionId,
+      "arena.challenge.completeTeam",
+      {
+        challengeId: teamChallengeId,
+        ras: [fixture.participants[1].ra, "RA-INEXISTENTE-QA"],
+      },
+      [404],
+    );
+    const adminArena = await arenaState(
+      fixture.admin,
+      fixture.editionId,
+      "admin",
+    );
+    expect(
+      adminArena.completions.filter(
+        (item: { challengeId: string }) =>
+          item.challengeId === teamChallengeId,
+      ),
+    ).toHaveLength(0);
+
+    const rewardId = await save(
+      fixture.admin,
+      fixture.editionId,
+      "reward",
+      {
+        name: "Brinde XP QA DEV",
+        description: "Reserva transacional de teste.",
+        total: 1,
+        active: true,
+        redemptionMode: "XP_STORE",
+        xpCost: 100,
+        maxPerParticipant: 1,
+      },
+    );
+    const purchased = await action(
+      participant,
+      fixture.editionId,
+      "reward.purchase",
+      { rewardId },
+    );
+    expect(
+      await arenaState(participant, fixture.editionId, "participant"),
+    ).toMatchObject({ myXpTotal: 125, myXpAvailable: 25 });
+    await action(
+      participant,
+      fixture.editionId,
+      "reward.purchase.cancel",
+      { reservationId: (purchased.reservation as { id: string }).id },
+    );
+    expect(
+      await arenaState(participant, fixture.editionId, "participant"),
+    ).toMatchObject({ myXpTotal: 125, myXpAvailable: 125 });
+
+    await action(
+      operator,
+      fixture.editionId,
+      "arena.challenge.revoke",
+      { completionId, reason: "Resultado revogado em teste" },
+    );
+    expect(
+      await arenaState(participant, fixture.editionId, "participant"),
+    ).toMatchObject({ myXpTotal: 0, myXpAvailable: 0 });
+  } finally {
+    await finish(fixture);
+  }
+});
+
+test("@mobile participante entra e navega na programação, Farma Arena e passaporte", async ({
   page,
 }) => {
   const fixture = await makeFixture();
@@ -1009,7 +1216,19 @@ test("@mobile participante entra pelo formulário e navega na programação e no
     await page.getByRole("link", { name: "Programação", exact: true }).click();
     await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await page.getByRole("link", { name: "Passaporte", exact: true }).click();
+    await page.getByRole("link", { name: "Farma Arena", exact: true }).click();
+    await expect(page).toHaveURL(/\/app\/arena$/);
+    await expect(
+      page.getByRole("heading", {
+        name: "Desafios que transformam conhecimento em conquista.",
+      }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    // O badge do Next Dev ocupa o primeiro item da barra em viewport móvel.
+    // As demais rotas da barra já foram exercitadas acima; seguimos para a
+    // página inicial diretamente para validar o atalho do passaporte.
+    await page.goto("/app");
+    await page.getByRole("link", { name: "Abrir meu passaporte" }).click();
     await expect(page).toHaveURL(/\/app\/passaporte$/);
     await expect(
       page.getByText(fixture.participants[0].ra, { exact: false }).first(),
@@ -1035,7 +1254,7 @@ test("@desktop administração entra e consulta participantes da edição seleci
   const fixture = await makeFixture();
   try {
     await page.goto("/login/admin");
-    await page.getByLabel("E-mail", { exact: true }).fill(adminEmail);
+    await page.getByLabel("Login ou e-mail", { exact: true }).fill(adminEmail);
     await page.getByLabel("Senha", { exact: true }).fill(adminPassword);
     await page.getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page).toHaveURL(/\/admin$/);

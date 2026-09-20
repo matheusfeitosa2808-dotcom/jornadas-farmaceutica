@@ -30,6 +30,11 @@ import LoadingScreen from "./loading-screen";
 import FarmaArenaStamp from "./farma-arena-stamp";
 import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
 import {
+  ArenaAwardRevealQueue,
+  ArenaRouter,
+  ArenaTransitionLink,
+} from "@/components/arena";
+import {
   ActivityMeta,
   Avatar,
   Badge,
@@ -48,14 +53,14 @@ const navigation = [
     icon: "/assets/navigation/nav-programacao.png",
   },
   {
-    path: "passaporte",
-    label: "Passaporte",
-    icon: "/assets/navigation/nav-passaporte.png",
+    path: "arena",
+    label: "Farma Arena",
+    icon: "/assets/navigation/nav-farma-arena.png",
   },
   {
-    path: "brindes",
-    label: "Brindes",
-    icon: "/assets/navigation/nav-brindes.png",
+    path: "ranking",
+    label: "Ranking",
+    icon: "/assets/navigation/nav-ranking.png",
   },
   {
     path: "perfil",
@@ -109,9 +114,11 @@ function isLive(data: any, activity: any) {
 export default function ParticipantApp({
   section,
   id,
+  detailId,
 }: {
   section: string;
   id?: string;
+  detailId?: string;
 }) {
   const { data, loading, error, refresh } = useJornadas();
   if (loading && !data) return <LoadingScreen />;
@@ -173,7 +180,9 @@ export default function ParticipantApp({
           className="participant-content page-enter"
           key={section + id}
         >
-          <ParticipantMasthead section={section} compact={Boolean(id)} />
+          {!["arena", "ranking"].includes(section) && (
+            <ParticipantMasthead section={section} compact={Boolean(id)} />
+          )}
           {section === "" ? (
             <ParticipantHome person={person} />
           ) : section === "programacao" ? (
@@ -194,6 +203,10 @@ export default function ParticipantApp({
             <Notifications />
           ) : section === "certificados" ? (
             <Certificates />
+          ) : section === "arena" ? (
+            <ArenaRouter page={id || "home"} id={detailId} />
+          ) : section === "ranking" ? (
+            <ArenaRouter page="ranking" />
           ) : (
             <Empty title="Página não encontrada">
               <Link href="/app">Voltar ao início</Link>
@@ -204,21 +217,25 @@ export default function ParticipantApp({
           {data.edition?.name} <span>·</span> Faculdade Cathedral
         </footer>
       </div>
+      <ArenaAwardRevealQueue />
       <nav className="bottom-nav" aria-label="Navegação principal">
-        {navigation.map(({ path, label, icon }) => (
-          <Link
-            key={path}
-            href={`/app${path ? "/" + path : ""}`}
-            aria-current={section === path ? "page" : undefined}
-            className={section === path ? "selected" : ""}
-          >
-            <span className="nav-icon-frame" aria-hidden="true">
-              <img className="nav-stamp-icon" src={icon} alt="" />
-            </span>
-            <span>{label}</span>
-            {section === path && <i />}
-          </Link>
-        ))}
+        {navigation.map(({ path, label, icon }) => {
+          const NavLink = path === "arena" ? ArenaTransitionLink : Link;
+          return (
+            <NavLink
+              key={path}
+              href={`/app${path ? "/" + path : ""}`}
+              aria-current={section === path ? "page" : undefined}
+              className={section === path ? "selected" : ""}
+            >
+              <span className="nav-icon-frame" aria-hidden="true">
+                <img className="nav-stamp-icon" src={icon} alt="" />
+              </span>
+              <span>{label}</span>
+              {section === path && <i />}
+            </NavLink>
+          );
+        })}
       </nav>
     </div>
   );
@@ -408,6 +425,17 @@ function ParticipantHome({ person }: { person: any }) {
           </Link>
         </section>
       </div>
+      <section className="home-arena-feature">
+        <div className="home-arena-feature__copy">
+          <span className="eyebrow">UMA NOVA DISPUTA COMEÇA AQUI</span>
+          <h2>Entre na Farma Arena</h2>
+          <p>Supere desafios, conquiste XP e avance no ranking da Jornada.</p>
+          <ArenaTransitionLink href="/app/arena" className="button">
+            Entrar na Arena <ArrowRight size={17} />
+          </ArenaTransitionLink>
+        </div>
+        <FarmaArenaStamp className="home-arena-feature__stamp" />
+      </section>
       <div className="home-stat-grid">
         <Link className="home-stat card" href="/app/inscricoes">
           <span className="shortcut-icon">
@@ -1631,9 +1659,7 @@ function Certificates() {
                   {c.workload} horas · <Badge status={c.status} />
                 </p>
                 {c.code && (
-                  <span className="fine-print">
-                    Validação: {c.code}
-                  </span>
+                  <span className="fine-print">Validação: {c.code}</span>
                 )}
               </div>
               {["RELEASED", "GENERATED"].includes(c.status) && (

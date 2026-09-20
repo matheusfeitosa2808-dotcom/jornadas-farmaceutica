@@ -90,6 +90,27 @@ export function Provider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  // Atualizações sob demanda: o servidor avisa por SSE quando algo muda.
+  // Não existe polling periódico; ao perder a conexão o EventSource reconecta.
+  useEffect(() => {
+    if (isLogin || scope === "public" || !data?.actor?.id) return;
+    const activeEditionId = data?.edition?.id || editionId;
+    if (!activeEditionId) return;
+    const source = new EventSource(
+      `/api/events?scope=${scope}&editionId=${encodeURIComponent(activeEditionId)}`,
+    );
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const update = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void refresh(), 320);
+    };
+    source.addEventListener("update", update);
+    return () => {
+      if (timer) clearTimeout(timer);
+      source.close();
+    };
+  }, [data?.actor?.id, data?.edition?.id, editionId, isLogin, refresh, scope]);
+
   const action = async (actionName: string, payload: any = {}) => {
     try {
       const currentEditionId = data?.edition?.id || editionId;

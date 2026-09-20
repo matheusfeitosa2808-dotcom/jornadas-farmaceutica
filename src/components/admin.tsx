@@ -20,6 +20,7 @@ import {
   Download,
   ExternalLink,
   FileSpreadsheet,
+  Flame,
   Gift,
   Home,
   Layers3,
@@ -51,6 +52,7 @@ import {
 import { readApiResponse } from "@/lib/api-response";
 import "./admin.css";
 import "./admin-motion.css";
+import { FarmaArenaAdmin } from "@/components/arena/admin";
 
 type Row = Record<string, any>;
 type Option = { value: string; label: string };
@@ -973,6 +975,31 @@ const configs: Record<string, EntityConfig> = {
         type: "datetime-local",
         wide: true,
         help: "Personalize o dia e o horário em que a equipe poderá entregar este brinde.",
+      },
+      {
+        key: "redemptionMode",
+        label: "Forma de resgate",
+        type: "select",
+        default: "ELIGIBILITY",
+        options: [
+          { value: "ELIGIBILITY", label: "Elegibilidade tradicional" },
+          { value: "XP_STORE", label: "Loja XP da Farma Arena" },
+        ],
+      },
+      {
+        key: "xpCost",
+        label: "Custo em XP",
+        type: "number",
+        min: 0,
+        default: 0,
+        help: "Usado somente nos itens da Loja XP.",
+      },
+      {
+        key: "maxPerParticipant",
+        label: "Limite por participante",
+        type: "number",
+        min: 1,
+        default: 1,
       },
       { key: "exclusiveGroup", label: "Grupo de exclusividade (opcional)" },
       { key: "active", label: "Brinde ativo", type: "checkbox", default: true },
@@ -1953,6 +1980,7 @@ const menu = [
   ["operacao", "Operação", ClipboardCheck],
   ["presencas", "Presenças", CheckCheck],
   ["passaportes", "Passaportes", BookOpen],
+  ["farma-arena", "Farma Arena", Flame],
   ["brindes", "Loja / Brindes", Gift],
   ["estoque", "Estoque", Package],
   ["elegibilidade", "Elegibilidade", Sparkles],
@@ -1980,6 +2008,7 @@ function permitted(data: Row, section: string) {
     operacao: "attendance.register",
     presencas: "attendance.register",
     passaportes: "participants.read",
+    "farma-arena": "arena.read",
     brindes: "rewards.manage",
     estoque: "rewards.manage",
     elegibilidade: "rewards.manage",
@@ -3237,6 +3266,7 @@ export default function AdminApp({
   else if (configs[section]) content = <EntityManager section={section} />;
   else if (section === "importacoes") content = <ImportPage />;
   else if (section === "operacao") content = <Operation />;
+  else if (section === "farma-arena") content = <FarmaArenaAdmin />;
   else if (
     [
       "inscricoes",

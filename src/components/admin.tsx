@@ -2847,9 +2847,25 @@ function Certificates() {
     <>
       <PageTitle
         title="Certificados"
-        description="Elegibilidade, emissão, reemissão e validação individual."
+        description="Emissão automática por palestra, validação e controle individual."
       />
       <Panel title="Elegíveis para emissão">
+        {candidates.length > 0 && (
+          <div className="a-row-actions" style={{ marginBottom: 14 }}>
+            <RunButton
+              run={async () => {
+                for (const candidate of candidates) {
+                  await action("certificate.issue", {
+                    participantId: candidate.participantId,
+                    activityId: candidate.activityId,
+                  });
+                }
+              }}
+            >
+              Emitir todos ({candidates.length})
+            </RunButton>
+          </div>
+        )}
         <Table
           data={data}
           rows={candidates}
@@ -2941,8 +2957,9 @@ function Certificates() {
         />
       </Panel>
       <p className="a-help">
-        Certificados são liberados somente após o fim da edição. Em palestras,
-        check-in e check-out são obrigatórios.
+        Novos certificados são emitidos automaticamente ao concluir a presença.
+        Em palestras com saída obrigatória, o certificado é liberado após o
+        check-out.
       </p>
     </>
   );

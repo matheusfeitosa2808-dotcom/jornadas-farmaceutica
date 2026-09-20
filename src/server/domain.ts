@@ -647,6 +647,18 @@ export async function checkAttendance(
       where: { participantId: participant.id, activityId, status: "ACTIVE" },
       data: { status: "COMPLETED" },
     });
+  if (
+    attendance.status === "COMPLETED" &&
+    activity.category.generatesCertificate
+  )
+    await issueCertificate(
+      tx,
+      editionId,
+      participant.id,
+      activityId,
+      actor,
+      now,
+    );
   await audit(
     tx,
     actor,
@@ -800,11 +812,6 @@ export async function issueCertificate(
   now = new Date(),
 ) {
   const activity = await activityOf(tx, editionId, activityId);
-  ensure(
-    now > activity.edition.endAt,
-    "Os certificados serão liberados após o fim do evento.",
-    "EVENT_NOT_FINISHED",
-  );
   ensure(
     activity.category.generatesCertificate,
     "Esta atividade não gera certificado.",

@@ -1601,7 +1601,6 @@ function Notifications() {
 }
 function Certificates() {
   const { data } = useJornadas();
-  const ended = new Date(data.serverNow) > new Date(data.edition.endAt);
   return (
     <>
       <PageHeading
@@ -1609,16 +1608,13 @@ function Certificates() {
         title="Meus certificados"
         description="O registro de cada experiência de aprendizado."
       />
-      {!ended && (
-        <div className="info-note">
-          <Clock3 size={21} />
-          <p>
-            Os certificados serão liberados após o encerramento da edição, em{" "}
-            {formatDate(data.edition.endAt, data.edition.timezone, true)}.
-            Palestras exigem check-in e check-out válidos.
-          </p>
-        </div>
-      )}
+      <div className="info-note">
+        <Clock3 size={21} />
+        <p>
+          Cada certificado é liberado após a conclusão da presença na palestra.
+          Quando houver saída obrigatória, faça também o check-out.
+        </p>
+      </div>
       {data.certificates?.length ? (
         <div className="stack">
           {data.certificates.map((c: any) => (
@@ -1634,13 +1630,13 @@ function Certificates() {
                 <p>
                   {c.workload} horas · <Badge status={c.status} />
                 </p>
-                {c.validationCode && (
+                {c.code && (
                   <span className="fine-print">
-                    Validação: {c.validationCode}
+                    Validação: {c.code}
                   </span>
                 )}
               </div>
-              {ended && ["RELEASED", "GENERATED"].includes(c.status) && (
+              {["RELEASED", "GENERATED"].includes(c.status) && (
                 <a
                   className="button secondary"
                   href={`/api/certificates/${c.id}`}
@@ -1656,7 +1652,7 @@ function Certificates() {
         </div>
       ) : (
         <Empty title="Suas conquistas serão reconhecidas aqui.">
-          A organização disponibilizará os certificados elegíveis após o evento.
+          Seus certificados aparecerão aqui após a presença ser concluída.
         </Empty>
       )}
     </>

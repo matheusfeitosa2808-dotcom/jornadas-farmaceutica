@@ -4997,7 +4997,7 @@ img {
   }
 }
 
-/* Carimbo especial da Farma Arena: medalhão com brilho dourado discreto. */
+/* Carimbo especial da Farma Arena: halo de arena em ouro, vinho e luz quente. */
 .farma-arena-badge {
   position: relative;
   display: inline-grid;
@@ -5010,13 +5010,50 @@ img {
   content: "";
   position: absolute;
   z-index: 0;
-  inset: 7%;
+  inset: 1%;
   border-radius: 50%;
   pointer-events: none;
-  background: rgba(249, 245, 235, 0.72);
+  background: radial-gradient(
+    circle,
+    rgba(255, 252, 237, 0.98) 0 43%,
+    rgba(239, 202, 105, 0.42) 59%,
+    rgba(159, 39, 31, 0.2) 69%,
+    transparent 76%
+  );
   box-shadow:
-    0 0 10px rgba(209, 166, 59, 0.5),
-    0 0 20px rgba(169, 51, 37, 0.2);
+    0 0 0 1px rgba(206, 157, 38, 0.25),
+    0 0 12px rgba(245, 201, 83, 0.68),
+    0 0 26px rgba(169, 51, 37, 0.28),
+    0 0 42px rgba(222, 151, 40, 0.2);
+  opacity: 0.86;
+  transform: scale(0.95);
+  will-change: transform, opacity;
+  animation: farma-arena-aura 2.7s cubic-bezier(0.4, 0, 0.2, 1) infinite
+    alternate;
+}
+
+.farma-arena-badge::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: -7%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 18deg,
+    transparent 0 12%,
+    rgba(255, 226, 137, 0.42) 17%,
+    transparent 23% 47%,
+    rgba(157, 35, 29, 0.23) 53%,
+    transparent 60% 79%,
+    rgba(255, 241, 188, 0.38) 85%,
+    transparent 91%
+  );
+  filter: blur(2px);
+  opacity: 0.54;
+  transform: rotate(-7deg) scale(0.96);
+  will-change: transform, opacity;
+  animation: farma-arena-halo 4.8s ease-in-out infinite alternate;
 }
 .farma-arena-badge > .farma-arena-badge__art {
   position: relative;
@@ -5026,6 +5063,21 @@ img {
   height: 100%;
   object-fit: contain;
   transform: translateZ(0);
+  filter: drop-shadow(0 2px 3px rgba(72, 29, 17, 0.22));
+}
+
+@keyframes farma-arena-aura {
+  to {
+    opacity: 1;
+    transform: scale(1.045);
+  }
+}
+
+@keyframes farma-arena-halo {
+  to {
+    opacity: 0.82;
+    transform: rotate(7deg) scale(1.035);
+  }
 }
 
 .detail-hero--farma-arena {
@@ -5076,10 +5128,19 @@ img {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .farma-arena-badge::before,
+  .farma-arena-badge::after {
+    animation: none;
+  }
+
   .farma-arena-badge::before {
-    box-shadow:
-      0 0 10px rgba(209, 166, 59, 0.5),
-      0 0 20px rgba(169, 51, 37, 0.2);
+    opacity: 0.96;
+    transform: none;
+  }
+
+  .farma-arena-badge::after {
+    opacity: 0.68;
+    transform: none;
   }
 }
 

@@ -5072,6 +5072,7 @@ img {
 /* Mantém o brilho ancorado ao selo quando o cartão troca para CSS Grid. */
 .farma-arena-badge.activity-stamp {
   position: relative;
+  inset: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

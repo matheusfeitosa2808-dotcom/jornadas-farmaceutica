@@ -5146,7 +5146,7 @@ img {
   }
 }
 
-/* Carimbo especial da Farma Arena: halo de arena em ouro, vinho e luz quente. */
+/* Carimbo especial da Farma Arena: luz difusa, sem aro artificial ao redor da arte. */
 .farma-arena-badge {
   position: relative;
   display: inline-grid;
@@ -5159,50 +5159,48 @@ img {
   content: "";
   position: absolute;
   z-index: 0;
-  inset: 1%;
+  inset: -15%;
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
     circle,
-    rgba(255, 252, 237, 0.98) 0 43%,
-    rgba(239, 202, 105, 0.42) 59%,
-    rgba(159, 39, 31, 0.2) 69%,
-    transparent 76%
+    rgba(255, 233, 166, 0.34) 0,
+    rgba(224, 151, 70, 0.22) 32%,
+    rgba(143, 34, 35, 0.11) 54%,
+    transparent 72%
   );
-  box-shadow:
-    0 0 0 1px rgba(206, 157, 38, 0.25),
-    0 0 12px rgba(245, 201, 83, 0.68),
-    0 0 26px rgba(169, 51, 37, 0.28),
-    0 0 42px rgba(222, 151, 40, 0.2);
-  opacity: 0.86;
-  transform: scale(0.95);
+  filter: blur(10px);
+  opacity: 0.66;
+  transform: translateZ(0) scale(0.92);
   will-change: transform, opacity;
-  animation: farma-arena-aura 2.7s cubic-bezier(0.4, 0, 0.2, 1) infinite
-    alternate;
+  animation: farma-arena-aura 3.6s cubic-bezier(0.77, 0, 0.175, 1)
+    infinite alternate;
 }
 
 .farma-arena-badge::after {
   content: "";
   position: absolute;
   z-index: 1;
-  inset: -7%;
+  inset: -12%;
   border-radius: 50%;
   pointer-events: none;
-  background: conic-gradient(
-    from 18deg,
-    transparent 0 12%,
-    rgba(255, 226, 137, 0.42) 17%,
-    transparent 23% 47%,
-    rgba(157, 35, 29, 0.23) 53%,
-    transparent 60% 79%,
-    rgba(255, 241, 188, 0.38) 85%,
-    transparent 91%
-  );
-  filter: blur(2px);
-  opacity: 0.54;
-  transform: rotate(-7deg) scale(0.96);
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      rgba(255, 242, 196, 0.34),
+      transparent 29%
+    ),
+    radial-gradient(
+      circle at 68% 70%,
+      rgba(195, 73, 46, 0.2),
+      transparent 34%
+    );
+  filter: blur(9px);
+  opacity: 0.3;
+  transform: translate3d(-2%, -1%, 0) scale(0.96);
   will-change: transform, opacity;
-  animation: farma-arena-halo 4.8s ease-in-out infinite alternate;
+  animation: farma-arena-halo 5.4s cubic-bezier(0.77, 0, 0.175, 1)
+    infinite alternate;
 }
 .farma-arena-badge > .farma-arena-badge__art {
   position: relative;
@@ -5212,20 +5210,22 @@ img {
   height: 100%;
   object-fit: contain;
   transform: translateZ(0);
-  filter: drop-shadow(0 2px 3px rgba(72, 29, 17, 0.22));
+  filter:
+    drop-shadow(0 3px 5px rgba(72, 29, 17, 0.18))
+    drop-shadow(0 0 8px rgba(239, 195, 94, 0.16));
 }
 
 @keyframes farma-arena-aura {
   to {
-    opacity: 1;
-    transform: scale(1.045);
+    opacity: 0.88;
+    transform: translateZ(0) scale(1.02);
   }
 }
 
 @keyframes farma-arena-halo {
   to {
-    opacity: 0.82;
-    transform: rotate(7deg) scale(1.035);
+    opacity: 0.48;
+    transform: translate3d(2%, 1%, 0) scale(1.04);
   }
 }
 
@@ -5283,13 +5283,13 @@ img {
   }
 
   .farma-arena-badge::before {
-    opacity: 0.96;
-    transform: none;
+    opacity: 0.72;
+    transform: translateZ(0);
   }
 
   .farma-arena-badge::after {
-    opacity: 0.68;
-    transform: none;
+    opacity: 0.34;
+    transform: translateZ(0);
   }
 }
 

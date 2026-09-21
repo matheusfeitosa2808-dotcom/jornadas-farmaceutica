@@ -243,8 +243,8 @@ export default function ParticipantApp({
               <span className="nav-icon-frame" aria-hidden="true">
                 <img className="nav-stamp-icon" src={icon} alt="" />
               </span>
-              <span>{label}</span>
-              {section === path && <i />}
+              <span className="nav-item-label">{label}</span>
+              {section === path && <i aria-hidden="true" />}
             </NavLink>
           );
         })}

@@ -244,7 +244,8 @@
   line-height: 1.25;
 }
 
-.activity-xp-reward .tinted-stamp {
+.activity-xp-reward .tinted-stamp,
+.activity-xp-reward .farma-arena-badge {
   width: 24px;
   height: 24px;
   flex: 0 0 24px;
@@ -253,6 +254,25 @@
 .activity-xp-reward.detail {
   margin-top: 14px;
   color: var(--ink);
+}
+
+:is(.participant-programacao, .participant-inscricoes) .activity-xp-reward {
+  grid-column: 1 / -1;
+  justify-self: start;
+  width: auto;
+  margin-top: 0;
+  padding: 7px 11px;
+  border-color: rgba(180, 137, 49, 0.14);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-xp-reward
+  :is(.tinted-stamp, .farma-arena-badge) {
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
 }
 
 .stamp-xp-value {
@@ -459,6 +479,37 @@
   letter-spacing: 0.005em;
 }
 
+.nav-item-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bottom-nav a i {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* A arte da Arena é mais densa; uma escala própria evita recorte no mobile. */
+.bottom-nav a:nth-child(4) .nav-icon-frame {
+  width: 44px;
+  height: 44px;
+}
+
+.bottom-nav a:nth-child(4) .nav-stamp-icon {
+  width: 38px;
+  height: 38px;
+  object-position: center;
+}
+
+.bottom-nav a.selected:nth-child(4) .nav-stamp-icon {
+  transform: scale(1.04);
+}
+
 @media (max-width: 600px) {
   .participant-passaporte .passport-progress p {
     margin-top: 5px;
@@ -492,6 +543,16 @@
   .nav-stamp-icon {
     width: 38px;
     height: 38px;
+  }
+
+  .bottom-nav a:nth-child(4) .nav-icon-frame {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bottom-nav a:nth-child(4) .nav-stamp-icon {
+    width: 36px;
+    height: 36px;
   }
 
   .page-heading {

@@ -39,13 +39,17 @@ import {
   revokeArenaCompletion,
   scheduleArenaAward,
 } from "@/server/arena";
+import { rewardRedemptionMode } from "@/lib/rewards";
 const D = (v: any) => (v ? new Date(v) : null),
   N = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d),
   B = (v: any, d = false) => (v === undefined ? d : Boolean(v));
 const stampColor = (value: any, fallback: string | null = null) => {
   if (!value) return fallback;
   const color = String(value).trim();
-  ensure(/^#[0-9a-f]{6}$/i.test(color), "Informe uma cor válida para o carimbo.");
+  ensure(
+    /^#[0-9a-f]{6}$/i.test(color),
+    "Informe uma cor válida para o carimbo.",
+  );
   return color.toLowerCase();
 };
 async function rewardStock(tx: any, rewardId: string) {
@@ -94,6 +98,7 @@ async function recalc(tx: any, editionId: string, participantIds?: string[]) {
   ]);
   for (const p of people)
     for (const r of rewards) {
+      if (rewardRedemptionMode(r) === "XP_STORE") continue;
       const rule = rules.find((x: any) => x.rewardId === r.id),
         mine = att.filter((x: any) => x.participantId === p.id);
       const eligible =
@@ -114,8 +119,8 @@ async function recalc(tx: any, editionId: string, participantIds?: string[]) {
             (await tx.edition.findUnique({ where: { id: editionId } }))
               .maxCheckins);
       const reason = eligible
-        ? "Requisitos concluídos."
-        : `Complete ${Math.max(0, (rule?.minCheckins || 0) - mine.length)} atividade(s).`;
+        ? "Carimbos necessários conquistados."
+        : `Conquiste mais ${Math.max(0, (rule?.minCheckins || 0) - mine.length)} carimbo(s).`;
       await tx.rewardEligibility.upsert({
         where: {
           rewardId_participantId: { rewardId: r.id, participantId: p.id },
@@ -811,7 +816,7 @@ export async function POST(req: NextRequest) {
             actor,
           );
           await recalc(tx, editionId, [result.participantId]);
-          message = "Presença confirmada e carimbo emitido.";
+          message = "Presença confirmada, carimbo emitido e XP creditado.";
           break;
         case "attendance.checkout":
           result = await checkAttendance(

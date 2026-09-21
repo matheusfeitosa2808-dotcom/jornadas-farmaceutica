@@ -133,6 +133,7 @@
 .home-action,
 .reward-card,
 .profile-ranking-card,
+.store-mode-filter button,
 .filter-chips button,
 .bottom-nav a {
   -webkit-tap-highlight-color: transparent;
@@ -153,6 +154,7 @@
 .home-action:active,
 .reward-card:active,
 .profile-ranking-card:active,
+.store-mode-filter button:active,
 .filter-chips button:active:not(:disabled) {
   transform: scale(0.975);
   transition-duration: var(--motion-press);

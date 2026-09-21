@@ -28,7 +28,7 @@ const tabs = [
   ["liberacao", "Liberar XP", Zap],
   ["ranking", "Ranking", Trophy],
   ["ajustes", "Ajustar XP", Settings2],
-  ["loja", "Loja XP", ShoppingBag],
+  ["loja", "Loja e brindes", ShoppingBag],
 ] as const;
 
 function Input({ label, ...props }: any) {
@@ -798,11 +798,11 @@ function Store({ arena }: any) {
     <section className="arena-admin-panel">
       <div className="arena-admin-title">
         <div>
-          <span>CATÁLOGO XP</span>
-          <h2>Itens da Loja XP</h2>
+          <span>CATÁLOGO UNIFICADO</span>
+          <h2>Loja da Jornada</h2>
           <p>
-            Estoque real e limite individual usam o mesmo controle seguro dos
-            brindes.
+            Brindes por carimbo e itens por XP compartilham o mesmo estoque e a
+            mesma retirada.
           </p>
         </div>
         <Link className="button" href="/admin/brindes">
@@ -813,7 +813,7 @@ function Store({ arena }: any) {
         {arena.rewards.map((x: any) => (
           <article key={x.id}>
             {x.imageUrl && <img src={x.imageUrl} alt="" />}
-            <span>LOJA XP</span>
+            <span>RESGATE COM XP</span>
             <h3>{x.name}</h3>
             <p>{x.description}</p>
             <footer>

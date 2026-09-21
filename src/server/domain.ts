@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { Tx } from "@/server/db";
 import { Actor, DomainError, ensure, requirePermission } from "./security";
+import { STAMP_XP_REWARD } from "@/lib/xp";
 
 export const minute = 60_000;
 export const occupiedStatuses = ["ACTIVE", "COMPLETED"];
@@ -675,7 +676,7 @@ export async function checkAttendance(
     [participant.id],
     operation,
     operation === "CHECK_IN" ? "Presença confirmada!" : "Check-out confirmado",
-    `${activity.title}${operation === "CHECK_IN" && activity.category.generatesStamp ? " · Seu passaporte recebeu um novo carimbo." : ""}`,
+    `${activity.title}${operation === "CHECK_IN" && activity.category.generatesStamp ? ` · Novo carimbo e +${STAMP_XP_REWARD} XP.` : ""}`,
   );
   return attendance;
 }

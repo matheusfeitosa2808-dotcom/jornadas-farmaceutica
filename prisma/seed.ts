@@ -5,6 +5,7 @@ import {
   permissionsList,
   rolePermissions,
 } from "../src/server/security";
+import { STAMP_XP_REWARD } from "../src/lib/xp";
 const db = new PrismaClient();
 async function main() {
   if (process.env.DEV_SEED !== "true")
@@ -400,18 +401,24 @@ async function main() {
           editionId: edition.id,
           name,
           description: guaranteed
-            ? "Uma lembrança básica para celebrar sua participação."
-            : "Um reconhecimento pelas conquistas da sua jornada.",
+            ? "Seu primeiro carimbo libera esta lembrança da Jornada."
+            : "Troque o XP dos seus carimbos por esta lembrança.",
           total,
           order: i,
           confirmationMinutes: 60,
           redemptionStartsAt,
+          redemptionMode: guaranteed ? "ELIGIBILITY" : "XP_STORE",
+          xpCost: guaranteed ? 0 : min * STAMP_XP_REWARD,
         },
       });
     else
       reward = await db.rewardItem.update({
         where: { id: reward.id },
-        data: { redemptionStartsAt },
+        data: {
+          redemptionStartsAt,
+          redemptionMode: guaranteed ? "ELIGIBILITY" : "XP_STORE",
+          xpCost: guaranteed ? 0 : min * STAMP_XP_REWARD,
+        },
       });
     if (!(await db.rewardRule.findFirst({ where: { rewardId: reward.id } })))
       await db.rewardRule.create({

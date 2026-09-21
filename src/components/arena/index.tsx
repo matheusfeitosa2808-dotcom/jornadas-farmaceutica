@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -188,8 +187,7 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
     return <ArenaChallengeDetail arena={state.arena} id={id} />;
   if (page === "desafios") return <ArenaChallenges arena={state.arena} />;
   if (page === "desempenho") return <ArenaPerformance arena={state.arena} />;
-  if (page === "loja")
-    return <ArenaStore arena={state.arena} run={state.run} />;
+  if (page === "loja") return <ArenaStoreRedirect />;
   return <ArenaHome arena={state.arena} />;
 }
 
@@ -235,8 +233,8 @@ function ArenaHome({ arena }: { arena: any }) {
         <Link href="/app/ranking">
           <Trophy /> Ranking <ChevronRight />
         </Link>
-        <Link href="/app/arena/loja">
-          <Gift /> Loja XP <ChevronRight />
+        <Link href="/app/brindes">
+          <Gift /> Loja da Jornada <ChevronRight />
         </Link>
         <Link href="/app/arena/desempenho">
           <Medal /> Desempenho <ChevronRight />
@@ -558,86 +556,12 @@ function ArenaPerformance({ arena }: { arena: any }) {
   );
 }
 
-function ArenaStore({
-  arena,
-  run,
-}: {
-  arena: any;
-  run: (name: string, payload?: any) => Promise<any>;
-}) {
-  const [busy, setBusy] = useState("");
-  const ownReservations = new Set(
-    (arena.reservations || [])
-      .filter((item: any) =>
-        ["RESERVED", "CONFIRMED", "DELIVERED"].includes(item.status),
-      )
-      .map((item: any) => item.rewardId),
-  );
-  return (
-    <div className="arena-surface">
-      <ArenaHeader
-        eyebrow="LOJA XP"
-        title="Troque conquistas por lembranças"
-        description="Seu XP total mantém sua posição. Apenas o saldo disponível é usado no resgate."
-      />
-      <div className="arena-balance">
-        <Zap />
-        <span>Saldo disponível</span>
-        <strong>{arena.myXpAvailable} XP</strong>
-      </div>
-      <div className="arena-store-grid">
-        {(arena.rewards || []).map((reward: any) => {
-          const owned = ownReservations.has(reward.id);
-          const affordable = arena.myXpAvailable >= reward.xpCost;
-          return (
-            <article key={reward.id} className="arena-store-card">
-              {reward.imageUrl ? (
-                <img src={reward.imageUrl} alt={reward.name} />
-              ) : (
-                <span className="arena-store-card__fallback">
-                  <Gift />
-                </span>
-              )}
-              <div>
-                <span className="arena-kicker">LOJA FARMA ARENA</span>
-                <h2>{reward.name}</h2>
-                <p>{reward.description}</p>
-                <div className="arena-store-meta">
-                  <strong>{reward.xpCost} XP</strong>
-                  <span>
-                    {reward.stockAvailable ?? reward.available ?? reward.total}{" "}
-                    disponíveis
-                  </span>
-                </div>
-                <button
-                  disabled={owned || !affordable || busy === reward.id}
-                  onClick={async () => {
-                    setBusy(reward.id);
-                    try {
-                      await run("reward.purchase", { rewardId: reward.id });
-                    } catch {
-                      // O Provider já exibe a mensagem funcional da API.
-                    } finally {
-                      setBusy("");
-                    }
-                  }}
-                >
-                  {owned
-                    ? "Já resgatado"
-                    : busy === reward.id
-                      ? "Reservando…"
-                      : affordable
-                        ? "Resgatar"
-                        : "XP insuficiente"}
-                  <ArrowRight />
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
+function ArenaStoreRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/app/brindes");
+  }, [router]);
+  return <LoadingArena />;
 }
 
 export function ArenaAwardRevealQueue() {

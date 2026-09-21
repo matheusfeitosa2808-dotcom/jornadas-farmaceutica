@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { STAMP_XP_REWARD } from "@/lib/xp";
+import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
 import type { Actor } from "./security";
 import { ensure, requireParticipant, requirePermission } from "./security";
 import { audit, notify } from "./domain";
@@ -60,6 +62,7 @@ export function rankArenaParticipants(
   transactions: any[],
   completions: any[],
   config: any,
+  stamps: any[] = [],
 ) {
   const txByParticipant = new Map<string, any[]>();
   for (const item of transactions) {
@@ -73,19 +76,34 @@ export function rankArenaParticipants(
     set.add(item.challengeId);
     challengesByParticipant.set(item.participantId, set);
   }
+  const stampsByParticipant = new Map<string, any[]>();
+  for (const stamp of stamps) {
+    const list = stampsByParticipant.get(stamp.participantId) || [];
+    list.push(stamp);
+    stampsByParticipant.set(stamp.participantId, list);
+  }
   const rows = participants.map((participant: any) => {
     const mine = txByParticipant.get(participant.id) || [];
-    const xpTotal = mine.reduce(
-      (sum: number, item: any) => sum + Number(item.rankingDelta || 0),
-      0,
-    );
-    const xpAvailable = mine.reduce(
-      (sum: number, item: any) => sum + Number(item.balanceDelta || 0),
-      0,
-    );
+    const myStamps = stampsByParticipant.get(participant.id) || [];
+    const stampXp = myStamps.length * STAMP_XP_REWARD;
+    const xpTotal =
+      stampXp +
+      mine.reduce(
+        (sum: number, item: any) => sum + Number(item.rankingDelta || 0),
+        0,
+      );
+    const xpAvailable =
+      stampXp +
+      mine.reduce(
+        (sum: number, item: any) => sum + Number(item.balanceDelta || 0),
+        0,
+      );
     const rankingMoments = mine
       .filter((item: any) => Number(item.rankingDelta) !== 0)
-      .map((item: any) => asDate(item.createdAt)?.getTime() || 0);
+      .map((item: any) => asDate(item.createdAt)?.getTime() || 0)
+      .concat(
+        myStamps.map((stamp: any) => asDate(stamp.issuedAt)?.getTime() || 0),
+      );
     return {
       participantId: participant.id,
       displayName: rankingDisplayName(participant.name),
@@ -121,13 +139,21 @@ export function rankArenaParticipants(
 }
 
 export async function buildArenaRanking(tx: any, editionId: string) {
-  const [config, participants, transactions, completions] = await Promise.all([
-    arenaConfig(tx, editionId),
-    tx.participant.findMany({ where: { editionId, active: true } }),
-    tx.xpTransaction.findMany({ where: { editionId } }),
-    tx.arenaCompletion.findMany({ where: { editionId, status: "VALID" } }),
-  ]);
-  return rankArenaParticipants(participants, transactions, completions, config);
+  const [config, participants, transactions, completions, stamps] =
+    await Promise.all([
+      arenaConfig(tx, editionId),
+      tx.participant.findMany({ where: { editionId, active: true } }),
+      tx.xpTransaction.findMany({ where: { editionId } }),
+      tx.arenaCompletion.findMany({ where: { editionId, status: "VALID" } }),
+      tx.passportStamp.findMany({ where: { editionId, status: "VALID" } }),
+    ]);
+  return rankArenaParticipants(
+    participants,
+    transactions,
+    completions,
+    config,
+    stamps,
+  );
 }
 
 export async function arenaPayload(
@@ -148,36 +174,60 @@ export async function arenaPayload(
     orderBy: [{ order: "asc" }, { title: "asc" }],
   });
   const ownId = actor.type === "participant" ? actor.id : undefined;
-  const [completions, awards, transactions, rewards, reservations, operators] =
-    await Promise.all([
-      tx.arenaCompletion.findMany({
-        where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-        include: includeAdmin ? { participant: true } : undefined,
-        orderBy: { completedAt: "desc" },
-      }),
-      tx.arenaXpAward.findMany({
-        where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-        include: includeAdmin ? { participant: true } : undefined,
-        orderBy: { createdAt: "desc" },
-      }),
-      tx.xpTransaction.findMany({
-        where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-        orderBy: { createdAt: "desc" },
-      }),
-      tx.rewardItem.findMany({
+  const [
+    completions,
+    awards,
+    transactions,
+    stamps,
+    rewards,
+    reservations,
+    operators,
+  ] = await Promise.all([
+    tx.arenaCompletion.findMany({
+      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+      include: includeAdmin ? { participant: true } : undefined,
+      orderBy: { completedAt: "desc" },
+    }),
+    tx.arenaXpAward.findMany({
+      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+      include: includeAdmin ? { participant: true } : undefined,
+      orderBy: { createdAt: "desc" },
+    }),
+    tx.xpTransaction.findMany({
+      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+      orderBy: { createdAt: "desc" },
+    }),
+    tx.passportStamp.findMany({
+      where: {
+        editionId,
+        status: "VALID",
+        ...(ownId ? { participantId: ownId } : {}),
+      },
+      orderBy: { issuedAt: "desc" },
+    }),
+    tx.rewardItem
+      .findMany({
         where: {
           editionId,
-          redemptionMode: "XP_STORE",
           ...(includeAdmin ? {} : { active: true }),
         },
         orderBy: { order: "asc" },
-      }),
-      tx.rewardReservation.findMany({
-        where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-        orderBy: { createdAt: "desc" },
-      }),
-      includeAdmin ? tx.adminUser.findMany({}) : Promise.resolve([]),
-    ]);
+      })
+      .then((items: any[]) =>
+        items
+          .filter((reward: any) => rewardRedemptionMode(reward) === "XP_STORE")
+          .map((reward: any) => ({
+            ...reward,
+            redemptionMode: "XP_STORE",
+            xpCost: rewardXpCost(reward),
+          })),
+      ),
+    tx.rewardReservation.findMany({
+      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+      orderBy: { createdAt: "desc" },
+    }),
+    includeAdmin ? tx.adminUser.findMany({}) : Promise.resolve([]),
+  ]);
   const rewardsWithAvailability = await Promise.all(
     rewards.map(async (reward: any) => ({
       ...reward,
@@ -212,6 +262,27 @@ export async function arenaPayload(
         };
       })
     : awards;
+  const ledger = [
+    ...transactions,
+    ...stamps.map((stamp: any) => ({
+      id: `stamp-xp-${stamp.id}`,
+      editionId,
+      participantId: stamp.participantId,
+      type: "EARN",
+      balanceDelta: STAMP_XP_REWARD,
+      rankingDelta: STAMP_XP_REWARD,
+      sourceType: "PASSPORT_STAMP",
+      sourceId: stamp.id,
+      description: "Carimbo conquistado",
+      idempotencyKey: `stamp-xp-${stamp.id}`,
+      createdBy: stamp.issuedBy,
+      createdAt: stamp.issuedAt,
+    })),
+  ].sort(
+    (a: any, b: any) =>
+      (asDate(b.createdAt)?.getTime() || 0) -
+      (asDate(a.createdAt)?.getTime() || 0),
+  );
   return {
     config,
     challenges,
@@ -223,7 +294,7 @@ export async function arenaPayload(
     completions,
     awards: awardsWithAdminContext,
     pendingRevealAwards,
-    transactions,
+    transactions: ledger,
     rewards: rewardsWithAvailability,
     reservations,
   };
@@ -729,15 +800,21 @@ export async function purchaseXpReward(
   actor: Actor,
 ) {
   requireParticipant(actor, editionId);
-  const reward = await tx.rewardItem.findFirst({
+  const rewardRecord = await tx.rewardItem.findFirst({
     where: {
       id: rewardId,
       editionId,
       active: true,
-      redemptionMode: "XP_STORE",
     },
   });
+  const reward = rewardRecord
+    ? { ...rewardRecord, xpCost: rewardXpCost(rewardRecord) }
+    : null;
   ensure(reward, "Item indisponível na Loja XP.", "NOT_FOUND", 404);
+  ensure(
+    rewardRedemptionMode(reward) === "XP_STORE",
+    "Este brinde é liberado por carimbo.",
+  );
   ensure(reward.xpCost > 0, "Este item ainda não possui custo em XP.");
   ensure(
     !reward.redemptionStartsAt ||
@@ -835,9 +912,13 @@ export async function cancelXpPurchase(
   });
   ensure(reservation, "Reserva cancelável não encontrada.", "NOT_FOUND", 404);
   const reward = await tx.rewardItem.findFirst({
-    where: { id: reservation.rewardId, redemptionMode: "XP_STORE" },
+    where: { id: reservation.rewardId },
   });
   ensure(reward, "Este resgate não pertence à Loja XP.");
+  ensure(
+    rewardRedemptionMode(reward) === "XP_STORE",
+    "Este resgate não pertence à Loja XP.",
+  );
   if (actor.type === "admin") requirePermission(actor, "rewards.manage");
   const spend = await tx.xpTransaction.findFirst({
     where: {

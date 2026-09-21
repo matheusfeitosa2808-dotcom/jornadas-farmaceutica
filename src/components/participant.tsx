@@ -32,6 +32,8 @@ import LoadingScreen from "./loading-screen";
 import FarmaArenaStamp from "./farma-arena-stamp";
 import { StampArtwork, resolvedStampColor } from "./stamp-artwork";
 import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
+import { STAMP_XP_REWARD } from "@/lib/xp";
+import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
 import {
   ArenaAwardRevealQueue,
   ArenaRouter,
@@ -266,7 +268,7 @@ function ParticipantMasthead({
       "Seus encontros confirmados e em espera.",
     ],
     passaporte: ["Passaporte Digital", "Conhecimento  ·  Conexões  ·  Futuro"],
-    brindes: ["Brindes", "Acompanhe sua elegibilidade e sua retirada."],
+    brindes: ["Loja da Jornada", "Carimbos, XP e lembranças em um só lugar."],
     perfil: ["Perfil", "Ciência hoje. Saúde sempre."],
     notificacoes: ["Notificações", "Avisos importantes da organização."],
     certificados: ["Certificados", "O registro das suas conquistas."],
@@ -528,8 +530,8 @@ function ParticipantHome({ person }: { person: any }) {
             <Gift />
           </BrandIcon>
           <span>
-            <strong>Brindes elegíveis</strong>
-            <small>Acompanhar benefícios</small>
+            <strong>Loja da Jornada</strong>
+            <small>Brindes por carimbos ou XP</small>
           </span>
           <ChevronRight />
         </Link>
@@ -765,6 +767,18 @@ function ActivityCard({ activity }: { activity: any }) {
         <p className="activity-excerpt">{activity.description}</p>
       )}
       <ActivityMeta activity={activity} timezone={data.edition.timezone} />
+      {c.generatesStamp !== false && (
+        <div className="activity-xp-reward">
+          <StampArtwork
+            src={resolvedStampUrl(c, activity)}
+            color={resolvedStampColor(c, activity)}
+            alt=""
+          />
+          <span>
+            Este carimbo vale <b>+{STAMP_XP_REWARD} XP</b>
+          </span>
+        </div>
+      )}
       <div className="activity-card-bottom">
         <span>
           {seats === 0
@@ -834,6 +848,14 @@ function ActivityDetail({ id }: { id: string }) {
         </span>
         <h1>{activity.title}</h1>
         <ActivityMeta activity={activity} timezone={data.edition.timezone} />
+        {c.generatesStamp !== false && (
+          <div className="activity-xp-reward detail">
+            <Zap size={17} />
+            <span>
+              Presença confirmada: carimbo + <b>{STAMP_XP_REWARD} XP</b>
+            </span>
+          </div>
+        )}
         {isLive(data, activity) && <Badge tone="live">Acontecendo agora</Badge>}
       </section>
       <div className="detail-grid">
@@ -1092,7 +1114,10 @@ function Passport({ person }: { person: any }) {
           <div className="passport-progress-copy">
             <span className="passport-overline">PROGRESSO DA EDIÇÃO</span>
             <h3>Carimbos conquistados</h3>
-            <p>Cada presença confirmada acrescenta uma marca à coleção.</p>
+            <p>
+              Cada presença confirmada acrescenta um carimbo e rende +
+              {STAMP_XP_REWARD} XP.
+            </p>
           </div>
           <span className="passport-progress-summary">
             <strong>
@@ -1163,6 +1188,9 @@ function Passport({ person }: { person: any }) {
                   {formatDate(a.startAt, data.edition.timezone)} ·{" "}
                   {formatTime(a.startAt, data.edition.timezone)}
                 </span>
+                <span className="stamp-xp-value">
+                  <Zap size={11} /> +{STAMP_XP_REWARD} XP
+                </span>
                 {stamp && (
                   <span className="stamp-record">
                     <Check size={11} /> Conquistado
@@ -1213,32 +1241,89 @@ function rewardImage(name: string) {
 
 function Rewards({ id }: { id?: string }) {
   const { data, action } = useJornadas();
+  const arenaState = useArena();
+  const arena = arenaState.arena;
   const [busy, setBusy] = useState("");
+  const [mode, setMode] = useState<"ALL" | "ELIGIBILITY" | "XP_STORE">("ALL");
   const count = validStamps(data).length;
-  const items = (data.rewards || []).filter(
+  const allItems = (data.rewards || []).filter(
     (r: any) => r.active !== false && (!id || r.id === id),
   );
+  const items = allItems.filter(
+    (r: any) => mode === "ALL" || rewardRedemptionMode(r) === mode,
+  );
+  const eligibilityCount = allItems.filter(
+    (r: any) => rewardRedemptionMode(r) !== "XP_STORE",
+  ).length;
+  const xpCount = allItems.filter(
+    (r: any) => rewardRedemptionMode(r) === "XP_STORE",
+  ).length;
   return (
     <>
       <PageHeading
-        eyebrow="PEQUENAS CONQUISTAS, GRANDES LEMBRANÇAS"
-        title="Brindes e resgates"
-        description="Acompanhe sua elegibilidade e os brindes da edição."
+        eyebrow="CARIMBOS E XP QUE VIRAM LEMBRANÇAS"
+        title="Loja da Jornada"
+        description="Use seus carimbos ou seu saldo de XP para resgatar os brindes da edição."
       />
-      <div className="reward-progress-strip">
-        <Gift size={23} />
-        <span>
-          <strong>
-            {count} {count === 1 ? "check-in" : "check-ins"}
-          </strong>{" "}
-          na sua jornada
-        </span>
-        <span>
-          {count} de {data.edition.maxCheckins} atividades concluídas
-        </span>
-      </div>
+      <section className="unified-store-summary" aria-label="Seus saldos">
+        <div>
+          <BrandIcon tone="sage">
+            <CheckCircle2 />
+          </BrandIcon>
+          <span>
+            <small>Carimbos no passaporte</small>
+            <strong>
+              {count} {count === 1 ? "carimbo" : "carimbos"}
+            </strong>
+          </span>
+        </div>
+        <div>
+          <BrandIcon tone="gold">
+            <Zap />
+          </BrandIcon>
+          <span>
+            <small>Saldo para resgates</small>
+            <strong>
+              {arenaState.loading && !arena
+                ? "Calculando…"
+                : `${arena?.myXpAvailable || 0} XP`}
+            </strong>
+          </span>
+        </div>
+        <p>
+          Cada novo carimbo rende +{STAMP_XP_REWARD} XP. Gastar XP não altera
+          sua posição no ranking, e o estoque é único para todos os resgates.
+        </p>
+      </section>
+      {!id && (
+        <div className="store-mode-filter" aria-label="Filtrar brindes">
+          <button
+            className={mode === "ALL" ? "selected" : ""}
+            onClick={() => setMode("ALL")}
+          >
+            Todos <span>{allItems.length}</span>
+          </button>
+          <button
+            className={mode === "ELIGIBILITY" ? "selected" : ""}
+            onClick={() => setMode("ELIGIBILITY")}
+          >
+            Por carimbo <span>{eligibilityCount}</span>
+          </button>
+          <button
+            className={mode === "XP_STORE" ? "selected" : ""}
+            onClick={() => setMode("XP_STORE")}
+          >
+            Com XP <span>{xpCount}</span>
+          </button>
+        </div>
+      )}
       <div className="reward-grid">
         {items.map((r: any) => {
+          const xpItem = rewardRedemptionMode(r) === "XP_STORE";
+          const xpCost = rewardXpCost(r);
+          const arenaReward = (arena?.rewards || []).find(
+            (item: any) => item.id === r.id,
+          );
           const rule = (data.rules || []).find(
             (rule: any) => rule.rewardId === r.id,
           );
@@ -1257,7 +1342,19 @@ function Rewards({ id }: { id?: string }) {
             (count >= (rule?.minCheckins ?? Infinity)
               ? "ELIGIBLE"
               : "NOT_ELIGIBLE");
+          const xpOwned =
+            xpItem &&
+            reservation &&
+            ["RESERVED", "CONFIRMED", "DELIVERED"].includes(reservation.status);
+          const xpAvailable = Number(arena?.myXpAvailable || 0);
+          const affordable = xpAvailable >= xpCost;
+          const stockAvailable =
+            arenaReward?.stockAvailable ??
+            r.stockAvailable ??
+            r.available ??
+            r.total;
           const needsConfirm =
+            !xpItem &&
             reservation &&
             ["PENDING", "AWAITING_CONFIRMATION", "SELECTED"].includes(status);
           const imageUrl = r.imageUrl || rewardImage(r.name);
@@ -1288,107 +1385,217 @@ function Rewards({ id }: { id?: string }) {
               </div>
               <div className="reward-card-content">
                 <div className="row-between">
-                  <h2>{r.name}</h2>
-                  <Badge status={status} />
+                  <div>
+                    <span
+                      className={`reward-mode-label ${xpItem ? "xp" : "journey"}`}
+                    >
+                      {xpItem ? "RESGATE COM XP" : "RESGATE COM CARIMBO"}
+                    </span>
+                    <h2>{r.name}</h2>
+                  </div>
+                  {xpItem ? (
+                    <Badge tone={xpOwned ? "success" : ""}>
+                      {reservation?.status === "DELIVERED"
+                        ? "Entregue"
+                        : xpOwned
+                          ? "Resgatado"
+                          : stockAvailable <= 0
+                            ? "Esgotado"
+                            : affordable
+                              ? "Disponível"
+                              : "XP insuficiente"}
+                    </Badge>
+                  ) : (
+                    <Badge status={status} />
+                  )}
                 </div>
                 <p>{r.description}</p>
-                <div className="reward-rule">
-                  <CheckCircle2 size={15} />
-                  <span>
-                    {rule?.completeJourney
-                      ? "Jornada completa"
-                      : `Mínimo de ${rule?.minCheckins ?? 0} ${rule?.minCheckins === 1 ? "check-in" : "check-ins"}`}
-                    {c ? ` · ${c.name}` : ""}
-                    {a ? ` · ${a.title}` : ""}
-                  </span>
-                </div>
-                <div
-                  className="reward-progress"
-                  aria-label={`${Math.min(count, required)} de ${required} requisitos concluídos`}
-                >
-                  <span
-                    style={
-                      {
-                        "--progress-ratio": Math.min(
-                          count / Math.max(1, required),
-                          1,
-                        ),
-                      } as React.CSSProperties
-                    }
-                  />
-                </div>
-                <div className="reward-availability">
-                  <span>
-                    Disponíveis:{" "}
-                    <b>{r.available ?? r.availableStock ?? r.total}</b>
-                  </span>
-                  <span>A quantidade pode variar.</span>
-                </div>
-                {r.redemptionStartsAt && (
-                  <div className="reward-pickup-date">
-                    <CalendarDays size={16} />
-                    <span>
-                      {redemptionLocked
-                        ? "Retirada a partir de "
-                        : "Retirada liberada desde "}
-                      <b>
-                        {formatDate(
-                          r.redemptionStartsAt,
-                          data.edition.timezone,
-                        )}
-                      </b>
-                    </span>
-                  </div>
-                )}
-                {needsConfirm && (
+                {xpItem ? (
                   <>
-                    <p className="reward-deadline">
-                      Confirme até{" "}
-                      {formatTime(reservation.expiresAt, data.edition.timezone)}{" "}
-                      de{" "}
-                      {formatDate(reservation.expiresAt, data.edition.timezone)}
-                      .
-                    </p>
+                    <div className="xp-redemption-summary">
+                      <span>
+                        <Zap size={18} />
+                        <b>{xpCost} XP</b>
+                        <small>por unidade</small>
+                      </span>
+                      <span>
+                        <Gift size={18} />
+                        <b>{stockAvailable}</b>
+                        <small>disponíveis</small>
+                      </span>
+                    </div>
+                    {r.redemptionStartsAt && (
+                      <div className="reward-pickup-date">
+                        <CalendarDays size={16} />
+                        <span>
+                          {redemptionLocked
+                            ? "Resgates liberados a partir de "
+                            : "Retirada liberada desde "}
+                          <b>
+                            {formatDate(
+                              r.redemptionStartsAt,
+                              data.edition.timezone,
+                            )}
+                          </b>
+                        </span>
+                      </div>
+                    )}
                     <button
-                      className="button full"
-                      disabled={busy === r.id}
+                      className="button full xp-redemption-button"
+                      disabled={
+                        Boolean(xpOwned) ||
+                        !arena ||
+                        Boolean(arenaState.error) ||
+                        !affordable ||
+                        stockAvailable <= 0 ||
+                        Boolean(redemptionLocked) ||
+                        busy === r.id
+                      }
                       onClick={async () => {
                         setBusy(r.id);
                         try {
-                          await action("reservation.confirm", {
-                            reservationId: reservation.id,
+                          await arenaState.run("reward.purchase", {
+                            rewardId: r.id,
                           });
                         } catch {
+                          // A mensagem funcional é exibida pelo Provider.
                         } finally {
                           setBusy("");
                         }
                       }}
                     >
-                      {busy === r.id ? "Confirmando…" : "Confirmar brinde"}
-                      <Check size={17} />
+                      {xpOwned
+                        ? "Brinde já resgatado"
+                        : busy === r.id
+                          ? "Reservando…"
+                          : arenaState.loading && !arena
+                            ? "Calculando saldo…"
+                            : redemptionLocked
+                              ? "Resgate ainda não liberado"
+                              : stockAvailable <= 0
+                                ? "Brinde esgotado"
+                                : affordable
+                                  ? `Resgatar por ${xpCost} XP`
+                                  : `Faltam ${Math.max(0, xpCost - xpAvailable)} XP`}
+                      <ArrowRight size={17} />
                     </button>
+                    {xpOwned && (
+                      <div className="reward-ready">
+                        <CheckCircle2 size={18} />
+                        {reservation.status === "DELIVERED"
+                          ? "Brinde entregue. Leve esta lembrança com você!"
+                          : redemptionLocked
+                            ? `Resgate confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
+                            : "Resgate confirmado. Apresente seu RA à equipe de retirada."}
+                      </div>
+                    )}
                   </>
-                )}
-                {["CONFIRMED", "RESERVED", "AVAILABLE"].includes(status) &&
-                  reservation && (
-                    <div className="reward-ready">
-                      <CheckCircle2 size={18} />
-                      {redemptionLocked
-                        ? `Seu brinde está confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
-                        : "Seu brinde está confirmado. Apresente seu RA à equipe de retirada."}
+                ) : (
+                  <>
+                    <div className="reward-rule">
+                      <CheckCircle2 size={15} />
+                      <span>
+                        {rule?.completeJourney
+                          ? "Todos os carimbos da Jornada"
+                          : `${rule?.minCheckins ?? 0} ${rule?.minCheckins === 1 ? "carimbo" : "carimbos"}`}
+                        {c ? ` · ${c.name}` : ""}
+                        {a ? ` · ${a.title}` : ""}
+                      </span>
                     </div>
-                  )}
-                {status === "DELIVERED" && (
-                  <div className="reward-ready">
-                    <Check size={18} />
-                    Brinde entregue. Leve esta lembrança com você!
-                  </div>
-                )}
-                {status === "EXPIRED" && (
-                  <p className="fine-print">
-                    O prazo de confirmação terminou. Acompanhe as próximas
-                    rodadas.
-                  </p>
+                    <div
+                      className="reward-progress"
+                      aria-label={`${Math.min(count, required)} de ${required} requisitos concluídos`}
+                    >
+                      <span
+                        style={
+                          {
+                            "--progress-ratio": Math.min(
+                              count / Math.max(1, required),
+                              1,
+                            ),
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                    <div className="reward-availability">
+                      <span>
+                        Disponíveis: <b>{stockAvailable}</b>
+                      </span>
+                      <span>A quantidade pode variar.</span>
+                    </div>
+                    {r.redemptionStartsAt && (
+                      <div className="reward-pickup-date">
+                        <CalendarDays size={16} />
+                        <span>
+                          {redemptionLocked
+                            ? "Retirada a partir de "
+                            : "Retirada liberada desde "}
+                          <b>
+                            {formatDate(
+                              r.redemptionStartsAt,
+                              data.edition.timezone,
+                            )}
+                          </b>
+                        </span>
+                      </div>
+                    )}
+                    {needsConfirm && (
+                      <>
+                        <p className="reward-deadline">
+                          Confirme até{" "}
+                          {formatTime(
+                            reservation.expiresAt,
+                            data.edition.timezone,
+                          )}{" "}
+                          de{" "}
+                          {formatDate(
+                            reservation.expiresAt,
+                            data.edition.timezone,
+                          )}
+                          .
+                        </p>
+                        <button
+                          className="button full"
+                          disabled={busy === r.id}
+                          onClick={async () => {
+                            setBusy(r.id);
+                            try {
+                              await action("reservation.confirm", {
+                                reservationId: reservation.id,
+                              });
+                            } catch {
+                            } finally {
+                              setBusy("");
+                            }
+                          }}
+                        >
+                          {busy === r.id ? "Confirmando…" : "Confirmar brinde"}
+                          <Check size={17} />
+                        </button>
+                      </>
+                    )}
+                    {["CONFIRMED", "RESERVED", "AVAILABLE"].includes(status) &&
+                      reservation && (
+                        <div className="reward-ready">
+                          <CheckCircle2 size={18} />
+                          {redemptionLocked
+                            ? `Seu brinde está confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
+                            : "Seu brinde está confirmado. Apresente seu RA à equipe de retirada."}
+                        </div>
+                      )}
+                    {status === "DELIVERED" && (
+                      <div className="reward-ready">
+                        <Check size={18} />
+                        Brinde entregue. Leve esta lembrança com você!
+                      </div>
+                    )}
+                    {status === "EXPIRED" && (
+                      <p className="fine-print">
+                        O prazo de confirmação terminou. Acompanhe as próximas
+                        rodadas.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </article>
@@ -1403,8 +1610,8 @@ function Rewards({ id }: { id?: string }) {
       <div className="info-note">
         <ShieldCheck size={20} />
         <p>
-          Quando o número de elegíveis superar o estoque, haverá sorteio. Sua
-          participação nas atividades continua independente dos brindes.
+          O chaveiro e outros brindes especiais podem pedir carimbos. Os demais
+          resgates usam XP e reservam o item imediatamente.
         </p>
       </div>
     </>
@@ -1588,6 +1795,15 @@ function Profile({ person }: { person: any }) {
         </Link>
       )}
       <div className="profile-links">
+        <Link href="/app/brindes" className="profile-link card">
+          <span>
+            <BrandIcon tone="gold" size="sm">
+              <Gift size={17} />
+            </BrandIcon>
+            <strong>Loja da Jornada</strong>
+          </span>
+          <ChevronRight size={19} />
+        </Link>
         <Link href="/app/certificados" className="profile-link card">
           <span>
             <BrandIcon tone="sage" size="sm">

@@ -5,6 +5,8 @@ import {
   rankArenaParticipants,
   rankingDisplayName,
 } from "../src/server/arena";
+import { STAMP_XP_REWARD } from "../src/lib/xp";
+import { rewardRedemptionMode, rewardXpCost } from "../src/lib/rewards";
 
 const people = [
   { id: "p1", name: "Mariana Costa Silva", semester: 6 },
@@ -41,6 +43,65 @@ describe("Farma Arena", () => {
       defaultArenaConfig("edition"),
     );
     expect(rows[0]).toMatchObject({ xpTotal: 500, xpAvailable: 200 });
+  });
+
+  it("transforma cada carimbo válido em XP de ranking e saldo", () => {
+    const rows = rankArenaParticipants(
+      people,
+      [],
+      [],
+      defaultArenaConfig("edition"),
+      [
+        {
+          id: "s1",
+          participantId: "p1",
+          issuedAt: "2026-09-20T10:00:00Z",
+        },
+        {
+          id: "s2",
+          participantId: "p1",
+          issuedAt: "2026-09-20T11:00:00Z",
+        },
+      ],
+    );
+    expect(rows.find((row) => row.participantId === "p1")).toMatchObject({
+      xpTotal: STAMP_XP_REWARD * 2,
+      xpAvailable: STAMP_XP_REWARD * 2,
+    });
+  });
+
+  it("mantém o chaveiro por carimbo e migra os demais brindes para XP", () => {
+    expect(rewardRedemptionMode({ name: "Chaveiro" })).toBe("ELIGIBILITY");
+    expect(rewardRedemptionMode({ name: "Caneta" })).toBe("XP_STORE");
+    expect(rewardXpCost({ name: "Caneta" })).toBe(200);
+  });
+
+  it("gastar XP de carimbo preserva o total do ranking", () => {
+    const rows = rankArenaParticipants(
+      people,
+      [
+        {
+          id: "purchase",
+          participantId: "p1",
+          balanceDelta: -50,
+          rankingDelta: 0,
+          createdAt: "2026-09-20T11:00:00Z",
+        },
+      ],
+      [],
+      defaultArenaConfig("edition"),
+      [
+        {
+          id: "s1",
+          participantId: "p1",
+          issuedAt: "2026-09-20T10:00:00Z",
+        },
+      ],
+    );
+    expect(rows.find((row) => row.participantId === "p1")).toMatchObject({
+      xpTotal: STAMP_XP_REWARD,
+      xpAvailable: STAMP_XP_REWARD - 50,
+    });
   });
 
   it("reembolso devolve saldo sem aumentar o ranking", () => {

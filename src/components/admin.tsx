@@ -956,9 +956,9 @@ const configs: Record<string, EntityConfig> = {
     entity: "reward",
     collection: "rewards",
     singular: "brinde",
-    title: "Brindes",
+    title: "Loja e brindes",
     description:
-      "Um reconhecimento por cada conquista. Gerencie catálogo e condições de distribuição.",
+      "Um catálogo único para resgates por carimbo ou por XP, com estoque e retirada compartilhados.",
     fields: [
       { key: "name", label: "Nome do brinde", required: true, wide: true },
       { key: "description", label: "Descrição", type: "textarea", wide: true },
@@ -997,8 +997,8 @@ const configs: Record<string, EntityConfig> = {
         type: "select",
         default: "ELIGIBILITY",
         options: [
-          { value: "ELIGIBILITY", label: "Elegibilidade tradicional" },
-          { value: "XP_STORE", label: "Loja XP da Farma Arena" },
+          { value: "ELIGIBILITY", label: "Resgate por carimbo" },
+          { value: "XP_STORE", label: "Resgate com XP" },
         ],
       },
       {
@@ -1007,7 +1007,7 @@ const configs: Record<string, EntityConfig> = {
         type: "number",
         min: 0,
         default: 0,
-        help: "Usado somente nos itens da Loja XP.",
+        help: "Usado somente quando a forma de resgate for XP.",
       },
       {
         key: "maxPerParticipant",
@@ -1084,7 +1084,7 @@ const configs: Record<string, EntityConfig> = {
       },
       {
         key: "minCheckins",
-        label: "Mínimo de check-ins",
+        label: "Quantidade de carimbos",
         type: "number",
         min: 0,
         default: 1,
@@ -1124,7 +1124,7 @@ const configs: Record<string, EntityConfig> = {
       },
       { key: "type", label: "Regra", render: (r) => labels[r.type] || r.type },
       { key: "description", label: "Descrição" },
-      { key: "minCheckins", label: "Mínimo de check-ins" },
+      { key: "minCheckins", label: "Carimbos exigidos" },
       {
         key: "active",
         label: "Status",
@@ -1683,9 +1683,7 @@ function EntityForm({
                   key={f.key}
                   field={f}
                   value={values[f.key]}
-                  setValue={(v) =>
-                    setValues((old) => ({ ...old, [f.key]: v }))
-                  }
+                  setValue={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
                   data={data || {}}
                   stampColor={
                     values.stampColor ||
@@ -2030,7 +2028,7 @@ const menu = [
   ["presencas", "Presenças", CheckCheck],
   ["passaportes", "Passaportes", BookOpen],
   ["farma-arena", "Farma Arena", Flame],
-  ["brindes", "Loja / Brindes", Gift],
+  ["brindes", "Loja e brindes", Gift],
   ["estoque", "Estoque", Package],
   ["elegibilidade", "Elegibilidade", Sparkles],
   ["sorteios", "Sorteios", Award],

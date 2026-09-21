@@ -1,0 +1,2 @@
+ALTER TABLE "ActivityCategory" ADD COLUMN IF NOT EXISTS "stampColor" TEXT;
+ALTER TABLE "Activity" ADD COLUMN IF NOT EXISTS "stampColor" TEXT;

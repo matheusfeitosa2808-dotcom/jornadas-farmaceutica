@@ -29,7 +29,7 @@ import FarmaArenaStamp from "@/components/farma-arena-stamp";
 import { readApiResponse } from "@/lib/api-response";
 import "./arena.css";
 
-function useArena() {
+export function useArena() {
   const { data, action } = useJornadas();
   const [arena, setArena] = useState<any>(null);
   const [loading, setLoading] = useState(true);

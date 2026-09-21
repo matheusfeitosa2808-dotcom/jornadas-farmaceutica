@@ -143,6 +143,7 @@ model ActivityCategory {
   generatesCertificate Boolean         @default(false)
   active               Boolean         @default(true)
   stampUrl             String?
+  stampColor           String?
   activities           Activity[]
   stamps               PassportStamp[]
   rules                RewardRule[]
@@ -182,6 +183,7 @@ model Activity {
   status             String            @default("OPEN")
   allowWaitlist      Boolean           @default(true)
   stampUrl           String?
+  stampColor         String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   speakers           ActivitySpeaker[]

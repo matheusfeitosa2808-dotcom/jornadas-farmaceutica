@@ -44,6 +44,7 @@ import {
 import { useJornadas } from "@/components/provider";
 import LoadingScreen from "@/components/loading-screen";
 import FarmaArenaStamp from "@/components/farma-arena-stamp";
+import { StampArtwork, resolvedStampColor } from "@/components/stamp-artwork";
 import {
   FARMA_ARENA_STAMP_URL,
   isFarmaArena,
@@ -675,6 +676,13 @@ const configs: Record<string, EntityConfig> = {
       { key: "name", label: "Nome", required: true },
       { key: "slug", label: "Identificador (slug)", required: true },
       { key: "color", label: "Cor", type: "color", default: "#174f58" },
+      {
+        key: "stampColor",
+        label: "Cor dos carimbos",
+        type: "color",
+        default: "#174f58",
+        help: "Define a cor padrão dos carimbos desta categoria.",
+      },
       { key: "order", label: "Ordem", type: "number", default: 0 },
       { key: "stampUrl", label: "Selo padrão", type: "stamp", wide: true },
       {
@@ -735,9 +743,10 @@ const configs: Record<string, EntityConfig> = {
               alt={`Selo especial ${r.name}`}
             />
           ) : r.stampUrl ? (
-            <img
+            <StampArtwork
               className="a-stamp-mini"
               src={r.stampUrl}
+              color={resolvedStampColor(r)}
               alt={`Selo ${r.name}`}
             />
           ) : (
@@ -892,6 +901,12 @@ const configs: Record<string, EntityConfig> = {
         label: "Selo específico (opcional)",
         type: "stamp",
         wide: true,
+      },
+      {
+        key: "stampColor",
+        label: "Cor específica do carimbo",
+        type: "color-optional",
+        help: "Opcional: substitui a cor padrão da categoria somente nesta atividade.",
       },
     ],
     columns: [
@@ -1260,6 +1275,7 @@ function InputField({
   setValue,
   data,
   editionId,
+  stampColor,
   onUploadChange,
 }: {
   field: Field;
@@ -1267,6 +1283,7 @@ function InputField({
   setValue: (v: any) => void;
   data: Row;
   editionId?: string;
+  stampColor?: string;
   onUploadChange?: (uploading: boolean) => void;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -1395,7 +1412,11 @@ function InputField({
               isLegacyFarmaArenaStamp(value) ? (
                 <FarmaArenaStamp alt="Carimbo especial da Farma Arena" />
               ) : (
-                <img src={value} alt="Carimbo selecionado" />
+                <StampArtwork
+                  src={value}
+                  color={stampColor}
+                  alt="Carimbo selecionado"
+                />
               )
             ) : (
               <div className="a-preview-empty">
@@ -1406,6 +1427,21 @@ function InputField({
               O carimbo aparece no passaporte após a presença ser confirmada.
             </small>
           </aside>
+        </div>
+      ) : field.type === "color-optional" ? (
+        <div className="a-optional-color">
+          <input
+            id={id}
+            type="color"
+            value={value || stampColor || "#174f58"}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <span>{value ? value : "Usando a cor da categoria"}</span>
+          {value && (
+            <button type="button" onClick={() => setValue("")}>
+              Usar cor da categoria
+            </button>
+          )}
         </div>
       ) : field.type === "upload" ? (
         <div
@@ -1638,20 +1674,33 @@ function EntityForm({
               ` Horários em ${zone}.`}
           </p>
           <div className="a-form-grid">
-            {config.fields.map((f) => (
-              <InputField
-                key={f.key}
-                field={f}
-                value={values[f.key]}
-                setValue={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
-                data={data || {}}
-                onUploadChange={(uploading) =>
-                  setPendingUploads((count) =>
-                    Math.max(0, count + (uploading ? 1 : -1)),
-                  )
-                }
-              />
-            ))}
+            {config.fields.map((f) => {
+              const category = all(data || {}, "categories").find(
+                (item) => item.id === values.categoryId,
+              );
+              return (
+                <InputField
+                  key={f.key}
+                  field={f}
+                  value={values[f.key]}
+                  setValue={(v) =>
+                    setValues((old) => ({ ...old, [f.key]: v }))
+                  }
+                  data={data || {}}
+                  stampColor={
+                    values.stampColor ||
+                    values.color ||
+                    category?.stampColor ||
+                    category?.color
+                  }
+                  onUploadChange={(uploading) =>
+                    setPendingUploads((count) =>
+                      Math.max(0, count + (uploading ? 1 : -1)),
+                    )
+                  }
+                />
+              );
+            })}
           </div>
           {error && (
             <p className="error" role="alert">

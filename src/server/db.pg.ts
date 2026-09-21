@@ -261,6 +261,7 @@ const models: Record<string, ModelMeta> = {
       "generatesCertificate",
       "active",
       "stampUrl",
+      "stampColor",
     ],
     uniques: { editionId_slug: ["editionId", "slug"] },
     relations: {
@@ -322,6 +323,7 @@ const models: Record<string, ModelMeta> = {
       "status",
       "allowWaitlist",
       "stampUrl",
+      "stampColor",
       "createdAt",
       "updatedAt",
     ],

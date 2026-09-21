@@ -339,6 +339,9 @@
   height: 42px;
   object-fit: contain;
 }
+.a-stamp-mini.tinted-stamp {
+  height: 42px;
+}
 .a-sponsor-logo {
   max-width: 90px;
   max-height: 36px;
@@ -1345,8 +1348,10 @@
   width: 100%;
   font: 700 1rem var(--font-serif);
 }
-.a-stamp-preview img {
+.a-stamp-preview img,
+.a-stamp-preview .tinted-stamp {
   width: min(250px, 90%);
+  height: auto;
   aspect-ratio: 1;
   object-fit: contain;
   margin: auto;
@@ -1360,6 +1365,36 @@
   margin: auto;
   text-align: center;
   color: var(--muted);
+}
+.a-optional-color {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.78);
+}
+.a-optional-color input[type="color"] {
+  width: 48px;
+  height: 34px;
+  padding: 2px;
+  border: 0;
+  cursor: pointer;
+}
+.a-optional-color span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.a-optional-color button {
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 .a-operation-console {
   border-radius: 8px;
@@ -1378,11 +1413,20 @@
   .a-stamp-preview {
     min-height: 240px;
   }
-  .a-stamp-preview img {
+  .a-stamp-preview img,
+  .a-stamp-preview .tinted-stamp {
     width: 180px;
   }
 }
 @media (max-width: 760px) {
+  .a-optional-color {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .a-optional-color button {
+    grid-column: 2;
+    justify-self: start;
+    padding: 0;
+  }
   .a-shell {
     display: block;
   }

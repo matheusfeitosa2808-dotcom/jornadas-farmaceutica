@@ -42,6 +42,12 @@ import {
 const D = (v: any) => (v ? new Date(v) : null),
   N = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d),
   B = (v: any, d = false) => (v === undefined ? d : Boolean(v));
+const stampColor = (value: any, fallback: string | null = null) => {
+  if (!value) return fallback;
+  const color = String(value).trim();
+  ensure(/^#[0-9a-f]{6}$/i.test(color), "Informe uma cor válida para o carimbo.");
+  return color.toLowerCase();
+};
 async function rewardStock(tx: any, rewardId: string) {
   const r = await tx.rewardItem.findUnique({ where: { id: rewardId } });
   ensure(r, "Brinde não encontrado.", "NOT_FOUND", 404);
@@ -262,6 +268,7 @@ async function saveEntity(
       generatesCertificate: B(data.generatesCertificate),
       active: B(data.active, true),
       stampUrl: safeUrl(data.stampUrl),
+      stampColor: stampColor(data.stampColor, data.color || "#174f58"),
     };
     result = id
       ? await tx.activityCategory.update({ where: { id }, data: v })
@@ -340,6 +347,7 @@ async function saveEntity(
       status: data.status || "OPEN",
       allowWaitlist: B(data.allowWaitlist, true),
       stampUrl: safeUrl(data.stampUrl),
+      stampColor: stampColor(data.stampColor),
     };
     result = id
       ? await tx.activity.update({
@@ -982,6 +990,7 @@ export async function POST(req: NextRequest) {
                   generatesCertificate: c.generatesCertificate,
                   active: c.active,
                   stampUrl: c.stampUrl,
+                  stampColor: c.stampColor,
                 })),
               },
               sponsors: body.copySponsors

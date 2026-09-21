@@ -22,17 +22,21 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
+  Trophy,
   Upload,
   WifiOff,
+  Zap,
 } from "lucide-react";
 import { useJornadas } from "./provider";
 import LoadingScreen from "./loading-screen";
 import FarmaArenaStamp from "./farma-arena-stamp";
+import { StampArtwork, resolvedStampColor } from "./stamp-artwork";
 import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
 import {
   ArenaAwardRevealQueue,
   ArenaRouter,
   ArenaTransitionLink,
+  useArena,
 } from "@/components/arena";
 import {
   ActivityMeta,
@@ -344,9 +348,10 @@ function ParticipantHome({ person }: { person: any }) {
                     alt={`Carimbo especial de ${categoryOf(data, next).name}`}
                   />
                 ) : (
-                  <img
+                  <StampArtwork
                     className="next-stamp"
                     src={resolvedStampUrl(categoryOf(data, next), next)}
+                    color={resolvedStampColor(categoryOf(data, next), next)}
                     alt={`Carimbo de ${categoryOf(data, next).name}`}
                   />
                 )}
@@ -483,8 +488,9 @@ function ParticipantHome({ person }: { person: any }) {
           const category = categoryOf(data, activity || {});
           return (
             <Link href="/app/passaporte" key={stamp.id}>
-              <img
+              <StampArtwork
                 src={resolvedStampUrl(category, activity)}
+                color={resolvedStampColor(category, activity)}
                 alt={`Carimbo ${category.name}`}
               />
               <strong>{category.name}</strong>
@@ -701,9 +707,10 @@ function ActivityCard({ activity }: { activity: any }) {
         />
       ) : (
         <div className="activity-stamp">
-          <img
+          <StampArtwork
             className="activity-stamp-art"
             src={resolvedStampUrl(c, activity)}
+            color={resolvedStampColor(c, activity)}
             alt={`Carimbo de ${c.name}`}
           />
         </div>
@@ -1110,10 +1117,10 @@ function Passport({ person }: { person: any }) {
                 {stamp ? (
                   <div className="stamp-art">
                     {image ? (
-                      <img
+                      <StampArtwork
                         src={image}
+                        color={resolvedStampColor(c, a)}
                         alt={`Carimbo de ${c.name}`}
-                        loading="lazy"
                       />
                     ) : (
                       <BookOpen size={48} />
@@ -1125,7 +1132,11 @@ function Passport({ person }: { person: any }) {
                 ) : (
                   <div className="stamp-placeholder">
                     {image ? (
-                      <img src={image} alt="" loading="lazy" />
+                      <StampArtwork
+                        src={image}
+                        color={resolvedStampColor(c, a)}
+                        alt={`Próximo carimbo de ${c.name}`}
+                      />
                     ) : (
                       <BookOpen size={48} />
                     )}
@@ -1383,6 +1394,8 @@ function Rewards({ id }: { id?: string }) {
 
 function Profile({ person }: { person: any }) {
   const { data, action, toast } = useJornadas();
+  const arenaState = useArena();
+  const arena = arenaState.arena;
   const router = useRouter();
   const [uploading, setUploading] = useState(false),
     [pushStatus, setPushStatus] = useState("");
@@ -1531,6 +1544,26 @@ function Profile({ person }: { person: any }) {
           </article>
         </div>
       </div>
+      {arena?.config?.enabled && (
+        <Link href="/app/ranking" className="profile-ranking-card card">
+          <span className="profile-ranking-card__icon" aria-hidden="true">
+            <Trophy />
+          </span>
+          <span className="profile-ranking-card__copy">
+            <small>FARMA ARENA · MEU RANKING</small>
+            <strong>
+              {arena.myRank ? `#${arena.myRank}` : "—"} na classificação
+            </strong>
+            <span>
+              <Zap size={15} /> {arena.myXpTotal || 0} XP acumulados ·{" "}
+              {arena.completedChallenges || 0} desafios concluídos
+            </span>
+          </span>
+          <span className="profile-ranking-card__action">
+            Ver ranking <ChevronRight size={18} />
+          </span>
+        </Link>
+      )}
       <div className="profile-links">
         <Link href="/app/certificados" className="profile-link card">
           <span>

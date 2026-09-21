@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, ReactNode } from "react";
+import { useEffect, useRef, useState, ReactNode } from "react";
 import {
   UserRound,
   X,
@@ -8,6 +8,28 @@ import {
   MapPin,
   Clock3,
 } from "lucide-react";
+
+export function BrandIcon({
+  children,
+  tone = "teal",
+  size = "md",
+  className = "",
+}: {
+  children: ReactNode;
+  tone?: "teal" | "gold" | "sage" | "crimson";
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  return (
+    <span
+      className={`brand-icon brand-icon--${tone} brand-icon--${size} ${className}`.trim()}
+      aria-hidden="true"
+    >
+      <span className="brand-icon__core">{children}</span>
+    </span>
+  );
+}
+
 export function Avatar({
   name = "",
   url,
@@ -17,9 +39,19 @@ export function Avatar({
   url?: string;
   size?: string;
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [url]);
+
   return (
     <span className={`avatar ${size}`} aria-label={name || "Participante"}>
-      {url ? <img src={url} alt={name} /> : <UserRound size={22} />}
+      {url && !imageFailed ? (
+        <img src={url} alt="" onError={() => setImageFailed(true)} />
+      ) : (
+        <UserRound size={22} aria-hidden="true" />
+      )}
     </span>
   );
 }
@@ -128,7 +160,9 @@ export function Empty({
 }) {
   return (
     <div className="empty">
-      <CalendarDays size={28} />
+      <BrandIcon tone="gold" size="lg">
+        <CalendarDays size={24} />
+      </BrandIcon>
       <h3>{title}</h3>
       {children && <p>{children}</p>}
     </div>

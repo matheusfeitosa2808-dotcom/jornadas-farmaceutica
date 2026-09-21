@@ -42,6 +42,7 @@ import {
   ActivityMeta,
   Avatar,
   Badge,
+  BrandIcon,
   Empty,
   ExternalLink,
   formatDate,
@@ -418,9 +419,11 @@ function ParticipantHome({ person }: { person: any }) {
             aria-valuemax={total}
           >
             <span
-              style={{
-                width: `${Math.min((count / Math.max(total, 1)) * 100, 100)}%`,
-              }}
+              style={
+                {
+                  "--progress-ratio": Math.min(count / Math.max(total, 1), 1),
+                } as React.CSSProperties
+              }
             />
           </div>
           <div className="progress-dots">
@@ -448,9 +451,9 @@ function ParticipantHome({ person }: { person: any }) {
       </section>
       <div className="home-stat-grid">
         <Link className="home-stat card" href="/app/inscricoes">
-          <span className="shortcut-icon">
+          <BrandIcon tone="teal">
             <Ticket />
-          </span>
+          </BrandIcon>
           <span>
             <small>Minhas inscrições</small>
             <strong>
@@ -465,9 +468,9 @@ function ParticipantHome({ person }: { person: any }) {
           <ChevronRight />
         </Link>
         <Link className="home-stat card" href="/app/passaporte">
-          <span className="shortcut-icon gold">
+          <BrandIcon tone="gold">
             <MapPin />
-          </span>
+          </BrandIcon>
           <span>
             <small>Check-ins realizados</small>
             <strong>
@@ -511,9 +514,9 @@ function ParticipantHome({ person }: { person: any }) {
       </div>
       <div className="home-action-grid">
         <Link className="home-action card" href="/app/certificados">
-          <span className="shortcut-icon">
+          <BrandIcon tone="sage">
             <BookOpen />
-          </span>
+          </BrandIcon>
           <span>
             <strong>Certificados disponíveis</strong>
             <small>{data.certificates?.length || 0} certificados</small>
@@ -521,9 +524,9 @@ function ParticipantHome({ person }: { person: any }) {
           <ChevronRight />
         </Link>
         <Link className="home-action card" href="/app/brindes">
-          <span className="shortcut-icon gold">
+          <BrandIcon tone="gold">
             <Gift />
-          </span>
+          </BrandIcon>
           <span>
             <strong>Brindes elegíveis</strong>
             <small>Acompanhar benefícios</small>
@@ -1098,7 +1101,13 @@ function Passport({ person }: { person: any }) {
             <small>concluídos</small>
           </span>
           <div className="passport-progress-track" aria-hidden="true">
-            <span style={{ width: `${stampProgress}%` }} />
+            <span
+              style={
+                {
+                  "--progress-ratio": stampProgress / 100,
+                } as React.CSSProperties
+              }
+            />
           </div>
         </div>
         <div className="stamp-grid">
@@ -1298,9 +1307,14 @@ function Rewards({ id }: { id?: string }) {
                   aria-label={`${Math.min(count, required)} de ${required} requisitos concluídos`}
                 >
                   <span
-                    style={{
-                      width: `${Math.min(100, (count / Math.max(1, required)) * 100)}%`,
-                    }}
+                    style={
+                      {
+                        "--progress-ratio": Math.min(
+                          count / Math.max(1, required),
+                          1,
+                        ),
+                      } as React.CSSProperties
+                    }
                   />
                 </div>
                 <div className="reward-availability">
@@ -1512,9 +1526,9 @@ function Profile({ person }: { person: any }) {
         </section>
         <div className="profile-metrics">
           <article className="card">
-            <span className="shortcut-icon">
+            <BrandIcon tone="teal">
               <Ticket />
-            </span>
+            </BrandIcon>
             <small>Atividades inscritas</small>
             <strong>
               {
@@ -1525,25 +1539,25 @@ function Profile({ person }: { person: any }) {
             </strong>
           </article>
           <article className="card">
-            <span className="shortcut-icon gold">
+            <BrandIcon tone="gold">
               <CalendarDays />
-            </span>
+            </BrandIcon>
             <small>Presenças</small>
             <strong>
               {(data.attendances || []).filter((a: any) => a.checkinAt).length}
             </strong>
           </article>
           <article className="card">
-            <span className="shortcut-icon">
+            <BrandIcon tone="crimson">
               <Sparkles />
-            </span>
+            </BrandIcon>
             <small>Carimbos</small>
             <strong>{validStamps(data).length}</strong>
           </article>
           <article className="card">
-            <span className="shortcut-icon sage">
+            <BrandIcon tone="sage">
               <BookOpen />
-            </span>
+            </BrandIcon>
             <small>Certificados</small>
             <strong>{data.certificates?.length || 0}</strong>
           </article>
@@ -1551,9 +1565,13 @@ function Profile({ person }: { person: any }) {
       </div>
       {arena?.config?.enabled && (
         <Link href="/app/ranking" className="profile-ranking-card card">
-          <span className="profile-ranking-card__icon" aria-hidden="true">
+          <BrandIcon
+            tone="gold"
+            size="lg"
+            className="profile-ranking-card__icon"
+          >
             <Trophy />
-          </span>
+          </BrandIcon>
           <span className="profile-ranking-card__copy">
             <small>FARMA ARENA · MEU RANKING</small>
             <strong>
@@ -1572,21 +1590,27 @@ function Profile({ person }: { person: any }) {
       <div className="profile-links">
         <Link href="/app/certificados" className="profile-link card">
           <span>
-            <BookOpen size={21} />
+            <BrandIcon tone="sage" size="sm">
+              <BookOpen size={17} />
+            </BrandIcon>
             <strong>Meus certificados</strong>
           </span>
           <ChevronRight size={19} />
         </Link>
         <Link href="/app/notificacoes" className="profile-link card">
           <span>
-            <Bell size={21} />
+            <BrandIcon tone="gold" size="sm">
+              <Bell size={17} />
+            </BrandIcon>
             <strong>Central de notificações</strong>
           </span>
           <ChevronRight size={19} />
         </Link>
         <button className="profile-link card" onClick={enablePush}>
           <span>
-            <Bell size={21} />
+            <BrandIcon tone="teal" size="sm">
+              <Bell size={17} />
+            </BrandIcon>
             <strong>Ativar notificações no dispositivo</strong>
           </span>
           <ChevronRight size={19} />
@@ -1605,7 +1629,9 @@ function Profile({ person }: { person: any }) {
           }}
         >
           <span>
-            <LogOut size={21} />
+            <BrandIcon tone="crimson" size="sm">
+              <LogOut size={17} />
+            </BrandIcon>
             <strong>Sair da minha conta</strong>
           </span>
           <ChevronRight size={19} />
@@ -1630,9 +1656,9 @@ function Notifications() {
               className={`notification-card card ${!n.readAt && !n.read ? "not-read" : ""}`}
               key={n.id}
             >
-              <span className="notice-icon">
-                <Bell size={20} />
-              </span>
+              <BrandIcon tone="gold" size="sm">
+                <Bell size={17} />
+              </BrandIcon>
               <div>
                 <div className="row-between">
                   <h2>{n.title}</h2>
@@ -1675,7 +1701,9 @@ function Certificates() {
         description="O registro de cada experiência de aprendizado."
       />
       <div className="info-note">
-        <Clock3 size={21} />
+        <BrandIcon tone="teal" size="sm">
+          <Clock3 size={17} />
+        </BrandIcon>
         <p>
           Cada certificado é liberado após a conclusão da presença na palestra.
           Quando houver saída obrigatória, faça também o check-out.
@@ -1685,9 +1713,9 @@ function Certificates() {
         <div className="stack">
           {data.certificates.map((c: any) => (
             <article key={c.id} className="card certificate-card">
-              <span className="shortcut-icon gold">
+              <BrandIcon tone="gold">
                 <BookOpen />
-              </span>
+              </BrandIcon>
               <div>
                 <h2>
                   {data.activities.find((a: any) => a.id === c.activityId)

@@ -1,0 +1,330 @@
+/* Acabamento editorial do participante: marca, legibilidade e ritmo. */
+:root {
+  --ink: #0b3c4e;
+  --teal: #155761;
+  --teal-2: #0b6670;
+  --gold: #b48931;
+  --gold-soft: #ead8aa;
+  --sage: #607f6c;
+  --paper: #f5f1e7;
+  --muted: #5e7073;
+  --line: #d7ddd8;
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.participant-shell {
+  --participant-surface: rgba(255, 253, 247, 0.9);
+  --participant-line: rgba(11, 60, 78, 0.17);
+}
+
+.participant-content h1,
+.participant-content h2,
+.participant-content h3 {
+  text-wrap: balance;
+}
+
+.participant-content p,
+.participant-content dd,
+.participant-content .activity-meta span {
+  text-wrap: pretty;
+}
+
+.participant-content .card {
+  border-color: var(--participant-line);
+  background-color: var(--participant-surface);
+}
+
+.page-heading {
+  position: relative;
+  max-width: 720px;
+  margin-bottom: clamp(20px, 3vw, 30px);
+  padding-bottom: 17px;
+}
+
+.page-heading::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: min(132px, 32vw);
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), rgba(180, 137, 49, 0));
+}
+
+.page-heading::before {
+  content: "✦";
+  position: absolute;
+  bottom: -9px;
+  left: min(72px, 18vw);
+  z-index: 1;
+  padding: 0 7px;
+  color: var(--gold);
+  background: var(--paper);
+  font-size: 0.8rem;
+  line-height: 18px;
+}
+
+.page-heading h1 {
+  max-width: 18ch;
+  margin-bottom: 6px;
+  letter-spacing: -0.025em;
+}
+
+.page-heading > p {
+  max-width: 58ch;
+  color: var(--muted);
+}
+
+/* Um único medalhão vetorial substitui círculos genéricos. */
+.brand-icon {
+  --brand-icon-color: var(--teal);
+  --brand-icon-soft: #dcebe7;
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  color: var(--brand-icon-color);
+  background: color-mix(in srgb, var(--brand-icon-soft) 88%, white);
+  border: 1px solid color-mix(in srgb, var(--brand-icon-color) 48%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--brand-icon-soft) 82%, white),
+    inset 0 0 0 4px color-mix(in srgb, var(--brand-icon-color) 22%, transparent),
+    0 5px 12px rgba(11, 60, 78, 0.08);
+  isolation: isolate;
+}
+
+.brand-icon::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--brand-icon-color) 30%, transparent);
+  border-radius: 50%;
+  clip-path: polygon(
+    50% 0%,
+    61% 5%,
+    72% 3%,
+    80% 12%,
+    91% 15%,
+    94% 27%,
+    100% 50%,
+    94% 73%,
+    91% 85%,
+    80% 88%,
+    72% 97%,
+    61% 95%,
+    50% 100%,
+    39% 95%,
+    28% 97%,
+    20% 88%,
+    9% 85%,
+    6% 73%,
+    0% 50%,
+    6% 27%,
+    9% 15%,
+    20% 12%,
+    28% 3%,
+    39% 5%
+  );
+  background: color-mix(in srgb, var(--brand-icon-soft) 72%, white);
+}
+
+.brand-icon__core {
+  display: grid;
+  place-items: center;
+}
+
+.brand-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.75;
+}
+
+.brand-icon--sm {
+  width: 34px;
+  height: 34px;
+}
+
+.brand-icon--sm::before {
+  inset: -3px;
+}
+
+.brand-icon--sm svg {
+  width: 17px;
+  height: 17px;
+}
+
+.brand-icon--lg {
+  width: 54px;
+  height: 54px;
+}
+
+.brand-icon--lg svg {
+  width: 25px;
+  height: 25px;
+}
+
+.brand-icon--gold {
+  --brand-icon-color: #986d18;
+  --brand-icon-soft: #f2e3ba;
+}
+
+.brand-icon--sage {
+  --brand-icon-color: #496c59;
+  --brand-icon-soft: #dfe9df;
+}
+
+.brand-icon--crimson {
+  --brand-icon-color: #8b2e36;
+  --brand-icon-soft: #f0dfe0;
+}
+
+.home-stat,
+.home-action {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.home-stat > span:nth-child(2),
+.home-action > span:nth-child(2) {
+  min-width: 0;
+}
+
+.profile-metrics article {
+  align-content: start;
+  min-width: 0;
+}
+
+.profile-metrics .brand-icon {
+  margin-bottom: 5px;
+}
+
+.profile-ranking-card__icon.brand-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #f2e3ba 88%, white);
+}
+
+.profile-link > span {
+  min-width: 0;
+}
+
+.profile-link strong {
+  overflow-wrap: anywhere;
+}
+
+.notification-card > .brand-icon,
+.certificate-card > .brand-icon {
+  margin-top: 2px;
+}
+
+.info-note > .brand-icon {
+  align-self: flex-start;
+}
+
+/* O valor muda sem recalcular layout. */
+.progress-track > span,
+.passport-progress-track > span,
+.reward-progress > span {
+  width: 100% !important;
+  transform: scaleX(var(--progress-ratio, 0));
+  transform-origin: left center;
+  transition: transform 280ms var(--motion-ease-out);
+  will-change: transform;
+}
+
+/* Os selos alternam de estado sem interpolar filter, evitando pintura contínua. */
+.nav-stamp-icon {
+  transition:
+    opacity var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out) !important;
+}
+
+.bottom-nav a,
+.nav-icon-frame {
+  transition-timing-function: var(--motion-ease-out) !important;
+}
+
+.bottom-nav a {
+  letter-spacing: 0.005em;
+}
+
+@media (max-width: 430px) {
+  .participant-shell {
+    padding-bottom: 90px;
+  }
+
+  .bottom-nav {
+    padding-inline: 3px;
+  }
+
+  .bottom-nav a {
+    min-height: 70px;
+    padding-inline: 1px;
+    font-size: clamp(0.59rem, 2.55vw, 0.68rem);
+    letter-spacing: -0.012em;
+  }
+
+  .nav-icon-frame {
+    width: 42px;
+    height: 42px;
+  }
+
+  .nav-stamp-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .page-heading {
+    margin-bottom: 22px;
+  }
+
+  .page-heading h1 {
+    max-width: 100%;
+  }
+
+  .home-stat,
+  .home-action {
+    gap: 10px;
+  }
+
+  .home-stat .brand-icon,
+  .home-action .brand-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .profile-metrics .brand-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 350px) {
+  .bottom-nav a {
+    font-size: 0.56rem;
+  }
+
+  .nav-icon-frame {
+    width: 38px;
+    height: 38px;
+  }
+
+  .nav-stamp-icon {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-track > span,
+  .passport-progress-track > span,
+  .reward-progress > span {
+    transition: none;
+  }
+}

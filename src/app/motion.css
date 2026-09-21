@@ -129,6 +129,10 @@
 .ghost,
 .icon-button,
 .profile-link,
+.home-stat,
+.home-action,
+.reward-card,
+.profile-ranking-card,
 .filter-chips button,
 .bottom-nav a {
   -webkit-tap-highlight-color: transparent;
@@ -145,8 +149,12 @@
 .ghost:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .profile-link:active,
+.home-stat:active,
+.home-action:active,
+.reward-card:active,
+.profile-ranking-card:active,
 .filter-chips button:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.975);
   transition-duration: var(--motion-press);
 }
 
@@ -235,8 +243,12 @@
   .button:active:not(:disabled),
   .secondary:active:not(:disabled),
   .ghost:active:not(:disabled),
-  .profile-link:active {
-    transform: scale(0.97);
+  .profile-link:active,
+  .home-stat:active,
+  .home-action:active,
+  .reward-card:active,
+  .profile-ranking-card:active {
+    transform: scale(0.975);
   }
 }
 

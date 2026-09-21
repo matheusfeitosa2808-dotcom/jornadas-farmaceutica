@@ -4,6 +4,7 @@ import Pwa from "@/components/pwa";
 import InstallApp from "@/components/install-app";
 import "./globals.css";
 import "./motion.css";
+import "./participant-polish.css";
 import "./dev-hidden.css";
 export const metadata: Metadata = {
   title: {

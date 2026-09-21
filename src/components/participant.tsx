@@ -57,6 +57,11 @@ const navigation = [
     icon: "/assets/navigation/nav-programacao.png",
   },
   {
+    path: "passaporte",
+    label: "Passaporte",
+    icon: "/assets/navigation/nav-passaporte.png",
+  },
+  {
     path: "arena",
     label: "Farma Arena",
     icon: "/assets/navigation/nav-farma-arena.png",

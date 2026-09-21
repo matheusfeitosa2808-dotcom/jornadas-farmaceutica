@@ -3287,6 +3287,7 @@ img {
 /* Navegação inferior com carimbos oficiais */
 .bottom-nav {
   padding: 6px 12px calc(8px + env(safe-area-inset-bottom));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: end;
   border-top-color: rgba(8, 59, 80, 0.16);
   background: rgba(249, 246, 238, 0.985);
@@ -3310,12 +3311,15 @@ img {
   --nav-color: #a77b25;
 }
 .bottom-nav a:nth-child(3) {
-  --nav-color: #981e27;
+  --nav-color: #174f58;
 }
 .bottom-nav a:nth-child(4) {
-  --nav-color: #b18a3b;
+  --nav-color: #981e27;
 }
 .bottom-nav a:nth-child(5) {
+  --nav-color: #b18a3b;
+}
+.bottom-nav a:nth-child(6) {
   --nav-color: #174f58;
 }
 .nav-icon-frame {
@@ -3375,7 +3379,7 @@ img {
   }
   .bottom-nav a {
     min-height: 68px;
-    font-size: 0.64rem;
+    font-size: 0.59rem;
   }
   .nav-icon-frame {
     width: 44px;

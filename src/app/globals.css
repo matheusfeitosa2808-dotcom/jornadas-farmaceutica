@@ -3227,6 +3227,22 @@ img {
   height: 48px;
   object-fit: contain;
 }
+.landing-supporters .landing-partner-logos {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 28px);
+}
+.landing-supporters .landing-partner-logos img {
+  width: 100%;
+  max-width: 130px;
+  justify-self: center;
+}
+.landing-supporters .landing-partner-logo--blue {
+  height: 56px;
+}
+.landing-supporters .landing-partner-logo--lady9 {
+  height: 54px;
+}
 .landing-partner-logos .landing-partner-logo--on-ok {
   height: 58px;
   mix-blend-mode: multiply;
@@ -3256,6 +3272,21 @@ img {
   .landing-partner-logos img {
     max-width: 22%;
     height: 40px;
+  }
+  .landing-supporters .landing-partner-logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px 18px;
+  }
+  .landing-supporters .landing-partner-logos img {
+    width: 100%;
+    max-width: 96px;
+    height: 44px;
+  }
+  .landing-supporters .landing-partner-logo--blue {
+    height: 52px;
+  }
+  .landing-supporters .landing-partner-logo--lady9 {
+    height: 48px;
   }
   .landing-partner-logos .landing-partner-logo--on-ok {
     height: 48px;

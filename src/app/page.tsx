@@ -93,6 +93,16 @@ export default function Landing() {
               src="/assets/partners/logo-on-ok.png"
               alt="On Ok Marketing e Vendas"
             />
+            <img
+              className="landing-partner-logo--blue"
+              src="/assets/partners/logo-blue-uniformes.png"
+              alt="Blue Uniformes Profissionais"
+            />
+            <img
+              className="landing-partner-logo--lady9"
+              src="/assets/partners/logo-lady9-confeccoes.png"
+              alt="Lady9 Confecções"
+            />
           </div>
         </article>
       </section>

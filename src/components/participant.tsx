@@ -72,7 +72,7 @@ const navigation = [
   {
     path: "ranking",
     label: "Ranking",
-    icon: "/assets/navigation/nav-ranking.png",
+    icon: "/assets/navigation/nav-ranking-hygia.png",
   },
   {
     path: "perfil",

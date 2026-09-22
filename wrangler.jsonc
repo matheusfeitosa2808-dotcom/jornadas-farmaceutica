@@ -21,7 +21,7 @@
                        }
                    ],
     "vars":  {
-                 "PARTICIPANT_LOGIN_DISABLED":  "true"
+                 "PARTICIPANT_LOGIN_DISABLED":  "false"
              },
     "observability":  {
                           "enabled":  true,

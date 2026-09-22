@@ -18,6 +18,7 @@ import {
   Clock3,
   Copy,
   Download,
+  Eye,
   ExternalLink,
   FileSpreadsheet,
   Flame,
@@ -841,7 +842,7 @@ const configs: Record<string, EntityConfig> = {
         label: "Status",
         type: "select",
         options: opts("DRAFT", "OPEN", "IN_PROGRESS", "FINISHED", "CANCELLED"),
-        default: "OPEN",
+        default: "DRAFT",
       },
       {
         key: "speakerIds",
@@ -888,7 +889,7 @@ const configs: Record<string, EntityConfig> = {
         key: "enrollmentOpen",
         label: "Inscrições abertas",
         type: "checkbox",
-        default: true,
+        default: false,
       },
       {
         key: "allowWaitlist",
@@ -1800,6 +1801,17 @@ function EntityManager({
             <Pencil size={16} />
             {config.entity === "reward" && <span>Editar</span>}
           </button>
+          {config.entity === "activity" && r.status === "DRAFT" && (
+            <button
+              className="a-text-button"
+              onClick={async () => {
+                await action("activity.publish", { activityId: r.id });
+                toast("Palestra liberada ao público.");
+              }}
+            >
+              <Eye size={15} /> Liberar
+            </button>
+          )}
           {config.entity === "edition" && <DuplicateEdition row={r} />}
           {config.entity === "activity" && r.status !== "CANCELLED" && (
             <ReasonButton

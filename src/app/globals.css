@@ -5311,3 +5311,37 @@ img {
     padding-right: 78px;
   }
 }
+
+/* Mobile Chromium/Android renders animated blur filters on the main thread on
+   many mid-range devices. Keep the same aura with compositor-friendly layers. */
+@media (hover: none) and (pointer: coarse) {
+  @supports not (-webkit-touch-callout: none) {
+    .farma-arena-badge::before {
+      inset: -9%;
+      filter: none;
+      opacity: 0.6;
+      animation-duration: 5.2s;
+    }
+
+    .farma-arena-badge::after {
+      display: none;
+    }
+
+    .farma-arena-badge > .farma-arena-badge__art {
+      filter: drop-shadow(0 3px 5px rgba(72, 29, 17, 0.16));
+    }
+
+    .bottom-nav {
+      background: rgba(250, 248, 241, 0.98);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    button,
+    a,
+    [role="button"] {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+}

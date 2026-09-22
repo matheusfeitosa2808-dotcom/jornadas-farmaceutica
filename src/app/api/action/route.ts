@@ -345,11 +345,11 @@ async function saveEntity(
       block: data.block || "",
       room: data.room || "",
       capacity: N(data.capacity, 20),
-      enrollmentOpen: B(data.enrollmentOpen, true),
+      enrollmentOpen: B(data.enrollmentOpen, false),
       enrollmentDeadline: D(data.enrollmentDeadline),
       swapDeadline: D(data.swapDeadline ?? data.changeDeadline),
       workload: N(data.workload ?? data.workloadHours, 1),
-      status: data.status || "OPEN",
+      status: data.status || "DRAFT",
       allowWaitlist: B(data.allowWaitlist, true),
       stampUrl: safeUrl(data.stampUrl),
       stampColor: stampColor(data.stampColor),
@@ -829,6 +829,38 @@ export async function POST(req: NextRequest) {
           );
           message = "Check-out confirmado.";
           break;
+        case "activity.publish": {
+          requirePermission(actor, "activities.write");
+          const previous = await tx.activity.findFirst({
+            where: { id: String(body.activityId || ""), editionId },
+          });
+          ensure(
+            previous,
+            "Atividade não encontrada nesta edição.",
+            "NOT_FOUND",
+            404,
+          );
+          ensure(
+            previous.status === "DRAFT",
+            "Somente atividades em rascunho podem ser liberadas.",
+          );
+          result = await tx.activity.update({
+            where: { id: previous.id },
+            data: { status: "OPEN", enrollmentOpen: true },
+          });
+          await audit(
+            tx,
+            actor,
+            editionId,
+            "activity.publish",
+            "Activity",
+            result.id,
+            previous,
+            result,
+          );
+          message = "Palestra liberada ao público com inscrições abertas.";
+          break;
+        }
         case "attendance.correct":
           result = await correctAttendance(
             tx,

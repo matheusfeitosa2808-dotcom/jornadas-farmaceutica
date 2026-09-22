@@ -947,3 +947,60 @@
     transition: none;
   }
 }
+
+/* Android/mobile Chromium: remove paint-heavy blur layers while preserving
+   the branded light and the transform-only motion used on iPhone. */
+@media (hover: none) and (pointer: coarse) {
+  @supports not (-webkit-touch-callout: none) {
+    .arena-surface {
+      contain: layout style;
+    }
+
+    .arena-challenge-card,
+    .arena-store-card,
+    .arena-ranking-list article,
+    .arena-ledger article,
+    .arena-completions article {
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 240px;
+    }
+
+    .arena-transition {
+      animation: arena-android-fade 0.28s ease-out both;
+    }
+
+    .arena-transition__ember,
+    .arena-reveal__fire {
+      width: 270px;
+      height: 270px;
+      filter: none;
+      opacity: 0.58;
+      animation-duration: 2.8s;
+    }
+
+    .arena-reveal__stamp,
+    .arena-hero__stamp,
+    .home-arena-feature__stamp {
+      filter: none;
+    }
+
+    .arena-actions a,
+    .arena-filters button,
+    .arena-store-card button,
+    .arena-reveal__skip {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+}
+
+@keyframes arena-android-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

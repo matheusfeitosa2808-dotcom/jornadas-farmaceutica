@@ -34,6 +34,7 @@ import { StampArtwork, resolvedStampColor } from "./stamp-artwork";
 import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
 import { STAMP_XP_REWARD } from "@/lib/xp";
 import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
+import { dateKeyInTimeZone } from "@/lib/datetime";
 import {
   ArenaAwardRevealQueue,
   ArenaRouter,
@@ -557,9 +558,14 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
   const [category, setCategory] = useState(""),
     [search, setSearch] = useState(""),
     [date, setDate] = useState("");
+  const timezone = data.edition.timezone;
   const dates: Array<string> = Array.from(
-    new Set((data.activities || []).map((a: any) => a.startAt.slice(0, 10))),
-  );
+    new Set<string>(
+      (data.activities || []).map((a: any) =>
+        dateKeyInTimeZone(a.startAt, timezone),
+      ),
+    ),
+  ).filter(Boolean);
   const activities = (data.activities || [])
     .filter(
       (a: any) =>
@@ -570,7 +576,7 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
             (w: any) => w.activityId === a.id && w.status === "WAITING",
           )) &&
         (!category || a.categoryId === category) &&
-        (!date || a.startAt.slice(0, 10) === date) &&
+        (!date || dateKeyInTimeZone(a.startAt, timezone) === date) &&
         (!search || a.title.toLowerCase().includes(search.toLowerCase())),
     )
     .sort((a: any, b: any) => a.startAt.localeCompare(b.startAt));

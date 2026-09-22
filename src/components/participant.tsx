@@ -67,12 +67,12 @@ const navigation = [
   {
     path: "arena",
     label: "Farma Arena",
-    icon: "/assets/navigation/nav-farma-arena.png",
+    icon: "/assets/navigation/nav-farma-arena.webp",
   },
   {
     path: "ranking",
     label: "Ranking",
-    icon: "/assets/navigation/nav-ranking-hygia.png",
+    icon: "/assets/navigation/nav-ranking-hygia.webp",
   },
   {
     path: "perfil",

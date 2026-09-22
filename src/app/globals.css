@@ -2973,7 +2973,7 @@ img {
   position: absolute;
   inset: -10px;
   z-index: 2;
-  background: url("/assets/brand/profile-frame.png") center / contain no-repeat;
+  background: url("/assets/brand/profile-frame.webp") center / contain no-repeat;
   pointer-events: none;
 }
 .profile-top {
@@ -4678,7 +4678,11 @@ img {
   color: var(--ink);
   text-decoration: none;
   background:
-    radial-gradient(circle at 92% 20%, rgba(181, 139, 50, 0.18), transparent 26%),
+    radial-gradient(
+      circle at 92% 20%,
+      rgba(181, 139, 50, 0.18),
+      transparent 26%
+    ),
     linear-gradient(135deg, rgba(23, 79, 88, 0.08), rgba(255, 255, 255, 0.86));
   border-color: rgba(23, 79, 88, 0.2);
 }
@@ -5173,8 +5177,8 @@ img {
   opacity: 0.66;
   transform: translateZ(0) scale(0.92);
   will-change: transform, opacity;
-  animation: farma-arena-aura 3.6s cubic-bezier(0.77, 0, 0.175, 1)
-    infinite alternate;
+  animation: farma-arena-aura 3.6s cubic-bezier(0.77, 0, 0.175, 1) infinite
+    alternate;
 }
 
 .farma-arena-badge::after {
@@ -5190,17 +5194,13 @@ img {
       rgba(255, 242, 196, 0.34),
       transparent 29%
     ),
-    radial-gradient(
-      circle at 68% 70%,
-      rgba(195, 73, 46, 0.2),
-      transparent 34%
-    );
+    radial-gradient(circle at 68% 70%, rgba(195, 73, 46, 0.2), transparent 34%);
   filter: blur(9px);
   opacity: 0.3;
   transform: translate3d(-2%, -1%, 0) scale(0.96);
   will-change: transform, opacity;
-  animation: farma-arena-halo 5.4s cubic-bezier(0.77, 0, 0.175, 1)
-    infinite alternate;
+  animation: farma-arena-halo 5.4s cubic-bezier(0.77, 0, 0.175, 1) infinite
+    alternate;
 }
 .farma-arena-badge > .farma-arena-badge__art {
   position: relative;
@@ -5210,8 +5210,7 @@ img {
   height: 100%;
   object-fit: contain;
   transform: translateZ(0);
-  filter:
-    drop-shadow(0 3px 5px rgba(72, 29, 17, 0.18))
+  filter: drop-shadow(0 3px 5px rgba(72, 29, 17, 0.18))
     drop-shadow(0 0 8px rgba(239, 195, 94, 0.16));
 }
 

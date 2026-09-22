@@ -16,15 +16,18 @@ export async function GET(req: NextRequest) {
 
       const editions = await db.edition.findMany({
         where:
-          scope === "public"
-            ? { status: { in: ["PUBLISHED", "ACTIVE", "FINISHED"] } }
-            : {},
+          scope === "admin"
+            ? {}
+            : actor?.editionId
+              ? { id: actor.editionId }
+              : { status: { in: ["PUBLISHED", "ACTIVE", "FINISHED"] } },
         orderBy: [{ year: "desc" }],
       });
 
       if (!editionId)
         editionId =
-          editions.find((e: any) => e.status === "ACTIVE")?.id || editions[0]?.id;
+          editions.find((e: any) => e.status === "ACTIVE")?.id ||
+          editions[0]?.id;
 
       if (!editionId)
         return NextResponse.json({
@@ -67,7 +70,7 @@ export async function GET(req: NextRequest) {
         db.activity.findMany({
           where: {
             editionId,
-            ...(scope === "public" ? { status: { not: "DRAFT" } } : {}),
+            ...(scope !== "admin" ? { status: { not: "DRAFT" } } : {}),
           },
           orderBy: { startAt: "asc" },
         }),
@@ -84,29 +87,30 @@ export async function GET(req: NextRequest) {
       ]);
 
       const activityIds = rawActivities.map((a: any) => a.id);
-      const [activitySpeakers, occupiedEnrollments, waitingEntries] = activityIds.length
-        ? await Promise.all([
-            db.activitySpeaker.findMany({
-              where: { activityId: { in: activityIds } },
-            }),
-            db.enrollment.findMany({
-              where: {
-                editionId,
-                activityId: { in: activityIds },
-                status: { in: ["ACTIVE", "COMPLETED"] },
-              },
-              select: { activityId: true },
-            }),
-            db.waitlistEntry.findMany({
-              where: {
-                editionId,
-                activityId: { in: activityIds },
-                status: "WAITING",
-              },
-              select: { activityId: true },
-            }),
-          ])
-        : [[], [], []];
+      const [activitySpeakers, occupiedEnrollments, waitingEntries] =
+        activityIds.length
+          ? await Promise.all([
+              db.activitySpeaker.findMany({
+                where: { activityId: { in: activityIds } },
+              }),
+              db.enrollment.findMany({
+                where: {
+                  editionId,
+                  activityId: { in: activityIds },
+                  status: { in: ["ACTIVE", "COMPLETED"] },
+                },
+                select: { activityId: true },
+              }),
+              db.waitlistEntry.findMany({
+                where: {
+                  editionId,
+                  activityId: { in: activityIds },
+                  status: "WAITING",
+                },
+                select: { activityId: true },
+              }),
+            ])
+          : [[], [], []];
 
       const speakerById = new Map(speakers.map((s: any) => [s.id, s]));
       const speakersByActivity = new Map<string, any[]>();
@@ -119,11 +123,17 @@ export async function GET(req: NextRequest) {
 
       const enrolledCount = new Map<string, number>();
       for (const row of occupiedEnrollments as any[])
-        enrolledCount.set(row.activityId, (enrolledCount.get(row.activityId) || 0) + 1);
+        enrolledCount.set(
+          row.activityId,
+          (enrolledCount.get(row.activityId) || 0) + 1,
+        );
 
       const waitlistCount = new Map<string, number>();
       for (const row of waitingEntries as any[])
-        waitlistCount.set(row.activityId, (waitlistCount.get(row.activityId) || 0) + 1);
+        waitlistCount.set(
+          row.activityId,
+          (waitlistCount.get(row.activityId) || 0) + 1,
+        );
 
       const activities = rawActivities.map((a: any) => {
         const activitySpeakersList = speakersByActivity.get(a.id) || [];
@@ -183,9 +193,13 @@ export async function GET(req: NextRequest) {
         where: participantWhere,
         orderBy: { name: "asc" },
       });
-      const participants = participants0.map((p: any) => ({ ...p, fullName: p.name }));
+      const participants = participants0.map((p: any) => ({
+        ...p,
+        fullName: p.name,
+      }));
       const pids = participants.map((p: any) => p.id);
-      const own = actor.type === "participant" ? { participantId: { in: pids } } : {};
+      const own =
+        actor.type === "participant" ? { participantId: { in: pids } } : {};
 
       const [
         enrollments,
@@ -280,9 +294,7 @@ export async function GET(req: NextRequest) {
             })
           : [];
         const notificationById = new Map<string, any>(
-          notificationRows.map(
-            (n: any) => [String(n.id), n] as [string, any],
-          ),
+          notificationRows.map((n: any) => [String(n.id), n] as [string, any]),
         );
         notifications = (notificationRecipients as any[])
           .map((r: any) => {

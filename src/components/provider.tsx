@@ -54,11 +54,12 @@ export function Provider({ children }: { children: ReactNode }) {
     const timeout = window.setTimeout(() => controller.abort(), 25000);
 
     try {
-      const endpoint = isLogin
-        ? "/api/editions"
-        : isAdminImport
-          ? `/api/state?scope=admin&mode=import${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
-          : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
+      const endpoint =
+        isLogin || scope === "public"
+          ? "/api/editions"
+          : isAdminImport
+            ? `/api/state?scope=admin&mode=import${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
+            : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
       const res = await fetch(endpoint, {
         cache: "no-store",
         signal: controller.signal,
@@ -90,10 +91,11 @@ export function Provider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  // Atualizações sob demanda: o servidor avisa por SSE quando algo muda.
-  // Não existe polling periódico; ao perder a conexão o EventSource reconecta.
+  // Só a equipe administrativa precisa receber alterações em tempo real.
+  // Participantes atualizam ao abrir/recarregar a página, evitando centenas de
+  // conexões persistentes e recargas coletivas durante o evento.
   useEffect(() => {
-    if (isLogin || scope === "public" || !data?.actor?.id) return;
+    if (isLogin || scope !== "admin" || !data?.actor?.id) return;
     const activeEditionId = data?.edition?.id || editionId;
     if (!activeEditionId) return;
     const source = new EventSource(

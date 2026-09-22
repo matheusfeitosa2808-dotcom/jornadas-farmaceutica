@@ -39,7 +39,7 @@ export function useArena() {
     if (!data?.edition?.id || data?.actor?.type !== "participant") return;
     try {
       const response = await fetch(
-        `/api/arena?editionId=${encodeURIComponent(data.edition.id)}`,
+        `/api/arena/pending?editionId=${encodeURIComponent(data.edition.id)}`,
         { cache: "no-store" },
       );
       setArena(

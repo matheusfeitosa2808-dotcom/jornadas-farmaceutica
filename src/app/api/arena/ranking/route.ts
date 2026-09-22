@@ -3,6 +3,7 @@ import { transaction } from "@/server/db";
 import {
   arenaConfig,
   buildArenaRanking,
+  cachedArenaRanking,
   publicArenaRanking,
 } from "@/server/arena";
 import {
@@ -34,10 +35,11 @@ export async function GET(request: NextRequest) {
         403,
       );
     const result = await transaction(async (tx) => {
-      const [config, ranking] = await Promise.all([
-        arenaConfig(tx, editionId),
-        buildArenaRanking(tx, editionId),
-      ]);
+      const config = await arenaConfig(tx, editionId);
+      const ranking =
+        actor.type === "admin"
+          ? await buildArenaRanking(tx, editionId, config)
+          : await cachedArenaRanking(tx, editionId, config);
       const safeRanking = publicArenaRanking(ranking);
       const own =
         actor.type === "participant"

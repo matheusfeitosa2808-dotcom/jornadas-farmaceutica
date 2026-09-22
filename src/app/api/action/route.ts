@@ -38,6 +38,7 @@ import {
   releaseScheduledArenaAwards,
   revokeArenaCompletion,
   scheduleArenaAward,
+  invalidateArenaRanking,
 } from "@/server/arena";
 import { rewardRedemptionMode } from "@/lib/rewards";
 const D = (v: any) => (v ? new Date(v) : null),
@@ -1564,6 +1565,7 @@ export async function POST(req: NextRequest) {
           throw new Error("Ação não reconhecida.");
       }
     });
+    invalidateArenaRanking(editionId);
     publish(editionId);
     const flat =
       result && typeof result === "object" && !Array.isArray(result)

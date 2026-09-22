@@ -51,6 +51,24 @@ export function publicArenaRanking(ranking: any[]) {
   }));
 }
 
+type ArenaRankingCacheEntry = {
+  expiresAt: number;
+  promise: Promise<any[]>;
+};
+
+const arenaCacheContext = globalThis as unknown as {
+  jornadasArenaRankingCache?: Map<string, ArenaRankingCacheEntry>;
+};
+const arenaRankingCache =
+  arenaCacheContext.jornadasArenaRankingCache ??
+  new Map<string, ArenaRankingCacheEntry>();
+arenaCacheContext.jornadasArenaRankingCache = arenaRankingCache;
+
+export function invalidateArenaRanking(editionId?: string) {
+  if (editionId) arenaRankingCache.delete(editionId);
+  else arenaRankingCache.clear();
+}
+
 export async function arenaConfig(tx: any, editionId: string, create = false) {
   const current = await tx.arenaConfig.findUnique({ where: { editionId } });
   if (current || !create) return current || defaultArenaConfig(editionId);
@@ -138,14 +156,35 @@ export function rankArenaParticipants(
   }));
 }
 
-export async function buildArenaRanking(tx: any, editionId: string) {
+export async function buildArenaRanking(
+  tx: any,
+  editionId: string,
+  knownConfig?: any,
+) {
   const [config, participants, transactions, completions, stamps] =
     await Promise.all([
-      arenaConfig(tx, editionId),
-      tx.participant.findMany({ where: { editionId, active: true } }),
-      tx.xpTransaction.findMany({ where: { editionId } }),
-      tx.arenaCompletion.findMany({ where: { editionId, status: "VALID" } }),
-      tx.passportStamp.findMany({ where: { editionId, status: "VALID" } }),
+      knownConfig || arenaConfig(tx, editionId),
+      tx.participant.findMany({
+        where: { editionId, active: true },
+        select: { id: true, name: true, photoUrl: true, semester: true },
+      }),
+      tx.xpTransaction.findMany({
+        where: { editionId },
+        select: {
+          participantId: true,
+          rankingDelta: true,
+          balanceDelta: true,
+          createdAt: true,
+        },
+      }),
+      tx.arenaCompletion.findMany({
+        where: { editionId, status: "VALID" },
+        select: { participantId: true, challengeId: true },
+      }),
+      tx.passportStamp.findMany({
+        where: { editionId, status: "VALID" },
+        select: { participantId: true, issuedAt: true },
+      }),
     ]);
   return rankArenaParticipants(
     participants,
@@ -156,6 +195,26 @@ export async function buildArenaRanking(tx: any, editionId: string) {
   );
 }
 
+export async function cachedArenaRanking(
+  tx: any,
+  editionId: string,
+  knownConfig?: any,
+) {
+  const now = Date.now();
+  const current = arenaRankingCache.get(editionId);
+  if (current && current.expiresAt > now) return current.promise;
+
+  const promise = buildArenaRanking(tx, editionId, knownConfig);
+  arenaRankingCache.set(editionId, { expiresAt: now + 30_000, promise });
+  try {
+    return await promise;
+  } catch (error) {
+    if (arenaRankingCache.get(editionId)?.promise === promise)
+      arenaRankingCache.delete(editionId);
+    throw error;
+  }
+}
+
 export async function arenaPayload(
   tx: any,
   editionId: string,
@@ -163,7 +222,9 @@ export async function arenaPayload(
   includeAdmin = false,
 ) {
   const config = await arenaConfig(tx, editionId);
-  const computedRanking = await buildArenaRanking(tx, editionId);
+  const computedRanking = includeAdmin
+    ? await buildArenaRanking(tx, editionId, config)
+    : await cachedArenaRanking(tx, editionId, config);
   const ranking = config.rankingEnabled || includeAdmin ? computedRanking : [];
   const challengeWhere = {
     editionId,
@@ -228,12 +289,45 @@ export async function arenaPayload(
     }),
     includeAdmin ? tx.adminUser.findMany({}) : Promise.resolve([]),
   ]);
-  const rewardsWithAvailability = await Promise.all(
-    rewards.map(async (reward: any) => ({
-      ...reward,
-      stockAvailable: await rewardAvailable(tx, reward),
-    })),
-  );
+  const rewardIds = rewards.map((reward: any) => reward.id);
+  const [stockReservations, stockDeliveries] = rewardIds.length
+    ? await Promise.all([
+        tx.rewardReservation.findMany({
+          where: {
+            rewardId: { in: rewardIds },
+            status: {
+              in: ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"],
+            },
+          },
+          select: { rewardId: true, quantity: true },
+        }),
+        tx.rewardDelivery.findMany({
+          where: { rewardId: { in: rewardIds }, status: "DELIVERED" },
+          select: { rewardId: true, quantity: true },
+        }),
+      ])
+    : [[], []];
+  const reservedByReward = new Map<string, number>();
+  const deliveredByReward = new Map<string, number>();
+  for (const row of stockReservations as any[])
+    reservedByReward.set(
+      row.rewardId,
+      (reservedByReward.get(row.rewardId) || 0) + Number(row.quantity || 0),
+    );
+  for (const row of stockDeliveries as any[])
+    deliveredByReward.set(
+      row.rewardId,
+      (deliveredByReward.get(row.rewardId) || 0) + Number(row.quantity || 0),
+    );
+  const rewardsWithAvailability = rewards.map((reward: any) => ({
+    ...reward,
+    stockAvailable: Math.max(
+      0,
+      reward.total -
+        (reservedByReward.get(reward.id) || 0) -
+        (deliveredByReward.get(reward.id) || 0),
+    ),
+  }));
   const pendingRevealAwards = ownId
     ? awards.filter(
         (award: any) =>

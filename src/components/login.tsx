@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+import { readApiResponse } from "@/lib/api-response";
 import { useJornadas } from "./provider";
 
 export default function Login({ kind }: { kind: "participant" | "admin" }) {
@@ -34,13 +35,11 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ kind, ...values }),
         signal: controller.signal,
       });
-      const body = (await res.json()) as any;
-      if (!res.ok) throw new Error(body.error || "Não foi possível entrar.");
-
-      window.location.replace(kind === "admin" ? "/admin" : "/app");
+      await readApiResponse(res, "Não foi possível entrar.");
     } catch (e) {
       const message =
         e instanceof DOMException && e.name === "AbortError"
@@ -50,9 +49,16 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
             : "Não foi possível entrar.";
       setError(message);
       setBusy(false);
+      return;
     } finally {
       window.clearTimeout(timeout);
     }
+
+    // Alguns WebViews móveis lançam `SyntaxError: The string did not match the
+    // expected pattern` ao usar Location.replace() com uma rota relativa. A
+    // sessão já foi criada nesse ponto; atribuir href mantém o redirecionamento
+    // simples e compatível com esses navegadores.
+    window.location.href = kind === "admin" ? "/admin" : "/app";
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {

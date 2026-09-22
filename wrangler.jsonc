@@ -20,7 +20,9 @@
                            "bucket_name":  "jornadas-uploads"
                        }
                    ],
-    "vars":  {},
+    "vars":  {
+                 "PARTICIPANT_LOGIN_DISABLED":  "true"
+             },
     "observability":  {
                           "enabled":  true,
                           "head_sampling_rate":  1

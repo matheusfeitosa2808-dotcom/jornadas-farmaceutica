@@ -6,6 +6,7 @@ import {
   errorResponse,
   ensure,
   normalizeName,
+  participantAccessPaused,
   rateLimit,
   tokenHash,
   verifyPassword,
@@ -16,6 +17,12 @@ export async function POST(req: NextRequest) {
     csrf(req);
     const b = (await req.json()) as any;
     const kind = b.kind === "admin" ? "admin" : "participant";
+    ensure(
+      kind === "admin" || !participantAccessPaused(),
+      "Acesso dos participantes temporariamente bloqueado para atualização da programação.",
+      "PARTICIPANT_ACCESS_PAUSED",
+      503,
+    );
     const devLogin = b.dev === true || b.dev === "true";
     const token = randomBytes(32).toString("base64url");
 

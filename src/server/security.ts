@@ -42,6 +42,8 @@ export const normalizeName = (name: string) =>
     .toLowerCase();
 export const tokenHash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
+export const participantAccessPaused = () =>
+  process.env.PARTICIPANT_LOGIN_DISABLED === "true";
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   return `scrypt$${salt}$${scryptSync(password, salt, 64).toString("hex")}`;
@@ -122,6 +124,7 @@ export async function getActor(
 ): Promise<Actor | null> {
   if (scope === "public") return null;
   const kind = scope === "admin" ? "admin" : "participant";
+  if (kind === "participant" && participantAccessPaused()) return null;
   const raw = request.cookies.get(`jornadas_${kind}`)?.value;
   if (!raw) return null;
   const session = await db.session.findUnique({

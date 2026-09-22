@@ -1702,27 +1702,6 @@ function createDb(query: Queryer): any {
   return result;
 }
 
-class Semaphore {
-  private available: number;
-  private waiting: Array<() => void> = [];
-  constructor(limit: number) {
-    this.available = limit;
-  }
-  async acquire() {
-    if (this.available > 0) {
-      this.available--;
-      return;
-    }
-    await new Promise<void>((resolve) => this.waiting.push(resolve));
-  }
-  release() {
-    const next = this.waiting.shift();
-    if (next) next();
-    else this.available++;
-  }
-}
-
-const sockets = new Semaphore(4);
 function connectionString(): string {
   const hyperdrive = (env as any)?.HYPERDRIVE?.connectionString;
 
@@ -1740,7 +1719,6 @@ function connectionString(): string {
 }
 
 async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
-  await sockets.acquire();
   const client = new Client({
     connectionString: connectionString(),
     connectionTimeoutMillis: 10_000,
@@ -1757,7 +1735,6 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
     } catch {
       /* already closed */
     }
-    sockets.release();
   }
 }
 

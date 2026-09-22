@@ -5,7 +5,7 @@ import { ArrowRight, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { useJornadas } from "@/components/provider";
 
 export default function Landing() {
-  const { data } = useJornadas();
+  const { data, loading, error, refresh } = useJornadas();
   const [editionId, setEditionId] = useState("");
   const selectedEditionId = editionId || data?.edition?.id || "";
 
@@ -55,11 +55,21 @@ export default function Landing() {
                   {edition.name}
                 </option>
               ))
-            ) : (
+            ) : loading ? (
               <option value="">Carregando edições…</option>
+            ) : (
+              <option value="">Nenhuma edição disponível</option>
             )}
           </select>
         </label>
+        {!loading && error && (
+          <div className="landing-edition-error" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => void refresh()}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
         <div className="entry-actions">
           <Link className="button" href="/login/participante">
             <UserRound size={19} /> Participante <ArrowRight size={18} />

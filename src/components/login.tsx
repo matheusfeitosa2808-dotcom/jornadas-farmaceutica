@@ -11,7 +11,12 @@ import {
 import { useJornadas } from "./provider";
 
 export default function Login({ kind }: { kind: "participant" | "admin" }) {
-  const { data } = useJornadas();
+  const {
+    data,
+    loading: editionsLoading,
+    error: editionsError,
+    refresh,
+  } = useJornadas();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
 
@@ -137,13 +142,25 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
                           {ed.name}
                         </option>
                       ))
-                    ) : (
+                    ) : editionsLoading ? (
                       <option value="" disabled>
                         Carregando edições…
+                      </option>
+                    ) : (
+                      <option value="" disabled>
+                        Nenhuma edição disponível
                       </option>
                     )}
                   </select>
                 </div>
+                {!editionsLoading && editionsError && (
+                  <div className="login-edition-error" role="alert">
+                    <span>{editionsError}</span>
+                    <button type="button" onClick={() => void refresh()}>
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
                 <label className="field">
                   Primeiro nome
                   <input

@@ -1,4 +1,4 @@
-const CACHE='jornadas-static-v1';
+const CACHE='jornadas-static-v2';
 const STATIC=['/offline.html','/icons/icon-192.png','/icons/icon-512.png','/assets/brand/logo-jornada-2026.webp'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)));self.skipWaiting()});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));

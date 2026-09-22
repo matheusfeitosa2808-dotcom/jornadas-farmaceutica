@@ -5345,3 +5345,28 @@ img {
     }
   }
 }
+
+.login-edition-error,
+.landing-edition-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  color: #842f2f;
+  font-size: 0.86rem;
+}
+
+.login-edition-error button,
+.landing-edition-error button {
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}

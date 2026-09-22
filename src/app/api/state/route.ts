@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transaction } from "@/server/db";
 import { getActor, errorResponse } from "@/server/security";
+import { cachedArenaRanking } from "@/server/arena";
 
 export const dynamic = "force-dynamic";
 
@@ -214,6 +215,8 @@ export async function GET(req: NextRequest) {
         adminNotifications,
         audit,
         users,
+        participantArenaConfig,
+        pendingArenaAwards,
       ] = await Promise.all([
         db.enrollment.findMany({ where: { editionId, ...own } }),
         db.waitlistEntry.findMany({
@@ -263,7 +266,44 @@ export async function GET(req: NextRequest) {
               },
             })
           : Promise.resolve([]),
+        actor.type === "participant"
+          ? db.arenaConfig.findUnique({ where: { editionId } })
+          : Promise.resolve(null),
+        actor.type === "participant"
+          ? db.arenaXpAward.findMany({
+              where: {
+                editionId,
+                participantId: actor.id,
+                status: "RELEASED",
+                animationStatus: { in: ["QUEUED", "DELIVERED"] },
+              },
+              orderBy: { createdAt: "asc" },
+            })
+          : Promise.resolve([]),
       ]);
+
+      const pendingArenaChallengeIds = [
+        ...new Set(
+          (pendingArenaAwards as any[]).map((award: any) =>
+            String(award.challengeId),
+          ),
+        ),
+      ];
+      const pendingArenaChallenges = pendingArenaChallengeIds.length
+        ? await db.arenaChallenge.findMany({
+            where: { editionId, id: { in: pendingArenaChallengeIds } },
+          })
+        : [];
+      const pendingArenaRanking = pendingArenaAwards.length
+        ? await cachedArenaRanking(
+            db,
+            editionId,
+            participantArenaConfig || undefined,
+          )
+        : [];
+      const participantArenaRank = pendingArenaRanking.find(
+        (row: any) => row.participantId === actor.id,
+      );
 
       let draws = drawsBase as any[];
       if (actor.type === "admin" && draws.length) {
@@ -350,6 +390,20 @@ export async function GET(req: NextRequest) {
         deliveries: ownDeliveries,
         certificates,
         notifications,
+        arenaPending:
+          actor.type === "participant"
+            ? {
+                config: {
+                  combinePendingAwards:
+                    participantArenaConfig?.combinePendingAwards || false,
+                },
+                challenges: pendingArenaChallenges,
+                pendingRevealAwards: pendingArenaAwards,
+                ranking: participantArenaRank ? [participantArenaRank] : [],
+                myRank: participantArenaRank?.rank || null,
+                myXpTotal: participantArenaRank?.xpTotal || 0,
+              }
+            : undefined,
         audit,
         users: users.map((u: any) => ({
           ...u,

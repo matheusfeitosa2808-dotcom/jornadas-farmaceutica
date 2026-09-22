@@ -39,7 +39,7 @@ export function useArena() {
     if (!data?.edition?.id || data?.actor?.type !== "participant") return;
     try {
       const response = await fetch(
-        `/api/arena/pending?editionId=${encodeURIComponent(data.edition.id)}`,
+        `/api/arena?editionId=${encodeURIComponent(data.edition.id)}`,
         { cache: "no-store" },
       );
       setArena(
@@ -567,34 +567,15 @@ function ArenaStoreRedirect() {
 export function ArenaAwardRevealQueue() {
   const { data, action } = useJornadas();
   const [queue, setQueue] = useState<any[]>([]);
-  const [arena, setArena] = useState<any>(null);
-  const load = useCallback(async () => {
-    // Mantém a fila sincronizada após uma atualização SSE do estado principal.
-    void data?.serverNow;
-    if (data?.actor?.type !== "participant" || !data?.edition?.id) return;
-    try {
-      const response = await fetch(
-        `/api/arena?editionId=${encodeURIComponent(data.edition.id)}`,
-        { cache: "no-store" },
-      );
-      const body = await readApiResponse<any>(
-        response,
-        "Não foi possível carregar conquistas.",
-      );
-      setArena(body);
-      setQueue(
-        (body.pendingRevealAwards || []).sort(
-          (a: any, b: any) =>
-            new Date(a.releasedAt).getTime() - new Date(b.releasedAt).getTime(),
-        ),
-      );
-    } catch {
-      // A fila persiste no servidor e será buscada novamente na reconexão.
-    }
-  }, [data?.actor?.type, data?.edition?.id, data?.serverNow]);
+  const arena = data?.arenaPending;
   useEffect(() => {
-    void load();
-  }, [load]);
+    setQueue(
+      [...(arena?.pendingRevealAwards || [])].sort(
+        (a: any, b: any) =>
+          new Date(a.releasedAt).getTime() - new Date(b.releasedAt).getTime(),
+      ),
+    );
+  }, [arena?.pendingRevealAwards]);
   const current = queue[0];
   const revealGroup = useMemo(
     () =>

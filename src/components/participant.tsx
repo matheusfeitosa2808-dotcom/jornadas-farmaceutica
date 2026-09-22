@@ -539,7 +539,7 @@ function ParticipantHome({ person }: { person: any }) {
       <div className="cathedral-story">
         <p>“ Sua presença constrói conhecimento. ”</p>
         <img
-          src="/assets/brand/cathedral-fachada-trimmed.webp"
+          src="/assets/brand/cathedral-fachada-trimmed-optimized.webp"
           alt="Fachada da Faculdade Cathedral"
         />
         <span>
@@ -1214,7 +1214,7 @@ function Passport({ person }: { person: any }) {
         </div>
         <div className="passport-institution">
           <img
-            src="/assets/brand/cathedral-fachada-trimmed.webp"
+            src="/assets/brand/cathedral-fachada-trimmed-optimized.webp"
             alt="Fachada da Faculdade Cathedral"
           />
           <span>

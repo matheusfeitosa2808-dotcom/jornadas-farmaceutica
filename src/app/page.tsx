@@ -26,7 +26,7 @@ export default function Landing() {
       <header className="landing-top">
         <img
           className="landing-logo"
-          src="/assets/brand/logo-jornadas.webp"
+          src="/assets/brand/logo-jornadas-optimized.webp"
           alt="Jornadas"
         />
       </header>
@@ -84,7 +84,7 @@ export default function Landing() {
           <span>CRIADO POR</span>
           <div className="landing-partner-logos">
             <img
-              src="/assets/partners/logo-matheus-feitosa.webp"
+              src="/assets/partners/logo-matheus-feitosa-optimized.webp"
               alt="Matheus Feitosa — designer gráfico"
               loading="lazy"
               decoding="async"
@@ -95,40 +95,40 @@ export default function Landing() {
           <span>APOIADORES</span>
           <div className="landing-partner-logos">
             <img
-              src="/assets/partners/logo-candido.webp"
+              src="/assets/partners/logo-candido-optimized.webp"
               alt="Cândido"
               loading="lazy"
               decoding="async"
             />
             <img
-              src="/assets/partners/logo-heloisa.webp"
+              src="/assets/partners/logo-heloisa-optimized.webp"
               alt="HLA Beleza Integrativa"
               loading="lazy"
               decoding="async"
             />
             <img
-              src="/assets/partners/logo-prosserv.webp"
+              src="/assets/partners/logo-prosserv-optimized.webp"
               alt="Prosserv"
               loading="lazy"
               decoding="async"
             />
             <img
               className="landing-partner-logo--on-ok"
-              src="/assets/partners/logo-on-ok.webp"
+              src="/assets/partners/logo-on-ok-optimized.webp"
               alt="On Ok Marketing e Vendas"
               loading="lazy"
               decoding="async"
             />
             <img
               className="landing-partner-logo--blue"
-              src="/assets/partners/logo-blue-uniformes.webp"
+              src="/assets/partners/logo-blue-uniformes-optimized.webp"
               alt="Blue Uniformes Profissionais"
               loading="lazy"
               decoding="async"
             />
             <img
               className="landing-partner-logo--lady9"
-              src="/assets/partners/logo-lady9-confeccoes.webp"
+              src="/assets/partners/logo-lady9-confeccoes-optimized.webp"
               alt="Lady9 Confecções"
               loading="lazy"
               decoding="async"
@@ -138,7 +138,7 @@ export default function Landing() {
       </section>
       <div className="landing-campus" aria-hidden="true">
         <img
-          src="/assets/brand/cathedral-fachada-trimmed.webp"
+          src="/assets/brand/cathedral-fachada-trimmed-optimized.webp"
           alt=""
           loading="lazy"
           decoding="async"

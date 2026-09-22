@@ -110,7 +110,7 @@ export default function Login({ kind }: { kind: "participant" | "admin" }) {
           </div>
           <img
             className="login-cathedral"
-            src="/assets/brand/cathedral-fachada-trimmed.webp"
+            src="/assets/brand/cathedral-fachada-trimmed-optimized.webp"
             alt="Fachada da Faculdade Cathedral"
           />
         </aside>

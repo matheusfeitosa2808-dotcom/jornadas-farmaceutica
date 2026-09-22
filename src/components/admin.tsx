@@ -3378,7 +3378,10 @@ export default function AdminApp({
             <br />
             Saúde sempre.
           </p>
-          <img src="/assets/brand/cathedral-fachada-trimmed.webp" alt="" />
+          <img
+            src="/assets/brand/cathedral-fachada-trimmed-optimized.webp"
+            alt=""
+          />
         </div>
         <button
           className="a-logout"

@@ -626,7 +626,7 @@ export async function checkAttendance(
       createdAt: now,
     },
   });
-  if (operation === "CHECK_IN" && activity.category.generatesStamp) {
+  if (attendance.status === "COMPLETED" && activity.category.generatesStamp) {
     const stamp = {
       editionId,
       participantId: participant.id,
@@ -676,7 +676,7 @@ export async function checkAttendance(
     [participant.id],
     operation,
     operation === "CHECK_IN" ? "Presença confirmada!" : "Check-out confirmado",
-    `${activity.title}${operation === "CHECK_IN" && activity.category.generatesStamp ? ` · Novo carimbo e +${STAMP_XP_REWARD} XP.` : ""}`,
+    `${activity.title}${attendance.status === "COMPLETED" && activity.category.generatesStamp ? ` · Novo carimbo e +${STAMP_XP_REWARD} XP.` : ""}`,
   );
   return attendance;
 }
@@ -751,12 +751,12 @@ export async function correctAttendance(
       createdAt: now,
     },
   });
-  if (operation === "CANCEL_CHECK_IN")
+  if (["CANCEL_CHECK_IN", "CANCEL_CHECK_OUT"].includes(operation))
     await tx.passportStamp.updateMany({
       where: { attendanceId },
       data: { status: "REVOKED" },
     });
-  if (operation === "CHECK_IN" && old.activity.category.generatesStamp) {
+  if (result.status === "COMPLETED" && old.activity.category.generatesStamp) {
     const stamp = {
       editionId,
       participantId: old.participantId,
@@ -791,6 +791,18 @@ export async function correctAttendance(
         invalidationReason: `Correção de presença: ${reason}`,
       },
     });
+  if (
+    result.status === "COMPLETED" &&
+    old.activity.category.generatesCertificate
+  )
+    await issueCertificate(
+      tx,
+      editionId,
+      old.participantId,
+      old.activityId,
+      actor,
+      now,
+    );
   await audit(
     tx,
     actor,

@@ -945,10 +945,40 @@ test("@api check-out libera certificado, validação pública e cancelamento de 
       activityId,
       ra: fixture.participants[0].ra,
     });
+    const afterCheckin = await state(fixture.admin, fixture.editionId);
+    expect(
+      afterCheckin.stamps.filter(
+        (item) =>
+          item.activityId === activityId &&
+          item.participantId === fixture.participants[0].id,
+      ),
+    ).toHaveLength(0);
+    expect(
+      afterCheckin.certificates.filter(
+        (item) =>
+          item.activityId === activityId &&
+          item.participantId === fixture.participants[0].id,
+      ),
+    ).toHaveLength(0);
     await action(fixture.admin, fixture.editionId, "attendance.checkout", {
       activityId,
       ra: fixture.participants[0].ra,
     });
+    const afterCheckout = await state(fixture.admin, fixture.editionId);
+    expect(
+      afterCheckout.stamps.filter(
+        (item) =>
+          item.activityId === activityId &&
+          item.participantId === fixture.participants[0].id,
+      ),
+    ).toHaveLength(1);
+    expect(
+      afterCheckout.certificates.filter(
+        (item) =>
+          item.activityId === activityId &&
+          item.participantId === fixture.participants[0].id,
+      ),
+    ).toHaveLength(1);
     await action(fixture.admin, fixture.editionId, "entity.save", {
       entity: "edition",
       data: {

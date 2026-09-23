@@ -1084,7 +1084,10 @@ function Passport({ person }: { person: any }) {
   const activities = (data.activities || [])
     .filter(
       (a: any) =>
-        a.status !== "DRAFT" && categoryOf(data, a).generatesStamp !== false,
+        (a.status !== "DRAFT" ||
+          (isFarmaArena(categoryOf(data, a), a) &&
+            stamps.some((stamp: any) => stamp.activityId === a.id))) &&
+        categoryOf(data, a).generatesStamp !== false,
     )
     .sort(
       (a: any, b: any) =>
@@ -1122,7 +1125,8 @@ function Passport({ person }: { person: any }) {
             <h3>Carimbos conquistados</h3>
             <p>
               Cada presença confirmada acrescenta um carimbo e rende +
-              {STAMP_XP_REWARD} XP.
+              {STAMP_XP_REWARD} XP. A primeira conquista na Farma Arena libera
+              um carimbo especial.
             </p>
           </div>
           <span className="passport-progress-summary">
@@ -1145,6 +1149,7 @@ function Passport({ person }: { person: any }) {
           {activities.map((a: any) => {
             const stamp = stamps.find((s: any) => s.activityId === a.id);
             const c = categoryOf(data, a);
+            const arenaStamp = isFarmaArena(c, a);
             const image = resolvedStampUrl(c, a);
             const repeatsCategory = a.title
               .toLocaleLowerCase("pt-BR")
@@ -1155,7 +1160,7 @@ function Passport({ person }: { person: any }) {
               : a.title;
             return (
               <Link
-                href={`/app/programacao/${a.id}`}
+                href={arenaStamp ? "/app/arena" : `/app/programacao/${a.id}`}
                 className={`stamp-cell ${stamp ? "earned" : "unearned"} ${stamp && newIds.has(stamp.id) ? "stamp-arrived" : ""}`}
                 key={a.id}
               >
@@ -1191,11 +1196,25 @@ function Passport({ person }: { person: any }) {
                 <span className="stamp-category">{c.name}</span>
                 <h3>{stampTitle}</h3>
                 <span className="stamp-date">
-                  {formatDate(a.startAt, data.edition.timezone)} ·{" "}
-                  {formatTime(a.startAt, data.edition.timezone)}
+                  {arenaStamp ? (
+                    "Primeira conquista de XP"
+                  ) : (
+                    <>
+                      {formatDate(a.startAt, data.edition.timezone)} ·{" "}
+                      {formatTime(a.startAt, data.edition.timezone)}
+                    </>
+                  )}
                 </span>
                 <span className="stamp-xp-value">
-                  <Zap size={11} /> +{STAMP_XP_REWARD} XP
+                  {arenaStamp ? (
+                    <>
+                      <Check size={11} /> Carimbo especial
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={11} /> +{STAMP_XP_REWARD} XP
+                    </>
+                  )}
                 </span>
                 {stamp && (
                   <span className="stamp-record">
@@ -1297,8 +1316,10 @@ function Rewards({ id }: { id?: string }) {
           </span>
         </div>
         <p>
-          Cada novo carimbo rende +{STAMP_XP_REWARD} XP. Gastar XP não altera
-          sua posição no ranking, e o estoque é único para todos os resgates.
+          Carimbos de presença rendem +{STAMP_XP_REWARD} XP. O carimbo especial
+          da Farma Arena identifica sua primeira conquista sem somar XP extra.
+          Gastar XP não altera sua posição no ranking, e o estoque é único para
+          todos os resgates.
         </p>
       </section>
       {!id && (

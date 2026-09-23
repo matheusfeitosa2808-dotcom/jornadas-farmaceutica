@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { STAMP_XP_REWARD } from "@/lib/xp";
 import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
+import { FARMA_ARENA_STAMP_URL } from "@/lib/farma-arena";
 import type { Actor } from "./security";
 import { ensure, requireParticipant, requirePermission } from "./security";
 import { audit, notify } from "./domain";
@@ -20,6 +21,13 @@ export const defaultArenaConfig = (editionId: string) => ({
   xpReleaseDelaySeconds: 0,
   combinePendingAwards: false,
 });
+
+const ARENA_PASSPORT_ACTIVITY_PREFIX = "arena-passport-activity:";
+const ARENA_PASSPORT_CATEGORY_PREFIX = "arena-passport-category:";
+export const arenaPassportActivityId = (editionId: string) =>
+  `${ARENA_PASSPORT_ACTIVITY_PREFIX}${editionId}`;
+export const isArenaPassportStamp = (stamp: any) =>
+  String(stamp?.activityId || "").startsWith(ARENA_PASSPORT_ACTIVITY_PREFIX);
 
 const asDate = (value: unknown) => (value ? new Date(value as any) : null);
 const titleForRank = (rank: number, config: any) =>
@@ -96,6 +104,7 @@ export function rankArenaParticipants(
   }
   const stampsByParticipant = new Map<string, any[]>();
   for (const stamp of stamps) {
+    if (isArenaPassportStamp(stamp)) continue;
     const list = stampsByParticipant.get(stamp.participantId) || [];
     list.push(stamp);
     stampsByParticipant.set(stamp.participantId, list);
@@ -183,7 +192,7 @@ export async function buildArenaRanking(
       }),
       tx.passportStamp.findMany({
         where: { editionId, status: "VALID" },
-        select: { participantId: true, issuedAt: true },
+        select: { participantId: true, activityId: true, issuedAt: true },
       }),
     ]);
   return rankArenaParticipants(
@@ -358,20 +367,22 @@ export async function arenaPayload(
     : awards;
   const ledger = [
     ...transactions,
-    ...stamps.map((stamp: any) => ({
-      id: `stamp-xp-${stamp.id}`,
-      editionId,
-      participantId: stamp.participantId,
-      type: "EARN",
-      balanceDelta: STAMP_XP_REWARD,
-      rankingDelta: STAMP_XP_REWARD,
-      sourceType: "PASSPORT_STAMP",
-      sourceId: stamp.id,
-      description: "Carimbo conquistado",
-      idempotencyKey: `stamp-xp-${stamp.id}`,
-      createdBy: stamp.issuedBy,
-      createdAt: stamp.issuedAt,
-    })),
+    ...stamps
+      .filter((stamp: any) => !isArenaPassportStamp(stamp))
+      .map((stamp: any) => ({
+        id: `stamp-xp-${stamp.id}`,
+        editionId,
+        participantId: stamp.participantId,
+        type: "EARN",
+        balanceDelta: STAMP_XP_REWARD,
+        rankingDelta: STAMP_XP_REWARD,
+        sourceType: "PASSPORT_STAMP",
+        sourceId: stamp.id,
+        description: "Carimbo conquistado",
+        idempotencyKey: `stamp-xp-${stamp.id}`,
+        createdBy: stamp.issuedBy,
+        createdAt: stamp.issuedAt,
+      })),
   ].sort(
     (a: any, b: any) =>
       (asDate(b.createdAt)?.getTime() || 0) -
@@ -392,6 +403,144 @@ export async function arenaPayload(
     rewards: rewardsWithAvailability,
     reservations,
   };
+}
+
+async function ensureArenaPassportStamp(
+  tx: any,
+  editionId: string,
+  participantId: string,
+  issuedBy: string,
+) {
+  const activityId = arenaPassportActivityId(editionId);
+  const current = await tx.passportStamp.findFirst({
+    where: { editionId, participantId, activityId },
+  });
+  if (current?.status === "VALID") return { stamp: current, granted: false };
+
+  const edition = await tx.edition.findUnique({ where: { id: editionId } });
+  ensure(edition, "Edição não encontrada.", "NOT_FOUND", 404);
+  const now = new Date();
+  const category = await tx.activityCategory.upsert({
+    where: { editionId_slug: { editionId, slug: "farma-arena" } },
+    create: {
+      id: `${ARENA_PASSPORT_CATEGORY_PREFIX}${editionId}`,
+      editionId,
+      name: "Farma Arena",
+      slug: "farma-arena",
+      color: "#9f2f2f",
+      icon: "trophy",
+      order: 999,
+      requiresEnrollment: false,
+      requiresCheckin: false,
+      requiresCheckout: false,
+      generatesStamp: true,
+      generatesCertificate: false,
+      active: true,
+      stampUrl: FARMA_ARENA_STAMP_URL,
+      stampColor: "#b5221b",
+    },
+    update: {
+      name: "Farma Arena",
+      color: "#9f2f2f",
+      generatesStamp: true,
+      active: true,
+      stampUrl: FARMA_ARENA_STAMP_URL,
+      stampColor: "#b5221b",
+    },
+  });
+  await tx.activity.upsert({
+    where: { id: activityId },
+    create: {
+      id: activityId,
+      editionId,
+      categoryId: category.id,
+      title: "Farma Arena",
+      description:
+        "Carimbo especial concedido na primeira conquista de XP da Farma Arena.",
+      startAt: edition.startAt,
+      endAt: edition.endAt,
+      block: "Farma Arena",
+      room: "Farma Arena",
+      capacity: 100000,
+      enrollmentOpen: false,
+      workload: 0,
+      status: "DRAFT",
+      allowWaitlist: false,
+      stampUrl: FARMA_ARENA_STAMP_URL,
+      stampColor: "#b5221b",
+    },
+    update: {
+      categoryId: category.id,
+      title: "Farma Arena",
+      description:
+        "Carimbo especial concedido na primeira conquista de XP da Farma Arena.",
+      enrollmentOpen: false,
+      status: "DRAFT",
+      allowWaitlist: false,
+      stampUrl: FARMA_ARENA_STAMP_URL,
+      stampColor: "#b5221b",
+    },
+  });
+  const attendance = await tx.attendance.upsert({
+    where: {
+      participantId_activityId: { participantId, activityId },
+    },
+    create: {
+      editionId,
+      participantId,
+      activityId,
+      checkinAt: now,
+      checkoutAt: now,
+      status: "COMPLETED",
+    },
+    update: {
+      status: "COMPLETED",
+      checkinAt: now,
+      checkoutAt: now,
+    },
+  });
+  const stamp = await tx.passportStamp.upsert({
+    where: {
+      participantId_activityId: { participantId, activityId },
+    },
+    create: {
+      editionId,
+      participantId,
+      activityId,
+      categoryId: category.id,
+      attendanceId: attendance.id,
+      issuedAt: now,
+      issuedBy,
+      status: "VALID",
+    },
+    update: {
+      categoryId: category.id,
+      attendanceId: attendance.id,
+      issuedBy,
+      status: "VALID",
+    },
+  });
+  return { stamp, granted: true };
+}
+
+async function revokeArenaPassportStampIfEmpty(
+  tx: any,
+  editionId: string,
+  participantId: string,
+) {
+  const released = await tx.arenaXpAward.count({
+    where: { editionId, participantId, status: "RELEASED" },
+  });
+  if (released) return;
+  const activityId = arenaPassportActivityId(editionId);
+  await tx.passportStamp.updateMany({
+    where: { editionId, participantId, activityId, status: "VALID" },
+    data: { status: "REVOKED" },
+  });
+  await tx.attendance.updateMany({
+    where: { editionId, participantId, activityId },
+    data: { status: "CANCELLED" },
+  });
 }
 
 async function validateChallenge(
@@ -452,6 +601,12 @@ async function releaseAwardCore(
   });
   ensure(award, "Prêmio de XP não encontrado.", "NOT_FOUND", 404);
   if (award.status === "RELEASED" && award.xpTransactionId) {
+    const passportStamp = await ensureArenaPassportStamp(
+      tx,
+      editionId,
+      award.participantId,
+      actor.id,
+    );
     const ranking = await buildArenaRanking(tx, editionId);
     const current = ranking.find(
       (row: any) => row.participantId === award.participantId,
@@ -462,6 +617,7 @@ async function releaseAwardCore(
       rankAfter: current?.rank,
       xpTotalAfter: current?.xpTotal,
       xpAvailableAfter: current?.xpAvailable,
+      passportStampGranted: passportStamp.granted,
     };
   }
   ensure(award.status === "PENDING", "Este prêmio não está pendente.");
@@ -498,6 +654,12 @@ async function releaseAwardCore(
       animationStatus: "QUEUED",
     },
   });
+  const passportStamp = await ensureArenaPassportStamp(
+    tx,
+    editionId,
+    award.participantId,
+    actor.id,
+  );
   const after = (await buildArenaRanking(tx, editionId)).find(
     (row: any) => row.participantId === award.participantId,
   );
@@ -522,7 +684,7 @@ async function releaseAwardCore(
     [award.participantId],
     "ARENA_XP_RELEASED",
     "XP liberado!",
-    `${award.challenge.title} · +${award.amount} XP`,
+    `${award.challenge.title} · +${award.amount} XP${passportStamp.granted ? " · Carimbo especial da Farma Arena conquistado!" : ""}`,
   );
   await audit(
     tx,
@@ -545,6 +707,7 @@ async function releaseAwardCore(
     rankAfter: after?.rank || null,
     title: after?.title || null,
     challengeTitle: award.challenge.title,
+    passportStampGranted: passportStamp.granted,
   };
 }
 
@@ -802,6 +965,11 @@ export async function revokeArenaCompletion(
       where: { id: completion.award.id },
       data: { status: "REVOKED", animationStatus: "SKIPPED" },
     });
+  await revokeArenaPassportStampIfEmpty(
+    tx,
+    editionId,
+    completion.participantId,
+  );
   await audit(
     tx,
     actor,

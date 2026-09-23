@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultArenaConfig,
+  arenaPassportActivityId,
   publicArenaRanking,
   rankArenaParticipants,
   rankingDisplayName,
@@ -67,6 +68,27 @@ describe("Farma Arena", () => {
     expect(rows.find((row) => row.participantId === "p1")).toMatchObject({
       xpTotal: STAMP_XP_REWARD * 2,
       xpAvailable: STAMP_XP_REWARD * 2,
+    });
+  });
+
+  it("não soma XP extra pelo carimbo único da Farma Arena", () => {
+    const rows = rankArenaParticipants(
+      people,
+      [earn("p1", 150, "2026-09-20T10:00:00Z", "arena")],
+      [],
+      defaultArenaConfig("edition"),
+      [
+        {
+          id: "arena-stamp",
+          participantId: "p1",
+          activityId: arenaPassportActivityId("edition"),
+          issuedAt: "2026-09-20T10:00:00Z",
+        },
+      ],
+    );
+    expect(rows.find((row) => row.participantId === "p1")).toMatchObject({
+      xpTotal: 150,
+      xpAvailable: 150,
     });
   });
 

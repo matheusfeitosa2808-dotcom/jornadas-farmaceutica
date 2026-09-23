@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { overlaps, minute } from "@/server/domain";
+import { overlaps, minute, validateEnrollment } from "@/server/domain";
 import {
   hashPassword,
   verifyPassword,
@@ -33,6 +33,91 @@ describe("regras centrais", () => {
         endAt: new Date(A.endAt.getTime() + minute),
       }),
     ).toBe(false);
+  });
+  it("ignora inscrição antiga quando a atividade relacionada foi cancelada", async () => {
+    const startAt = new Date("2026-10-23T18:30:00Z");
+    const target = {
+      id: "nova",
+      editionId: "edicao",
+      enrollmentOpen: true,
+      status: "OPEN",
+      startAt,
+      endAt: new Date(startAt.getTime() + 60 * minute),
+      enrollmentDeadline: null,
+      capacity: 30,
+      edition: {
+        status: "ACTIVE",
+        lateMinutes: 15,
+        maxActivities: 1,
+      },
+    };
+    const tx = {
+      activity: { findFirst: async () => target },
+      participant: { findFirst: async () => ({ id: "participante" }) },
+      enrollment: {
+        findMany: async () => [
+          {
+            id: "inscricao-cancelada",
+            activityId: "antiga",
+            status: "ACTIVE",
+            activity: {
+              id: "antiga",
+              status: "CANCELLED",
+              startAt,
+              endAt: new Date(startAt.getTime() + 60 * minute),
+            },
+          },
+        ],
+        count: async () => 0,
+      },
+    } as any;
+
+    await expect(
+      validateEnrollment(tx, "edicao", "participante", "nova", startAt),
+    ).resolves.toBe(target);
+  });
+  it("mantém o conflito quando a outra atividade continua válida", async () => {
+    const startAt = new Date("2026-10-23T18:30:00Z");
+    const target = {
+      id: "nova",
+      editionId: "edicao",
+      enrollmentOpen: true,
+      status: "OPEN",
+      startAt,
+      endAt: new Date(startAt.getTime() + 60 * minute),
+      enrollmentDeadline: null,
+      capacity: 30,
+      edition: {
+        status: "ACTIVE",
+        lateMinutes: 15,
+        maxActivities: 0,
+      },
+    };
+    const tx = {
+      activity: { findFirst: async () => target },
+      participant: { findFirst: async () => ({ id: "participante" }) },
+      enrollment: {
+        findMany: async () => [
+          {
+            id: "inscricao-ativa",
+            activityId: "antiga",
+            status: "ACTIVE",
+            activity: {
+              id: "antiga",
+              title: "Palestra anterior",
+              status: "OPEN",
+              startAt,
+              endAt: new Date(startAt.getTime() + 60 * minute),
+            },
+          },
+        ],
+        count: async () => 0,
+      },
+    } as any;
+
+    await expect(
+      validateEnrollment(tx, "edicao", "participante", "nova", startAt),
+    ).rejects.toMatchObject({ code: "SCHEDULE_CONFLICT" });
   });
   it("mantém permissões de operador restritas à operação", () => {
     expect(rolePermissions.OPERATOR).toContain("attendance.register");

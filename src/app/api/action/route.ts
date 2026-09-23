@@ -292,12 +292,13 @@ async function saveEntity(
       ? await tx.speaker.update({ where: { id }, data: v })
       : await tx.speaker.create({ data: v });
   } else if (entity === "activity") {
+    let existingActivity: any = null;
     if (id) {
-      const existing = await tx.activity.findFirst({
+      existingActivity = await tx.activity.findFirst({
         where: { id, editionId },
       });
       ensure(
-        existing,
+        existingActivity,
         "Atividade não encontrada nesta edição.",
         "NOT_FOUND",
         404,
@@ -306,7 +307,8 @@ async function saveEntity(
     const startAt = D(data.startAt)!,
       endAt = D(data.endAt)!;
     ensure(startAt < endAt, "O fim deve ocorrer depois do início.");
-    if (id) {
+    const nextStatus = data.status || existingActivity?.status || "DRAFT";
+    if (id && nextStatus !== "CANCELLED") {
       const conflicts = await tx.enrollment.findMany({
         where: {
           activityId: id,
@@ -316,7 +318,11 @@ async function saveEntity(
               some: {
                 status: { in: ["ACTIVE", "COMPLETED"] },
                 activityId: { not: id },
-                activity: { startAt: { lt: endAt }, endAt: { gt: startAt } },
+                activity: {
+                  status: { not: "CANCELLED" },
+                  startAt: { lt: endAt },
+                  endAt: { gt: startAt },
+                },
               },
             },
           },

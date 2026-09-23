@@ -128,17 +128,26 @@ export async function validateEnrollment(
       editionId,
       participantId,
       status: { in: occupiedStatuses },
+      activity: { status: { not: "CANCELLED" } },
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
     include: { activity: true },
   });
+  // Keep cancelled activities from reserving a participant's schedule or
+  // consuming the edition limit, including stale rows created before the
+  // cancellation flow started cancelling active enrollments automatically.
+  const scheduleEnrollments = enrolled.filter(
+    (e: any) => e.activity?.status !== "CANCELLED",
+  );
   ensure(
-    !enrolled.some((e: any) => e.activityId === activityId),
+    !scheduleEnrollments.some((e: any) => e.activityId === activityId),
     "Você já está inscrito nesta atividade.",
     "ALREADY_ENROLLED",
     409,
   );
-  const conflict = enrolled.find((e: any) => overlaps(e.activity, activity));
+  const conflict = scheduleEnrollments.find((e: any) =>
+    overlaps(e.activity, activity),
+  );
   ensure(
     !conflict,
     `Conflito de horário${conflict ? ` com ${conflict.activity.title}` : ""}.`,
@@ -146,7 +155,8 @@ export async function validateEnrollment(
     409,
   );
   ensure(
-    edition.maxActivities === 0 || enrolled.length < edition.maxActivities,
+    edition.maxActivities === 0 ||
+      scheduleEnrollments.length < edition.maxActivities,
     "Limite de atividades da edição atingido.",
     "ACTIVITY_LIMIT",
   );

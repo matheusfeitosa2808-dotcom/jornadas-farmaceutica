@@ -14,6 +14,8 @@ import {
   Clock3,
   Flame,
   ListChecks,
+  Maximize2,
+  Monitor,
   Pause,
   Play,
   Plus,
@@ -24,6 +26,8 @@ import {
   ShoppingBag,
   SkipForward,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
   Zap,
 } from "lucide-react";
@@ -771,7 +775,6 @@ function Release({ arena, run, busy }: any) {
 }
 
 function Ranking({ arena }: any) {
-  const [presenting, setPresenting] = useState(false);
   return (
     <section className="arena-admin-panel">
       <div className="arena-admin-title">
@@ -780,13 +783,14 @@ function Ranking({ arena }: any) {
           <h2>Ranking completo</h2>
           <p>O RA nunca é exibido na experiência do participante.</p>
         </div>
-        <button
+        <Link
           className="button arena-ranking-present-button"
-          onClick={() => setPresenting(true)}
-          disabled={!arena.ranking?.length}
+          href="/admin/farma-arena/apresentacao"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <Play /> Apresentar ranking
-        </button>
+          <Maximize2 /> Abrir apresentação
+        </Link>
       </div>
       <div className="arena-admin-ranking">
         {arena.ranking.map((x: any) => (
@@ -798,13 +802,98 @@ function Ranking({ arena }: any) {
           </article>
         ))}
       </div>
-      {presenting && (
-        <RankingReveal
-          ranking={arena.ranking || []}
-          onClose={() => setPresenting(false)}
-        />
-      )}
     </section>
+  );
+}
+
+export function FarmaArenaRankingPresentation() {
+  const { data, editionId } = useJornadas();
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [started, setStarted] = useState(false);
+  const activeEditionId = editionId || data?.edition?.id;
+
+  useEffect(() => {
+    if (!activeEditionId) return;
+    const controller = new AbortController();
+    setLoading(true);
+    fetch(
+      `/api/arena?scope=admin&view=ranking&editionId=${encodeURIComponent(activeEditionId)}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then((response) =>
+        readApiResponse<any>(
+          response,
+          "Não foi possível preparar a apresentação.",
+        ),
+      )
+      .then((payload) => {
+        setRanking(payload.ranking || []);
+        setError("");
+      })
+      .catch((reason) => {
+        if (reason?.name !== "AbortError")
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "Não foi possível preparar a apresentação.",
+          );
+      })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [activeEditionId]);
+
+  const start = async () => {
+    try {
+      if (!document.fullscreenElement)
+        await document.documentElement.requestFullscreen();
+    } catch {
+      // Alguns navegadores bloqueiam o modo nativo; o layout continua
+      // ocupando toda a área disponível e pode ser iniciado normalmente.
+    }
+    setStarted(true);
+  };
+
+  const close = async () => {
+    setStarted(false);
+    if (document.fullscreenElement) await document.exitFullscreen();
+  };
+
+  return (
+    <main className="arena-ranking-presentation-page">
+      <section className="arena-ranking-desktop-gate">
+        <Monitor />
+        <span>APRESENTAÇÃO DO RANKING</span>
+        <h1>Abra esta área em um computador.</h1>
+        <p>
+          A apresentação foi preparada para uma tela desktop ou projetor, com
+          espaço suficiente para o ranking e os controles.
+        </p>
+        <Link href="/admin/farma-arena">Voltar para a Farma Arena</Link>
+      </section>
+      <section className="arena-ranking-presentation-launcher">
+        <FarmaArenaStamp />
+        <span>FARMA ARENA · MODO APRESENTAÇÃO</span>
+        <h1>Ranking em tela cheia</h1>
+        <p>
+          A classificação parte das últimas posições e sobe até o topo ao som de
+          uma trilha de tensão. Use esta área em um computador conectado ao
+          projetor.
+        </p>
+        {error && <div role="alert">{error}</div>}
+        <button
+          className="button"
+          onClick={start}
+          disabled={loading || !ranking.length}
+        >
+          <Maximize2 />
+          {loading ? "Preparando ranking…" : "Iniciar em tela cheia"}
+        </button>
+        <Link href="/admin/farma-arena">Voltar ao painel</Link>
+      </section>
+      {started && <RankingReveal ranking={ranking} onClose={close} />}
+    </main>
   );
 }
 
@@ -826,11 +915,8 @@ function RankingReveal({ ranking, onClose }: any) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
-  const audioRef = useRef<{
-    context: AudioContext;
-    timer: ReturnType<typeof setInterval>;
-    drone: OscillatorNode;
-  } | null>(null);
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const active = rows[current] || rows[0];
 
   useEffect(() => {
@@ -841,7 +927,8 @@ function RankingReveal({ ranking, onClose }: any) {
     }
     if (paused || finished || !rows.length) return;
     const rank = Number(rows[current]?.rank || rows.length);
-    const delay = rank <= 3 ? 1450 : rank <= 10 ? 720 : 300;
+    const fastStep = Math.max(70, Math.min(220, 12_000 / rows.length));
+    const delay = rank <= 3 ? 1450 : rank <= 10 ? 720 : fastStep;
     const timer = window.setTimeout(() => {
       if (current >= rows.length - 1) setFinished(true);
       else setCurrent((value) => value + 1);
@@ -850,54 +937,11 @@ function RankingReveal({ ranking, onClose }: any) {
   }, [current, finished, paused, reducedMotion, rows.length]);
 
   useEffect(() => {
-    if (reducedMotion || !rows.length) return;
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioContextClass) return;
-    const context = new AudioContextClass();
-    const master = context.createGain();
-    const filter = context.createBiquadFilter();
-    const drone = context.createOscillator();
-    master.gain.value = 0.025;
-    filter.type = "lowpass";
-    filter.frequency.value = 420;
-    drone.type = "triangle";
-    drone.frequency.value = 55;
-    drone.connect(filter).connect(master).connect(context.destination);
-    drone.start();
-    let step = 0;
-    const notes = [82.41, 92.5, 98, 110];
-    const timer = setInterval(() => {
-      if (context.state !== "running") return;
-      const now = context.currentTime;
-      const pulse = context.createOscillator();
-      const gain = context.createGain();
-      pulse.type = "sine";
-      pulse.frequency.setValueAtTime(notes[step % notes.length], now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.055, now + 0.018);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.17);
-      pulse.connect(gain).connect(master);
-      pulse.start(now);
-      pulse.stop(now + 0.19);
-      step += 1;
-    }, 520);
-    audioRef.current = { context, timer, drone };
-    return () => {
-      clearInterval(timer);
-      drone.stop();
-      void context.close();
-      audioRef.current = null;
-    };
-  }, [reducedMotion, rows.length]);
-
-  useEffect(() => {
-    const context = audioRef.current?.context;
-    if (!context) return;
-    if (paused) void context.suspend();
-    else void context.resume();
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = 0.62;
+    if (paused) audio.pause();
+    else void audio.play().catch(() => undefined);
   }, [paused]);
 
   const skipToTop = () => {
@@ -907,6 +951,15 @@ function RankingReveal({ ranking, onClose }: any) {
 
   return (
     <div className="arena-ranking-reveal" role="dialog" aria-modal="true">
+      {!reducedMotion && (
+        <audio
+          ref={audioRef}
+          src="/assets/effects/farma-arena-ranking-reveal.m4a"
+          autoPlay
+          preload="auto"
+          muted={muted}
+        />
+      )}
       <div
         className="arena-ranking-reveal__constellations"
         aria-hidden="true"
@@ -961,6 +1014,10 @@ function RankingReveal({ ranking, onClose }: any) {
         >
           {paused ? <Play /> : <Pause />}
           {paused ? "Continuar" : "Pausar"}
+        </button>
+        <button onClick={() => setMuted((value) => !value)}>
+          {muted ? <VolumeX /> : <Volume2 />}
+          {muted ? "Ativar música" : "Silenciar música"}
         </button>
         <button onClick={skipToTop} disabled={finished}>
           <SkipForward /> Ir ao topo

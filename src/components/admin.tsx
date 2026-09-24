@@ -54,7 +54,10 @@ import {
 import { readApiResponse } from "@/lib/api-response";
 import "./admin.css";
 import "./admin-motion.css";
-import { FarmaArenaAdmin } from "@/components/arena/admin";
+import {
+  FarmaArenaAdmin,
+  FarmaArenaRankingPresentation,
+} from "@/components/arena/admin";
 
 type Row = Record<string, any>;
 type Option = { value: string; label: string };
@@ -3354,6 +3357,8 @@ export default function AdminApp({
         <Link href="/admin">Voltar à visão geral</Link>
       </main>
     );
+  if (section === "farma-arena" && id === "apresentacao")
+    return <FarmaArenaRankingPresentation />;
   let content: ReactNode;
   if (id && section === "participantes")
     content = <ParticipantDetail id={id} />;

@@ -339,6 +339,75 @@
 .arena-ranking-present-button svg {
   width: 17px;
 }
+.arena-ranking-presentation-page {
+  min-height: 100dvh;
+  margin: 0;
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(132, 28, 36, 0.24),
+      transparent 38%
+    ),
+    #0b0506;
+  color: #fff8e7;
+}
+.arena-ranking-presentation-launcher {
+  min-height: 100dvh;
+  width: min(720px, calc(100% - 48px));
+  margin: auto;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+.arena-ranking-presentation-launcher > .farma-arena-badge {
+  width: 142px;
+  margin-bottom: 24px;
+}
+.arena-ranking-presentation-launcher > span,
+.arena-ranking-desktop-gate > span {
+  color: #e8bd5c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+.arena-ranking-presentation-launcher h1,
+.arena-ranking-desktop-gate h1 {
+  margin: 10px 0;
+  font:
+    700 clamp(2.7rem, 6vw, 5.4rem)/0.98 Georgia,
+    serif;
+}
+.arena-ranking-presentation-launcher p,
+.arena-ranking-desktop-gate p {
+  max-width: 640px;
+  margin: 0 0 26px;
+  color: #d8cfd0;
+  line-height: 1.65;
+}
+.arena-ranking-presentation-launcher > .button {
+  min-height: 54px;
+  padding-inline: 24px;
+  border: 0;
+  background: #e5b84f;
+  color: #2a090d;
+}
+.arena-ranking-presentation-launcher > a:last-child,
+.arena-ranking-desktop-gate > a {
+  margin-top: 18px;
+  color: #e8bd5c;
+  font-weight: 800;
+}
+.arena-ranking-presentation-launcher [role="alert"] {
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(151, 36, 43, 0.28);
+  color: #ffdadd;
+}
+.arena-ranking-desktop-gate {
+  display: none;
+}
 .arena-admin-benefits {
   display: grid;
   gap: 8px;
@@ -823,7 +892,7 @@
   }
   .arena-ranking-reveal > footer {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
   }
   .arena-ranking-reveal__progress {
     grid-column: 1/-1;
@@ -845,6 +914,29 @@
     bottom: 0;
     padding-top: 12px;
     background: #fff;
+  }
+}
+
+@media (max-width: 900px) {
+  .arena-ranking-presentation-launcher {
+    display: none;
+  }
+  .arena-ranking-desktop-gate {
+    min-height: 100dvh;
+    padding: 30px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    text-align: center;
+  }
+  .arena-ranking-desktop-gate > svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 24px;
+    color: #e8bd5c;
+  }
+  .arena-ranking-desktop-gate h1 {
+    font-size: 2.4rem;
   }
 }
 

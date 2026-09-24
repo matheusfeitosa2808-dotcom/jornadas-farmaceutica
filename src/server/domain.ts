@@ -826,6 +826,180 @@ export async function correctAttendance(
   );
   return result;
 }
+
+export async function correctAttendanceByRa(
+  tx: Tx,
+  editionId: string,
+  activityId: string,
+  ra: string,
+  reason: string,
+  actor: Actor,
+  now = new Date(),
+) {
+  requirePermission(actor, "attendance.correct");
+  const normalizedRa = String(ra || "").trim();
+  ensure(normalizedRa, "Informe o RA do participante.");
+  ensure(
+    String(reason || "").trim().length >= 5,
+    "Informe um motivo com pelo menos 5 caracteres.",
+  );
+
+  const [activity, participant] = await Promise.all([
+    activityOf(tx, editionId, activityId),
+    tx.participant.findUnique({
+      where: { editionId_ra: { editionId, ra: normalizedRa } },
+    }),
+  ]);
+  ensure(participant?.active, "Participante não encontrado.", "NOT_FOUND", 404);
+  ensure(
+    activity.status !== "CANCELLED",
+    "Não é possível corrigir presença em uma atividade cancelada.",
+  );
+  ensure(
+    activity.category.requiresCheckin,
+    "A atividade selecionada não utiliza controle de presença.",
+  );
+
+  const old = await tx.attendance.findUnique({
+    where: {
+      participantId_activityId: {
+        participantId: participant.id,
+        activityId,
+      },
+    },
+  });
+  const wasComplete = Boolean(
+    old?.checkinAt &&
+    (!activity.category.requiresCheckout || old?.checkoutAt) &&
+    old.status === "COMPLETED",
+  );
+  const checkinAt = old?.checkinAt || now;
+  const checkoutAt = activity.category.requiresCheckout
+    ? old?.checkoutAt || now
+    : null;
+  const attendance = await tx.attendance.upsert({
+    where: {
+      participantId_activityId: {
+        participantId: participant.id,
+        activityId,
+      },
+    },
+    create: {
+      editionId,
+      participantId: participant.id,
+      activityId,
+      checkinAt,
+      checkoutAt,
+      status: "COMPLETED",
+    },
+    update: { checkinAt, checkoutAt, status: "COMPLETED" },
+  });
+
+  if (!old?.checkinAt)
+    await tx.attendanceEvent.create({
+      data: {
+        attendanceId: attendance.id,
+        operation: "CHECK_IN",
+        operatorId: actor.id,
+        reason,
+        createdAt: now,
+      },
+    });
+  if (activity.category.requiresCheckout && !old?.checkoutAt)
+    await tx.attendanceEvent.create({
+      data: {
+        attendanceId: attendance.id,
+        operation: "CHECK_OUT",
+        operatorId: actor.id,
+        reason,
+        createdAt: now,
+      },
+    });
+
+  await tx.enrollment.upsert({
+    where: {
+      participantId_activityId: {
+        participantId: participant.id,
+        activityId,
+      },
+    },
+    create: {
+      editionId,
+      participantId: participant.id,
+      activityId,
+      status: "COMPLETED",
+      source: "ADMIN_CORRECTION",
+      createdAt: checkinAt,
+    },
+    update: {
+      status: "COMPLETED",
+      cancelledAt: null,
+      cancelReason: null,
+    },
+  });
+
+  if (activity.category.generatesStamp) {
+    const stamp = {
+      editionId,
+      participantId: participant.id,
+      activityId,
+      categoryId: activity.categoryId,
+      attendanceId: attendance.id,
+      issuedAt: now,
+      issuedBy: actor.id,
+      status: "VALID",
+    };
+    await tx.passportStamp.upsert({
+      where: { attendanceId: attendance.id },
+      create: stamp,
+      update: {
+        editionId,
+        participantId: participant.id,
+        activityId,
+        categoryId: activity.categoryId,
+        issuedBy: actor.id,
+        status: "VALID",
+      },
+    });
+  }
+  if (activity.category.generatesCertificate)
+    await issueCertificate(
+      tx,
+      editionId,
+      participant.id,
+      activityId,
+      actor,
+      now,
+    );
+
+  await audit(
+    tx,
+    actor,
+    editionId,
+    "attendance.correct_by_ra",
+    "Attendance",
+    attendance.id,
+    old,
+    attendance,
+    reason,
+  );
+  if (!wasComplete)
+    await notify(
+      tx,
+      editionId,
+      [participant.id],
+      "ATTENDANCE_CORRECTED",
+      "Presença regularizada",
+      `${activity.title} · check-in e check-out confirmados pela organização.`,
+      `attendance-corrected:${attendance.id}`,
+    );
+  return {
+    ...attendance,
+    participantName: participant.name,
+    activityTitle: activity.title,
+    alreadyComplete: wasComplete,
+  };
+}
 export async function issueCertificate(
   tx: Tx,
   editionId: string,

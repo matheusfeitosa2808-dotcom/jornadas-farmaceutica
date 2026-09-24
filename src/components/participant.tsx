@@ -330,6 +330,8 @@ function ParticipantHome({ person }: { person: any }) {
   const next = booked[0];
   const count = stamps.length;
   const total = data.edition.maxCheckins;
+  const arenaCompleted = Number(data.arenaSummary?.completed || 0);
+  const arenaTotal = Number(data.arenaSummary?.total || 0);
   const firstName =
     person.firstName || person.name?.split(" ")[0] || "participante";
   return (
@@ -454,6 +456,40 @@ function ParticipantHome({ person }: { person: any }) {
           <ArenaTransitionLink href="/app/arena" className="button">
             Entrar na Arena <ArrowRight size={17} />
           </ArenaTransitionLink>
+        </div>
+        <div className="home-arena-feature__progress">
+          <span className="eyebrow">MINHA ARENA</span>
+          <div className="progress-numbers">
+            <strong>{arenaCompleted.toString().padStart(2, "0")}</strong>
+            <span>/ {arenaTotal.toString().padStart(2, "0")}</span>
+          </div>
+          <p>atividades concluídas</p>
+          <div
+            className="progress-track"
+            role="progressbar"
+            aria-label="Atividades concluídas na Farma Arena"
+            aria-valuenow={arenaCompleted}
+            aria-valuemin={0}
+            aria-valuemax={arenaTotal}
+          >
+            <span
+              style={
+                {
+                  "--progress-ratio": Math.min(
+                    arenaCompleted / Math.max(arenaTotal, 1),
+                    1,
+                  ),
+                } as React.CSSProperties
+              }
+            />
+          </div>
+          <div className="progress-dots" aria-hidden="true">
+            {Array.from({ length: Math.min(arenaTotal, 9) }, (_, i) => (
+              <span key={i} className={i < arenaCompleted ? "complete" : ""}>
+                {i < arenaCompleted ? <Check size={13} /> : i + 1}
+              </span>
+            ))}
+          </div>
         </div>
         <FarmaArenaStamp className="home-arena-feature__stamp" />
       </section>

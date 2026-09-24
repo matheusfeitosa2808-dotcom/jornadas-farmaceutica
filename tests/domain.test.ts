@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { overlaps, minute, validateEnrollment } from "@/server/domain";
+import {
+  correctAttendanceByRa,
+  overlaps,
+  minute,
+  validateEnrollment,
+} from "@/server/domain";
 import {
   hashPassword,
   verifyPassword,
@@ -158,5 +163,129 @@ describe("regras centrais", () => {
     expect(new Date(start.getTime() + 25 * minute).toISOString()).toBe(
       "2026-10-23T18:55:00.000Z",
     );
+  });
+  it("corrige presença por RA de forma idempotente e recompõe os derivados", async () => {
+    const now = new Date("2026-10-24T01:00:00Z");
+    const activity = {
+      id: "palestra",
+      editionId: "edicao",
+      categoryId: "categoria",
+      title: "Palestra teste",
+      status: "FINISHED",
+      workload: 2,
+      category: {
+        requiresCheckin: true,
+        requiresCheckout: true,
+        generatesStamp: true,
+        generatesCertificate: true,
+      },
+      edition: {},
+    };
+    let attendance: any = null;
+    let certificate: any = null;
+    const events: string[] = [];
+    const enrollments: any[] = [];
+    const stamps: any[] = [];
+    const tx = {
+      activity: { findFirst: async () => activity },
+      participant: {
+        findUnique: async () => ({
+          id: "participante",
+          name: "Amanda",
+          active: true,
+        }),
+      },
+      attendance: {
+        findUnique: async () => attendance,
+        upsert: async ({ create, update }: any) => {
+          attendance = attendance
+            ? { ...attendance, ...update }
+            : { id: "presenca", ...create };
+          return attendance;
+        },
+      },
+      attendanceEvent: {
+        create: async ({ data }: any) => {
+          events.push(data.operation);
+          return data;
+        },
+      },
+      enrollment: {
+        upsert: async ({ create, update }: any) => {
+          const row = enrollments[0]
+            ? Object.assign(enrollments[0], update)
+            : { id: "inscricao", ...create };
+          if (!enrollments.length) enrollments.push(row);
+          return row;
+        },
+      },
+      passportStamp: {
+        upsert: async ({ create, update }: any) => {
+          const row = stamps[0]
+            ? Object.assign(stamps[0], update)
+            : { id: "carimbo", ...create };
+          if (!stamps.length) stamps.push(row);
+          return row;
+        },
+      },
+      certificate: {
+        findFirst: async () => certificate,
+        create: async ({ data }: any) => {
+          certificate = { id: "certificado", status: "GENERATED", ...data };
+          return certificate;
+        },
+        update: async ({ data }: any) => {
+          certificate = { ...certificate, ...data };
+          return certificate;
+        },
+      },
+      auditLog: { create: async ({ data }: any) => data },
+      notification: {
+        findUnique: async () => null,
+        create: async ({ data }: any) => data,
+      },
+    } as any;
+    const actor = {
+      type: "admin" as const,
+      id: "admin",
+      name: "Comissão",
+      role: "ADMIN_GENERAL",
+      permissions: [],
+    };
+
+    const first = await correctAttendanceByRa(
+      tx,
+      "edicao",
+      "palestra",
+      " 48079 ",
+      "Ajuste solicitado pela comissão.",
+      actor,
+      now,
+    );
+    const second = await correctAttendanceByRa(
+      tx,
+      "edicao",
+      "palestra",
+      "48079",
+      "Conferência posterior do registro.",
+      actor,
+      now,
+    );
+
+    expect(first.status).toBe("COMPLETED");
+    expect(second.alreadyComplete).toBe(true);
+    expect(events).toEqual(["CHECK_IN", "CHECK_OUT"]);
+    expect(enrollments[0]).toMatchObject({
+      status: "COMPLETED",
+      source: "ADMIN_CORRECTION",
+    });
+    expect(stamps[0]).toMatchObject({
+      status: "VALID",
+      activityId: "palestra",
+    });
+    expect(certificate).toMatchObject({
+      participantId: "participante",
+      activityId: "palestra",
+    });
   });
 });

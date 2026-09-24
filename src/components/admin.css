@@ -716,6 +716,31 @@
 }
 .a-operation-actions {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.a-correction-button {
+  background: #c8a754;
+  color: #173e45;
+}
+.a-correction-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 198, 115, 0.34);
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #d8e7e5;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.a-correction-note svg {
+  flex: 0 0 auto;
+  color: #e2c673;
 }
 .a-people-list {
   display: grid;

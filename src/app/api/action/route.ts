@@ -19,6 +19,7 @@ import {
   cancelEnrollment,
   checkAttendance,
   correctAttendance,
+  correctAttendanceByRa,
   enroll,
   issueCertificate,
   joinWaitlist,
@@ -879,6 +880,20 @@ export async function POST(req: NextRequest) {
             actor,
           );
           await recalc(tx, editionId, [result.participantId]);
+          break;
+        case "attendance.correctByRa":
+          result = await correctAttendanceByRa(
+            tx,
+            editionId,
+            String(body.activityId || ""),
+            String(body.ra || ""),
+            String(body.reason || "Correção administrativa de presença."),
+            actor,
+          );
+          await recalc(tx, editionId, [result.participantId]);
+          message = result.alreadyComplete
+            ? `A presença de ${result.participantName} já estava completa; carimbo, certificado e XP foram conferidos.`
+            : `Check-in e check-out de ${result.participantName} foram corrigidos em ${result.activityTitle}.`;
           break;
         case "activity.cancel": {
           requirePermission(actor, "activities.write");

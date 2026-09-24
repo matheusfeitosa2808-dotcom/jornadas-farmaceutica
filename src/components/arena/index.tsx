@@ -192,7 +192,34 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
 }
 
 function ArenaHome({ arena }: { arena: any }) {
-  const nextChallenges = (arena.challenges || []).slice(0, 3);
+  const allChallenges = arena.challenges || [];
+  const challengeById = new Map(
+    (arena.challenges || []).map((challenge: any) => [challenge.id, challenge]),
+  );
+  const completed = Array.from(
+    (arena.completions || [])
+      .filter((item: any) => item.status === "VALID")
+      .reduce((items: Map<string, any>, item: any) => {
+        const current = items.get(item.challengeId);
+        if (
+          !current ||
+          new Date(item.completedAt).getTime() >
+            new Date(current.completedAt).getTime()
+        )
+          items.set(item.challengeId, item);
+        return items;
+      }, new Map<string, any>())
+      .values(),
+  ).sort(
+    (a: any, b: any) =>
+      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
+  );
+  const completedIds = new Set(
+    completed.map((item: any) => String(item.challengeId)),
+  );
+  const nextChallenges = allChallenges
+    .filter((challenge: any) => !completedIds.has(String(challenge.id)))
+    .slice(0, 3);
   return (
     <div className="arena-surface">
       <section className="arena-hero">
@@ -258,6 +285,49 @@ function ArenaHome({ arena }: { arena: any }) {
           ))}
         </div>
       </section>
+      <section className="arena-section arena-section--completed">
+        <div className="arena-section__title">
+          <div>
+            <span>MINHAS CONQUISTAS</span>
+            <h2>Atividades concluídas</h2>
+          </div>
+          {completed.length > 0 && (
+            <Link href="/app/arena/desempenho">Ver histórico</Link>
+          )}
+        </div>
+        {completed.length ? (
+          <div className="arena-completions arena-completions--home">
+            {completed.slice(0, 6).map((item: any) => {
+              const challenge: any = challengeById.get(item.challengeId);
+              return (
+                <article key={item.id}>
+                  <span className="arena-completion-check">
+                    <CheckCircle2 />
+                  </span>
+                  <div>
+                    <strong>{challenge?.title || "Desafio concluído"}</strong>
+                    <small>
+                      {new Date(item.completedAt).toLocaleDateString("pt-BR")}
+                    </small>
+                  </div>
+                  <b>+{item.xpAwarded} XP</b>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="arena-completions-empty">
+            <Sparkles />
+            <div>
+              <strong>Sua primeira conquista começa aqui.</strong>
+              <span>
+                Ao concluir um desafio, ele aparecerá neste painel com o XP
+                recebido.
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -286,13 +356,13 @@ function ChallengeCard({ challenge, arena }: { challenge: any; arena: any }) {
       <footer>
         <strong>+{challenge.xpReward} XP</strong>
         <span>
-          {challenge.mode === "TEAM" ? (
-            <>
-              <Users /> Equipe
-            </>
-          ) : done ? (
+          {done ? (
             <>
               <CheckCircle2 /> Concluído
+            </>
+          ) : challenge.mode === "TEAM" ? (
+            <>
+              <Users /> Equipe
             </>
           ) : (
             "Individual"

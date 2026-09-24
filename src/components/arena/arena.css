@@ -795,12 +795,13 @@
   vertical-align: middle;
 }
 .home-arena-feature {
+  position: relative;
   margin: 22px 0;
   min-height: 210px;
   padding: clamp(24px, 5vw, 46px);
   border-radius: 27px;
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 260px) 125px;
   align-items: center;
   overflow: hidden;
   background:
@@ -826,9 +827,98 @@
   background: #efc864;
 }
 .home-arena-feature__stamp {
-  width: 160px;
+  width: 125px;
   justify-self: end;
   filter: drop-shadow(0 9px 18px rgba(0, 0, 0, 0.25));
+}
+.home-arena-feature__progress {
+  align-self: stretch;
+  padding: 18px 20px;
+  border: 1px solid rgba(239, 200, 100, 0.32);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.home-arena-feature__progress .eyebrow {
+  color: #efc864;
+}
+.home-arena-feature__progress .progress-numbers {
+  margin-top: 13px;
+}
+.home-arena-feature__progress .progress-numbers strong {
+  font-size: 3.35rem;
+  color: #fffdf7;
+}
+.home-arena-feature__progress .progress-numbers span {
+  color: #efc864;
+}
+.home-arena-feature__progress > p {
+  margin: 5px 0 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+}
+.home-arena-feature__progress .progress-track {
+  background: rgba(255, 255, 255, 0.14);
+}
+.home-arena-feature__progress .progress-track span {
+  background: linear-gradient(90deg, #efc864, #fff0b3);
+}
+.home-arena-feature__progress .progress-dots {
+  margin: 13px 0 0;
+  flex-wrap: wrap;
+}
+.home-arena-feature__progress .progress-dots span {
+  width: 23px;
+  height: 23px;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: rgba(255, 255, 255, 0.62);
+}
+.home-arena-feature__progress .progress-dots span.complete {
+  border-color: #efc864;
+  background: #efc864;
+  color: #541017;
+}
+.arena-completions--home {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.arena-completion-check {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #2a7359;
+  background: #e3f1e9;
+  flex: 0 0 auto;
+}
+.arena-completion-check svg {
+  width: 20px;
+}
+.arena-completions-empty {
+  min-height: 104px;
+  padding: 20px;
+  border: 1px dashed #d3c8b0;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #6e7776;
+  background: rgba(255, 253, 248, 0.72);
+}
+.arena-completions-empty > svg {
+  color: var(--arena-gold);
+}
+.arena-completions-empty div {
+  display: grid;
+  gap: 3px;
+}
+.arena-completions-empty strong {
+  color: #283f42;
+}
+.arena-completions-empty span {
+  font-size: 0.84rem;
 }
 @keyframes arena-materialize {
   from {
@@ -1009,15 +1099,25 @@
     display: none;
   }
   .home-arena-feature {
-    grid-template-columns: 1fr 95px;
+    grid-template-columns: 1fr;
     padding: 25px 20px;
   }
+  .home-arena-feature__progress {
+    margin-top: 4px;
+    padding: 16px;
+  }
   .home-arena-feature__stamp {
-    width: 110px;
-    margin-right: -20px;
+    position: absolute;
+    width: 92px;
+    right: -14px;
+    top: 24px;
+    opacity: 0.2;
   }
   .home-arena-feature h2 {
     font-size: 2rem;
+  }
+  .arena-completions--home {
+    grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

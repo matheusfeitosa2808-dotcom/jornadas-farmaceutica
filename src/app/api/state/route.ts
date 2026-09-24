@@ -340,6 +340,7 @@ export async function GET(req: NextRequest) {
         users,
         participantArenaConfig,
         pendingArenaAwards,
+        participantArenaSummary,
       ] = await Promise.all([
         db.enrollment.findMany({ where: { editionId, ...own } }),
         db.waitlistEntry.findMany({
@@ -404,6 +405,24 @@ export async function GET(req: NextRequest) {
               orderBy: { createdAt: "asc" },
             })
           : Promise.resolve([]),
+        actor.type === "participant"
+          ? Promise.all([
+              db.arenaChallenge.count({
+                where: { editionId, active: true },
+              }),
+              db.arenaCompletion.findMany({
+                where: {
+                  editionId,
+                  participantId: actor.id,
+                  status: "VALID",
+                },
+                select: { challengeId: true },
+              }),
+            ]).then(([total, rows]: [number, any[]]) => ({
+              total,
+              completed: new Set(rows.map((row: any) => row.challengeId)).size,
+            }))
+          : Promise.resolve(null),
       ]);
 
       const pendingArenaChallengeIds = [
@@ -526,6 +545,14 @@ export async function GET(req: NextRequest) {
                 ranking: participantArenaRank ? [participantArenaRank] : [],
                 myRank: participantArenaRank?.rank || null,
                 myXpTotal: participantArenaRank?.xpTotal || 0,
+              }
+            : undefined,
+        arenaSummary:
+          actor.type === "participant"
+            ? {
+                enabled: participantArenaConfig?.enabled ?? true,
+                total: participantArenaSummary?.total || 0,
+                completed: participantArenaSummary?.completed || 0,
               }
             : undefined,
         audit,

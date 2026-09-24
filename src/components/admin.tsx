@@ -2205,6 +2205,9 @@ function Operation() {
     [found, setFound] = useState<Row | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const activity = find(data, "activities", activityId);
+  const canCorrect =
+    data.actor?.role === "ADMIN_GENERAL" ||
+    data.actor?.permissions?.includes("attendance.correct");
   useEffect(() => {
     const activities = all(data, "activities").filter(
       (item) => item.status !== "DRAFT" && item.status !== "CANCELLED",
@@ -2372,10 +2375,38 @@ function Operation() {
                           Confirmar check-out
                         </RunButton>
                       )}
+                    {canCorrect && (
+                      <RunButton
+                        className="button a-correction-button"
+                        run={async () => {
+                          await action("attendance.correctByRa", {
+                            activityId,
+                            ra: found.ra,
+                            reason:
+                              "Correção administrativa de check-in e check-out por RA.",
+                          });
+                          setRa("");
+                          setFound(null);
+                          input.current?.focus();
+                        }}
+                      >
+                        <CheckCheck size={17} />
+                        {validAttendance(attendance || {})
+                          ? "Conferir registro completo"
+                          : "Corrigir entrada e saída"}
+                      </RunButton>
+                    )}
                   </div>
                 </>
               )}
             </div>
+          )}
+          {canCorrect && (
+            <p className="a-correction-note">
+              <ShieldCheck size={16} /> Para correções, selecione a palestra,
+              informe somente o RA e use “Corrigir entrada e saída”. O sistema
+              confere carimbo, certificado e XP sem duplicar registros.
+            </p>
           )}
         </section>
         <Panel title="Presentes e pendentes" sub="Atualiza sem recarregar">

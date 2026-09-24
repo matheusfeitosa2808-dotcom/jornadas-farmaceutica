@@ -336,6 +336,217 @@
 .arena-admin-ranking small {
   color: #8a702f;
 }
+.arena-ranking-present-button svg {
+  width: 17px;
+}
+.arena-admin-benefits {
+  display: grid;
+  gap: 8px;
+}
+.arena-admin-benefits article {
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid #e0e5e2;
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(220px, 1.35fr) auto;
+  gap: 16px;
+  align-items: center;
+  background: #fbfcfa;
+}
+.arena-admin-benefits article > div {
+  display: grid;
+}
+.arena-admin-benefits small,
+.arena-admin-benefits time {
+  color: #788587;
+  font-size: 0.76rem;
+}
+.arena-admin-benefits article > span {
+  color: #68141b;
+  font-weight: 900;
+}
+.arena-ranking-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  padding: max(24px, env(safe-area-inset-top))
+    max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(28px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 50% 42%, rgba(168, 33, 41, 0.3), transparent 35%),
+    linear-gradient(145deg, #100708 0%, #26090d 54%, #070304 100%);
+  color: #fff8e7;
+  isolation: isolate;
+}
+.arena-ranking-reveal__constellations {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle, #e8bd5c 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 242, 199, 0.7) 0 1px, transparent 1.5px);
+  background-position:
+    0 0,
+    39px 47px;
+  background-size:
+    88px 88px,
+    123px 123px;
+  mask-image: linear-gradient(to bottom, #000, transparent 90%);
+}
+.arena-ranking-reveal > header,
+.arena-ranking-reveal > footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.arena-ranking-reveal > header {
+  justify-content: space-between;
+  color: #e8bd5c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+.arena-ranking-reveal button {
+  min-height: 42px;
+  padding: 9px 13px;
+  border: 1px solid rgba(232, 189, 92, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff8e7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 800;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+.arena-ranking-reveal button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.arena-ranking-reveal button svg {
+  width: 18px;
+}
+.arena-ranking-reveal > main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(390px, 1.2fr);
+  align-items: center;
+  gap: clamp(28px, 6vw, 90px);
+  width: min(1120px, 100%);
+  margin: auto;
+}
+.arena-ranking-reveal__eyebrow {
+  position: absolute;
+  top: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(232, 189, 92, 0.74);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+.arena-ranking-reveal__viewport {
+  height: 380px;
+  overflow: hidden;
+  mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent);
+}
+.arena-ranking-reveal__track {
+  display: grid;
+  will-change: transform;
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.arena-ranking-reveal__track article {
+  height: 76px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  opacity: 0.28;
+  transform: scale(0.97);
+  transition:
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.arena-ranking-reveal__track article.active {
+  opacity: 1;
+  transform: scale(1);
+  border-color: rgba(232, 189, 92, 0.55);
+}
+.arena-ranking-reveal__track article b {
+  color: #e8bd5c;
+  font-size: 1.25rem;
+}
+.arena-ranking-reveal__track article span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.arena-ranking-reveal__track article strong {
+  color: #f5d686;
+}
+.arena-ranking-reveal__focus {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+}
+.arena-ranking-reveal__focus small {
+  color: #e8bd5c;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+.arena-ranking-reveal__focus > b {
+  margin: 8px 0 0;
+  color: rgba(232, 189, 92, 0.72);
+  font:
+    700 clamp(3rem, 7vw, 6rem)/0.9 Georgia,
+    serif;
+}
+.arena-ranking-reveal__focus h2 {
+  max-width: 680px;
+  margin: 16px 0 8px;
+  font:
+    700 clamp(2.5rem, 6vw, 5.4rem)/0.94 Georgia,
+    serif;
+  text-wrap: balance;
+}
+.arena-ranking-reveal__focus > strong {
+  color: #f2d37f;
+  font-size: clamp(1.1rem, 2vw, 1.65rem);
+}
+.arena-ranking-reveal__focus.winner h2 {
+  text-shadow: 0 0 38px rgba(232, 189, 92, 0.32);
+}
+.arena-ranking-reveal > footer {
+  justify-content: flex-end;
+}
+.arena-ranking-reveal__progress {
+  height: 4px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.arena-ranking-reveal__progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f1720, #edc75f);
+  transform-origin: left;
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
 .arena-admin-loading {
   min-height: 50vh;
   display: grid;
@@ -575,6 +786,49 @@
     min-height: 62px;
     padding: 10px;
   }
+  .arena-admin-benefits article {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .arena-ranking-present-button {
+    width: 100%;
+  }
+  .arena-ranking-reveal {
+    padding: max(18px, env(safe-area-inset-top)) 14px
+      max(16px, env(safe-area-inset-bottom));
+  }
+  .arena-ranking-reveal > main {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 8px;
+  }
+  .arena-ranking-reveal__eyebrow {
+    position: static;
+    transform: none;
+    text-align: center;
+  }
+  .arena-ranking-reveal__viewport {
+    height: 228px;
+  }
+  .arena-ranking-reveal__focus {
+    justify-items: center;
+    text-align: center;
+  }
+  .arena-ranking-reveal__focus > b {
+    font-size: 2.8rem;
+  }
+  .arena-ranking-reveal__focus h2 {
+    margin: 8px 0 4px;
+    font-size: clamp(2rem, 10vw, 3.4rem);
+  }
+  .arena-ranking-reveal > footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .arena-ranking-reveal__progress {
+    grid-column: 1/-1;
+    width: 100%;
+  }
   .arena-admin-modal {
     align-items: end;
     padding: 8px;
@@ -591,6 +845,14 @@
     bottom: 0;
     padding-top: 12px;
     background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-ranking-reveal__track,
+  .arena-ranking-reveal__track article,
+  .arena-ranking-reveal__progress i {
+    transition: none;
   }
 }
 

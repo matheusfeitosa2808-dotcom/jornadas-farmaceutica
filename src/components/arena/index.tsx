@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BookOpen,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -11,6 +12,7 @@ import {
   Medal,
   ShoppingBag,
   Sparkles,
+  Send,
   Trophy,
   Users,
   X,
@@ -187,6 +189,8 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
     return <ArenaChallengeDetail arena={state.arena} id={id} />;
   if (page === "desafios") return <ArenaChallenges arena={state.arena} />;
   if (page === "desempenho") return <ArenaPerformance arena={state.arena} />;
+  if (page === "ponto-extra")
+    return <ArenaCreditChoice arena={state.arena} run={state.run} />;
   if (page === "loja") return <ArenaStoreRedirect />;
   return <ArenaHome arena={state.arena} />;
 }
@@ -266,6 +270,11 @@ function ArenaHome({ arena }: { arena: any }) {
         <Link href="/app/arena/desempenho">
           <Medal /> Desempenho <ChevronRight />
         </Link>
+        {arena.disciplineBenefit?.eligible && (
+          <Link href="/app/arena/ponto-extra" className="arena-benefit-link">
+            <BookOpen /> Ponto em disciplina <ChevronRight />
+          </Link>
+        )}
       </div>
       <section className="arena-section">
         <div className="arena-section__title">
@@ -462,15 +471,134 @@ function ArenaChallengeDetail({ arena, id }: { arena: any; id: string }) {
           </p>
         </div>
         {completions.length ? (
-          <div className="arena-done">
-            <CheckCircle2 /> Resultado validado{" "}
-            {completions.length > 1 ? `${completions.length} vezes` : ""}
-          </div>
+          <>
+            <div className="arena-done">
+              <CheckCircle2 /> Resultado validado{" "}
+              {completions.length > 1 ? `${completions.length} vezes` : ""}
+            </div>
+            {arena.disciplineBenefit?.challengeId === challenge.id && (
+              <Link className="arena-credit-cta" href="/app/arena/ponto-extra">
+                <BookOpen />
+                {arena.disciplineBenefit.submitted
+                  ? "Ver disciplina escolhida"
+                  : "Escolher disciplina para o ponto"}
+                <ChevronRight />
+              </Link>
+            )}
+          </>
         ) : (
           <div className="arena-operator-note">
             <Clock3 /> A conclusão é registrada pela equipe da Jornada.
           </div>
         )}
+      </section>
+    </div>
+  );
+}
+
+function ArenaCreditChoice({ arena, run }: { arena: any; run: any }) {
+  const benefit = arena.disciplineBenefit || {};
+  const [discipline, setDiscipline] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  if (!benefit.eligible) {
+    return (
+      <div className="arena-error">
+        <BookOpen />
+        <h2>Benefício ainda bloqueado</h2>
+        <p>
+          Conclua o desafio Convite de egressos para escolher uma disciplina.
+        </p>
+        <Link href="/app/arena/desafios">Ver desafios</Link>
+      </div>
+    );
+  }
+  if (benefit.submitted) {
+    return (
+      <div className="arena-surface">
+        <ArenaHeader
+          eyebrow="CONQUISTA ESPECIAL"
+          title="Disciplina escolhida"
+          description="Sua escolha foi registrada e encaminhada à organização."
+        />
+        <section className="arena-credit-confirmed">
+          <span>
+            <CheckCircle2 /> Enviado com sucesso
+          </span>
+          <BookOpen />
+          <small>DISCIPLINA</small>
+          <h2>{benefit.submission?.discipline}</h2>
+          <p>
+            Cada participante pode enviar somente uma disciplina, por isso esta
+            escolha não pode ser alterada.
+          </p>
+          <Link href="/app/arena">Voltar para a Arena</Link>
+        </section>
+      </div>
+    );
+  }
+  return (
+    <div className="arena-surface">
+      <ArenaHeader
+        eyebrow="CONQUISTA ESPECIAL"
+        title="Escolha sua disciplina"
+        description="Você concluiu o Convite de egressos e conquistou o direito de indicar uma disciplina para receber o ponto."
+      />
+      <section className="arena-credit-form-card">
+        <div className="arena-credit-emblem">
+          <BookOpen />
+        </div>
+        <div>
+          <span>UMA ÚNICA ESCOLHA</span>
+          <h2>Em qual disciplina você deseja receber o ponto?</h2>
+          <p>
+            Digite o nome como você reconhece a disciplina. Depois do envio, a
+            escolha será definitiva e ficará disponível para a organização.
+          </p>
+        </div>
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const value = discipline.trim();
+            if (!value) return;
+            if (
+              !window.confirm(
+                `Confirmar “${value}”? Esta escolha não poderá ser alterada.`,
+              )
+            )
+              return;
+            setBusy(true);
+            setError("");
+            try {
+              await run("arena.credit.submit", { discipline: value });
+            } catch (reason) {
+              setError(
+                reason instanceof Error
+                  ? reason.message
+                  : "Não foi possível registrar sua escolha.",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <label>
+            <span>Disciplina</span>
+            <input
+              value={discipline}
+              onChange={(event) => setDiscipline(event.target.value)}
+              maxLength={120}
+              placeholder="Ex.: Farmacologia Clínica"
+              autoComplete="off"
+              required
+            />
+            <small>{discipline.length}/120</small>
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <button className="button" disabled={busy || !discipline.trim()}>
+            <Send /> {busy ? "Enviando…" : "Confirmar escolha definitiva"}
+          </button>
+        </form>
       </section>
     </div>
   );

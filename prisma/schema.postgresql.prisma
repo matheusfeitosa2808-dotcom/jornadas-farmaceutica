@@ -45,6 +45,7 @@ model Edition {
   arenaChallenges        ArenaChallenge[]
   arenaCompletions       ArenaCompletion[]
   arenaAwards            ArenaXpAward[]
+  arenaCreditChoices     ArenaCreditChoice[]
   xpTransactions         XpTransaction[]
 }
 
@@ -75,6 +76,7 @@ model Participant {
   pushSubscriptions PushSubscription[]
   arenaCompletions  ArenaCompletion[]
   arenaAwards       ArenaXpAward[]
+  arenaCreditChoices ArenaCreditChoice[]
   xpTransactions    XpTransaction[]
 
   @@unique([editionId, ra])
@@ -354,6 +356,7 @@ model ArenaChallenge {
   updatedAt                    DateTime          @updatedAt
   completions                  ArenaCompletion[]
   awards                       ArenaXpAward[]
+  creditChoices                ArenaCreditChoice[]
 
   @@unique([editionId, slug])
   @@index([editionId, active, order])
@@ -407,6 +410,21 @@ model ArenaXpAward {
 
   @@index([editionId, status, releaseAt])
   @@index([participantId, animationStatus])
+}
+
+model ArenaCreditChoice {
+  id            String         @id @default(cuid())
+  editionId     String
+  edition       Edition        @relation(fields: [editionId], references: [id])
+  challengeId   String
+  challenge     ArenaChallenge @relation(fields: [challengeId], references: [id])
+  participantId String
+  participant   Participant    @relation(fields: [participantId], references: [id])
+  discipline    String
+  createdAt     DateTime       @default(now())
+
+  @@unique([participantId, challengeId])
+  @@index([editionId, createdAt])
 }
 
 model XpTransaction {

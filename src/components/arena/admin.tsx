@@ -9,17 +9,22 @@ import {
 } from "react";
 import Link from "next/link";
 import {
+  BookOpen,
   CheckCircle2,
   Clock3,
   Flame,
   ListChecks,
+  Pause,
+  Play,
   Plus,
   RotateCcw,
   Save,
   Send,
   Settings2,
   ShoppingBag,
+  SkipForward,
   Trophy,
+  X,
   Zap,
 } from "lucide-react";
 import { useJornadas } from "@/components/provider";
@@ -33,6 +38,7 @@ const tabs = [
   ["validacao", "Validar resultados", CheckCircle2],
   ["liberacao", "Liberar XP", Zap],
   ["ranking", "Ranking", Trophy],
+  ["beneficios", "Pontos em disciplina", BookOpen],
   ["ajustes", "Ajustar XP", Settings2],
   ["loja", "Loja e brindes", ShoppingBag],
 ] as const;
@@ -147,6 +153,7 @@ export function FarmaArenaAdmin() {
       )}
       {tab === "liberacao" && <Release arena={arena} run={run} busy={busy} />}
       {tab === "ranking" && <Ranking arena={arena} />}
+      {tab === "beneficios" && <Benefits arena={arena} />}
       {tab === "ajustes" && (
         <Adjustment
           participants={data.participants || []}
@@ -764,6 +771,7 @@ function Release({ arena, run, busy }: any) {
 }
 
 function Ranking({ arena }: any) {
+  const [presenting, setPresenting] = useState(false);
   return (
     <section className="arena-admin-panel">
       <div className="arena-admin-title">
@@ -772,6 +780,13 @@ function Ranking({ arena }: any) {
           <h2>Ranking completo</h2>
           <p>O RA nunca é exibido na experiência do participante.</p>
         </div>
+        <button
+          className="button arena-ranking-present-button"
+          onClick={() => setPresenting(true)}
+          disabled={!arena.ranking?.length}
+        >
+          <Play /> Apresentar ranking
+        </button>
       </div>
       <div className="arena-admin-ranking">
         {arena.ranking.map((x: any) => (
@@ -783,6 +798,211 @@ function Ranking({ arena }: any) {
           </article>
         ))}
       </div>
+      {presenting && (
+        <RankingReveal
+          ranking={arena.ranking || []}
+          onClose={() => setPresenting(false)}
+        />
+      )}
+    </section>
+  );
+}
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return reduced;
+}
+
+function RankingReveal({ ranking, onClose }: any) {
+  const rows = [...ranking].reverse();
+  const reducedMotion = useReducedMotion();
+  const [current, setCurrent] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const audioRef = useRef<{
+    context: AudioContext;
+    timer: ReturnType<typeof setInterval>;
+    drone: OscillatorNode;
+  } | null>(null);
+  const active = rows[current] || rows[0];
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setCurrent(Math.max(0, rows.length - 1));
+      setFinished(true);
+      return;
+    }
+    if (paused || finished || !rows.length) return;
+    const rank = Number(rows[current]?.rank || rows.length);
+    const delay = rank <= 3 ? 1450 : rank <= 10 ? 720 : 300;
+    const timer = window.setTimeout(() => {
+      if (current >= rows.length - 1) setFinished(true);
+      else setCurrent((value) => value + 1);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [current, finished, paused, reducedMotion, rows.length]);
+
+  useEffect(() => {
+    if (reducedMotion || !rows.length) return;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const master = context.createGain();
+    const filter = context.createBiquadFilter();
+    const drone = context.createOscillator();
+    master.gain.value = 0.025;
+    filter.type = "lowpass";
+    filter.frequency.value = 420;
+    drone.type = "triangle";
+    drone.frequency.value = 55;
+    drone.connect(filter).connect(master).connect(context.destination);
+    drone.start();
+    let step = 0;
+    const notes = [82.41, 92.5, 98, 110];
+    const timer = setInterval(() => {
+      if (context.state !== "running") return;
+      const now = context.currentTime;
+      const pulse = context.createOscillator();
+      const gain = context.createGain();
+      pulse.type = "sine";
+      pulse.frequency.setValueAtTime(notes[step % notes.length], now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.055, now + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.17);
+      pulse.connect(gain).connect(master);
+      pulse.start(now);
+      pulse.stop(now + 0.19);
+      step += 1;
+    }, 520);
+    audioRef.current = { context, timer, drone };
+    return () => {
+      clearInterval(timer);
+      drone.stop();
+      void context.close();
+      audioRef.current = null;
+    };
+  }, [reducedMotion, rows.length]);
+
+  useEffect(() => {
+    const context = audioRef.current?.context;
+    if (!context) return;
+    if (paused) void context.suspend();
+    else void context.resume();
+  }, [paused]);
+
+  const skipToTop = () => {
+    setCurrent(Math.max(0, rows.length - 1));
+    setFinished(true);
+  };
+
+  return (
+    <div className="arena-ranking-reveal" role="dialog" aria-modal="true">
+      <div
+        className="arena-ranking-reveal__constellations"
+        aria-hidden="true"
+      />
+      <header>
+        <span>FARMA ARENA · CLASSIFICAÇÃO AO VIVO</span>
+        <button onClick={onClose} aria-label="Fechar apresentação">
+          <X />
+        </button>
+      </header>
+      <main>
+        <div className="arena-ranking-reveal__eyebrow">SUBINDO ATÉ O TOPO</div>
+        <div className="arena-ranking-reveal__viewport">
+          <div
+            className="arena-ranking-reveal__track"
+            style={{ transform: `translate3d(0, ${152 - current * 76}px, 0)` }}
+          >
+            {rows.map((row: any, index: number) => (
+              <article
+                key={row.participantId}
+                className={index === current ? "active" : ""}
+              >
+                <b>#{row.rank}</b>
+                <span>{row.displayName}</span>
+                <strong>{row.xpTotal} XP</strong>
+              </article>
+            ))}
+          </div>
+        </div>
+        {active && (
+          <div
+            className={`arena-ranking-reveal__focus ${finished ? "winner" : ""}`}
+          >
+            <small>{finished ? "TOPO DO RANKING" : "POSIÇÃO ATUAL"}</small>
+            <b>#{active.rank}</b>
+            <h2>{active.displayName}</h2>
+            <strong>{active.xpTotal} XP</strong>
+          </div>
+        )}
+      </main>
+      <footer>
+        <div className="arena-ranking-reveal__progress">
+          <i
+            style={{
+              transform: `scaleX(${rows.length ? (current + 1) / rows.length : 0})`,
+            }}
+          />
+        </div>
+        <button
+          onClick={() => setPaused((value) => !value)}
+          disabled={finished}
+        >
+          {paused ? <Play /> : <Pause />}
+          {paused ? "Continuar" : "Pausar"}
+        </button>
+        <button onClick={skipToTop} disabled={finished}>
+          <SkipForward /> Ir ao topo
+        </button>
+      </footer>
+    </div>
+  );
+}
+
+function Benefits({ arena }: any) {
+  const choices = arena.creditChoices || [];
+  return (
+    <section className="arena-admin-panel">
+      <div className="arena-admin-title">
+        <div>
+          <span>BENEFÍCIO DO DESAFIO</span>
+          <h2>Pontos em disciplina</h2>
+          <p>
+            Cada participante pode enviar uma única disciplina após concluir o
+            desafio Convite de egressos.
+          </p>
+        </div>
+      </div>
+      {choices.length ? (
+        <div className="arena-admin-benefits">
+          {choices.map((choice: any) => (
+            <article key={choice.id}>
+              <div>
+                <strong>{choice.participant?.name}</strong>
+                <small>RA {choice.participant?.ra}</small>
+              </div>
+              <span>{choice.discipline}</span>
+              <time>{new Date(choice.createdAt).toLocaleString("pt-BR")}</time>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="arena-admin-empty">
+          <BookOpen />
+          Nenhuma disciplina enviada até agora.
+        </div>
+      )}
     </section>
   );
 }

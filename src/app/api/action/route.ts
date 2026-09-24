@@ -33,6 +33,7 @@ import {
   cancelArenaAward,
   cancelXpPurchase,
   completeArenaChallenge,
+  submitArenaCreditChoice,
   markArenaAwardSeen,
   purchaseXpReward,
   releaseArenaAwards,
@@ -673,6 +674,16 @@ export async function POST(req: NextRequest) {
             actor,
           );
           message = "Conclusão revogada e XP compensado.";
+          break;
+        case "arena.credit.submit":
+          result = await submitArenaCreditChoice(
+            tx,
+            editionId,
+            String(body.discipline || ""),
+            actor,
+          );
+          message =
+            "Disciplina registrada. Sua escolha foi enviada à organização.";
           break;
         case "arena.award.release":
           result = (

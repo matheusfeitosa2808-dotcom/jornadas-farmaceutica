@@ -102,6 +102,12 @@ const models: Record<string, ModelMeta> = {
         sourceKey: "id",
         targetKey: "editionId",
       },
+      arenaCreditChoices: {
+        model: "arenaCreditChoice",
+        kind: "many",
+        sourceKey: "id",
+        targetKey: "editionId",
+      },
     },
   },
   participant: {
@@ -860,6 +866,12 @@ const models: Record<string, ModelMeta> = {
         sourceKey: "id",
         targetKey: "challengeId",
       },
+      creditChoices: {
+        model: "arenaCreditChoice",
+        kind: "many",
+        sourceKey: "id",
+        targetKey: "challengeId",
+      },
     },
   },
   arenaCompletion: {
@@ -964,6 +976,42 @@ const models: Record<string, ModelMeta> = {
         model: "xpTransaction",
         kind: "one",
         sourceKey: "xpTransactionId",
+        targetKey: "id",
+      },
+    },
+  },
+  arenaCreditChoice: {
+    table: "ArenaCreditChoice",
+    id: "id",
+    createdAt: true,
+    fields: [
+      "id",
+      "editionId",
+      "challengeId",
+      "participantId",
+      "discipline",
+      "createdAt",
+    ],
+    uniques: {
+      participantId_challengeId: ["participantId", "challengeId"],
+    },
+    relations: {
+      edition: {
+        model: "edition",
+        kind: "one",
+        sourceKey: "editionId",
+        targetKey: "id",
+      },
+      participant: {
+        model: "participant",
+        kind: "one",
+        sourceKey: "participantId",
+        targetKey: "id",
+      },
+      challenge: {
+        model: "arenaChallenge",
+        kind: "one",
+        sourceKey: "challengeId",
         targetKey: "id",
       },
     },

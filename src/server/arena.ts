@@ -22,6 +22,8 @@ export const defaultArenaConfig = (editionId: string) => ({
   combinePendingAwards: false,
 });
 
+export const EGRESS_INVITATION_CHALLENGE_SLUG = "convite-de-egressos";
+
 const ARENA_PASSPORT_ACTIVITY_PREFIX = "arena-passport-activity:";
 const ARENA_PASSPORT_CATEGORY_PREFIX = "arena-passport-category:";
 export const arenaPassportActivityId = (editionId: string) =>
@@ -260,6 +262,7 @@ export async function arenaPayload(
     reservations,
     operators,
     adminParticipants,
+    creditChoices,
   ] = await Promise.all([
     challengesPromise,
     wantsAdminView("validacao")
@@ -343,6 +346,18 @@ export async function arenaPayload(
           },
         })
       : Promise.resolve([]),
+    includeAdmin && wantsAdminView("beneficios")
+      ? tx.arenaCreditChoice.findMany({
+          where: { editionId },
+          include: { participant: true, challenge: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : ownId
+        ? tx.arenaCreditChoice.findMany({
+            where: { editionId, participantId: ownId },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
   ]);
   const rewardIds = rewards.map((reward: any) => reward.id);
   const [stockReservations, stockDeliveries] = rewardIds.length
@@ -393,6 +408,21 @@ export async function arenaPayload(
   const my = ownId
     ? computedRanking.find((row: any) => row.participantId === ownId)
     : undefined;
+  const creditChallenge = challenges.find(
+    (challenge: any) => challenge.slug === EGRESS_INVITATION_CHALLENGE_SLUG,
+  );
+  const creditCompletion = creditChallenge
+    ? completions.find(
+        (completion: any) =>
+          completion.challengeId === creditChallenge.id &&
+          completion.status === "VALID",
+      )
+    : null;
+  const creditSubmission = creditChallenge
+    ? creditChoices.find(
+        (choice: any) => choice.challengeId === creditChallenge.id,
+      )
+    : null;
   const completionById = new Map(
     completions.map((completion: any) => [completion.id, completion]),
   );
@@ -455,7 +485,87 @@ export async function arenaPayload(
     transactions: ledger,
     rewards: rewardsWithAvailability,
     reservations,
+    creditChoices: includeAdmin ? creditChoices : [],
+    disciplineBenefit: includeAdmin
+      ? null
+      : {
+          eligible: Boolean(creditCompletion),
+          challengeId: creditChallenge?.id || null,
+          challengeTitle: creditChallenge?.title || null,
+          submitted: Boolean(creditSubmission),
+          submission: creditSubmission || null,
+        },
   };
+}
+
+export async function submitArenaCreditChoice(
+  tx: any,
+  editionId: string,
+  disciplineInput: string,
+  actor: Actor,
+) {
+  requireParticipant(actor, editionId);
+  const discipline = String(disciplineInput || "").trim();
+  ensure(discipline.length > 0, "Digite a disciplina escolhida.");
+  ensure(
+    discipline.length <= 120,
+    "A disciplina deve ter no máximo 120 caracteres.",
+  );
+  const challenge = await tx.arenaChallenge.findFirst({
+    where: {
+      editionId,
+      slug: EGRESS_INVITATION_CHALLENGE_SLUG,
+      active: true,
+    },
+  });
+  ensure(challenge, "Benefício ainda não disponível.", "NOT_FOUND", 404);
+  const completion = await tx.arenaCompletion.findFirst({
+    where: {
+      editionId,
+      challengeId: challenge.id,
+      participantId: actor.id,
+      status: "VALID",
+    },
+  });
+  ensure(
+    completion,
+    "Conclua o desafio Convite de egressos para escolher a disciplina.",
+    "FORBIDDEN",
+    403,
+  );
+  const previous = await tx.arenaCreditChoice.findUnique({
+    where: {
+      participantId_challengeId: {
+        participantId: actor.id,
+        challengeId: challenge.id,
+      },
+    },
+  });
+  ensure(
+    !previous,
+    "Sua disciplina já foi enviada e não pode ser alterada.",
+    "DUPLICATE",
+    409,
+  );
+  const choice = await tx.arenaCreditChoice.create({
+    data: {
+      editionId,
+      challengeId: challenge.id,
+      participantId: actor.id,
+      discipline,
+    },
+  });
+  await audit(
+    tx,
+    actor,
+    editionId,
+    "arena.credit.submit",
+    "ArenaCreditChoice",
+    choice.id,
+    undefined,
+    choice,
+  );
+  return choice;
 }
 
 async function ensureArenaPassportStamp(

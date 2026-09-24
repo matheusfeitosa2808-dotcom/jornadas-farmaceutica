@@ -1467,7 +1467,9 @@ function Rewards({ id }: { id?: string }) {
                   </>
                 )}
                 <span className="reward-stock">
-                  {r.total} unidades na edição
+                  {xpPricingPending
+                    ? "Quantidade calculando"
+                    : `${r.total} unidades na edição`}
                 </span>
               </div>
               <div className="reward-card-content">
@@ -1515,8 +1517,14 @@ function Rewards({ id }: { id?: string }) {
                       </span>
                       <span>
                         <Gift size={18} />
-                        <b>{stockAvailable}</b>
-                        <small>disponíveis</small>
+                        <b>
+                          {xpPricingPending ? "Calculando" : stockAvailable}
+                        </b>
+                        <small>
+                          {xpPricingPending
+                            ? "quantidade em definição"
+                            : "disponíveis"}
+                        </small>
                       </span>
                     </div>
                     {xpPricingPending && !xpOwned && (

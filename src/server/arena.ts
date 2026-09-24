@@ -1138,7 +1138,12 @@ export async function purchaseXpReward(
     rewardRedemptionMode(reward) === "XP_STORE",
     "Este brinde é liberado por carimbo.",
   );
-  ensure(reward.xpCost > 0, "Este item ainda não possui custo em XP.");
+  ensure(
+    reward.xpCost > 0,
+    "Os valores em XP estão sendo calculados com base no ranking. As reservas serão liberadas em breve.",
+    "REWARD_PRICING_PENDING",
+    409,
+  );
   ensure(
     !reward.redemptionStartsAt ||
       asDate(reward.redemptionStartsAt)! <= new Date(),

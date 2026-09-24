@@ -96,6 +96,9 @@ describe("Farma Arena", () => {
     expect(rewardRedemptionMode({ name: "Chaveiro" })).toBe("ELIGIBILITY");
     expect(rewardRedemptionMode({ name: "Caneta" })).toBe("XP_STORE");
     expect(rewardXpCost({ name: "Caneta" })).toBe(200);
+    expect(
+      rewardXpCost({ name: "Caneta", redemptionMode: "XP_STORE", xpCost: 0 }),
+    ).toBe(0);
   });
 
   it("gastar XP de carimbo preserva o total do ranking", () => {

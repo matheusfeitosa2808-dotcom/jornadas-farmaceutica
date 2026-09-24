@@ -23,6 +23,11 @@ export function rewardRedemptionMode(reward: any) {
 
 export function rewardXpCost(reward: any) {
   const configured = Number(reward?.xpCost || 0);
+  // An explicit XP item with cost 0 is intentionally awaiting pricing. The
+  // legacy table only upgrades records created before redemptionMode existed.
+  if (reward?.redemptionMode === "XP_STORE") {
+    return Math.max(0, configured);
+  }
   return configured > 0
     ? configured
     : legacyXpCosts[normalizedRewardName(reward?.name)] || 0;

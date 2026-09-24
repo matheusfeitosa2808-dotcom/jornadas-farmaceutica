@@ -1347,7 +1347,7 @@ function Rewards({ id }: { id?: string }) {
       <PageHeading
         eyebrow="CARIMBOS E XP QUE VIRAM LEMBRANÇAS"
         title="Loja da Jornada"
-        description="Use seus carimbos ou seu saldo de XP para resgatar os brindes da edição."
+        description="Acompanhe seus carimbos, seu saldo e os brindes preparados para esta edição."
       />
       <section className="unified-store-summary" aria-label="Seus saldos">
         <div>
@@ -1377,8 +1377,8 @@ function Rewards({ id }: { id?: string }) {
         <p>
           Carimbos de presença rendem +{STAMP_XP_REWARD} XP. O carimbo especial
           da Farma Arena identifica sua primeira conquista sem somar XP extra.
-          Gastar XP não altera sua posição no ranking, e o estoque é único para
-          todos os resgates.
+          Os valores dos demais brindes serão definidos a partir do ranking e
+          divulgados em breve.
         </p>
       </section>
       {!id && (
@@ -1407,6 +1407,7 @@ function Rewards({ id }: { id?: string }) {
         {items.map((r: any) => {
           const xpItem = rewardRedemptionMode(r) === "XP_STORE";
           const xpCost = rewardXpCost(r);
+          const xpPricingPending = xpItem && xpCost <= 0;
           const arenaReward = (arena?.rewards || []).find(
             (item: any) => item.id === r.id,
           );
@@ -1485,11 +1486,13 @@ function Rewards({ id }: { id?: string }) {
                         ? "Entregue"
                         : xpOwned
                           ? "Resgatado"
-                          : stockAvailable <= 0
-                            ? "Esgotado"
-                            : affordable
-                              ? "Disponível"
-                              : "XP insuficiente"}
+                          : xpPricingPending
+                            ? "Em definição"
+                            : stockAvailable <= 0
+                              ? "Esgotado"
+                              : affordable
+                                ? "Disponível"
+                                : "XP insuficiente"}
                     </Badge>
                   ) : (
                     <Badge status={status} />
@@ -1501,8 +1504,14 @@ function Rewards({ id }: { id?: string }) {
                     <div className="xp-redemption-summary">
                       <span>
                         <Zap size={18} />
-                        <b>{xpCost} XP</b>
-                        <small>por unidade</small>
+                        <b>
+                          {xpPricingPending ? "Calculando" : `${xpCost} XP`}
+                        </b>
+                        <small>
+                          {xpPricingPending
+                            ? "valor em definição"
+                            : "por unidade"}
+                        </small>
                       </span>
                       <span>
                         <Gift size={18} />
@@ -1510,6 +1519,17 @@ function Rewards({ id }: { id?: string }) {
                         <small>disponíveis</small>
                       </span>
                     </div>
+                    {xpPricingPending && !xpOwned && (
+                      <div className="reward-pricing-note">
+                        <Clock3 size={18} />
+                        <span>
+                          <b>Resgates em breve</b>
+                          Os valores em XP estão sendo calculados com base no
+                          ranking atual. Assim que forem definidos, a reserva
+                          será liberada aqui.
+                        </span>
+                      </div>
+                    )}
                     {r.redemptionStartsAt && (
                       <div className="reward-pickup-date">
                         <CalendarDays size={16} />
@@ -1530,6 +1550,7 @@ function Rewards({ id }: { id?: string }) {
                       className="button full xp-redemption-button"
                       disabled={
                         Boolean(xpOwned) ||
+                        xpPricingPending ||
                         !arena ||
                         Boolean(arenaState.error) ||
                         !affordable ||
@@ -1552,17 +1573,19 @@ function Rewards({ id }: { id?: string }) {
                     >
                       {xpOwned
                         ? "Brinde já resgatado"
-                        : busy === r.id
-                          ? "Reservando…"
-                          : arenaState.loading && !arena
-                            ? "Calculando saldo…"
-                            : redemptionLocked
-                              ? "Resgate ainda não liberado"
-                              : stockAvailable <= 0
-                                ? "Brinde esgotado"
-                                : affordable
-                                  ? `Resgatar por ${xpCost} XP`
-                                  : `Faltam ${Math.max(0, xpCost - xpAvailable)} XP`}
+                        : xpPricingPending
+                          ? "Aguardando definição do valor"
+                          : busy === r.id
+                            ? "Reservando…"
+                            : arenaState.loading && !arena
+                              ? "Calculando saldo…"
+                              : redemptionLocked
+                                ? "Resgate ainda não liberado"
+                                : stockAvailable <= 0
+                                  ? "Brinde esgotado"
+                                  : affordable
+                                    ? `Resgatar por ${xpCost} XP`
+                                    : `Faltam ${Math.max(0, xpCost - xpAvailable)} XP`}
                       <ArrowRight size={17} />
                     </button>
                     {xpOwned && (
@@ -1696,8 +1719,9 @@ function Rewards({ id }: { id?: string }) {
       <div className="info-note">
         <ShieldCheck size={20} />
         <p>
-          O chaveiro e outros brindes especiais podem pedir carimbos. Os demais
-          resgates usam XP e reservam o item imediatamente.
+          O chaveiro continua disponível conforme a regra de carimbos. Os demais
+          brindes aguardam a definição dos valores em XP e ainda não podem ser
+          reservados.
         </p>
       </div>
     </>

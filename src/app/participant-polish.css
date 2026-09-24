@@ -452,6 +452,35 @@
   background: linear-gradient(135deg, #7f5916, #a97e27);
 }
 
+.reward-pricing-note {
+  margin-top: 10px;
+  padding: 12px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(180, 137, 49, 0.2);
+  border-radius: 12px;
+  background: rgba(234, 216, 170, 0.16);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.reward-pricing-note > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #9b701d;
+}
+
+.reward-pricing-note > span {
+  display: grid;
+  gap: 2px;
+}
+
+.reward-pricing-note b {
+  color: var(--ink);
+}
+
 /* O valor muda sem recalcular layout. */
 .progress-track > span,
 .passport-progress-track > span,

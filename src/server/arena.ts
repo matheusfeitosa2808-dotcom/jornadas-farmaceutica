@@ -441,7 +441,10 @@ export async function arenaPayload(
   return {
     config,
     challenges,
-    ranking: publicArenaRanking(ranking),
+    // O participante recebe somente o pódio na carga principal. O restante
+    // do ranking é buscado apenas quando ele pedir para ver a lista completa.
+    ranking: publicArenaRanking(includeAdmin ? ranking : ranking.slice(0, 3)),
+    myRanking: my ? publicArenaRanking([my])[0] : null,
     myRank: my?.rank || null,
     myXpTotal: my?.xpTotal || 0,
     myXpAvailable: my?.xpAvailable || 0,

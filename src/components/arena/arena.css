@@ -362,17 +362,82 @@
   align-items: center;
   gap: 20px;
 }
+.arena-my-rank .arena-avatar {
+  flex: 0 0 auto;
+  margin: 0;
+  outline-color: rgba(242, 202, 104, 0.88);
+}
 .arena-my-rank > strong {
   font: 700 2.7rem var(--font-serif);
   color: #f2ca68;
 }
-.arena-my-rank > div {
+.arena-my-rank__identity {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.arena-my-rank__identity > small {
+  color: #f2ca68;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.arena-my-rank__identity > b,
+.arena-my-rank__identity > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arena-my-rank__identity > span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+}
+.arena-my-rank__xp {
   margin-left: auto;
   display: grid;
   text-align: right;
 }
 .arena-my-rank small {
   color: rgba(255, 255, 255, 0.68);
+}
+.arena-ranking-toggle {
+  width: min(100%, 420px);
+  min-height: 52px;
+  margin: 16px auto 10px;
+  padding: 0 20px;
+  border: 1px solid rgba(116, 29, 35, 0.2);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #6f171f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font: 800 0.92rem var(--font-sans);
+  box-shadow: 0 10px 24px rgba(75, 35, 32, 0.08);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.arena-ranking-toggle svg {
+  width: 18px;
+  transition: transform 180ms ease;
+}
+.arena-ranking-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+.arena-ranking-toggle:disabled {
+  cursor: progress;
+  opacity: 0.68;
+}
+.arena-ranking-error {
+  margin: 8px 0;
+  text-align: center;
+  color: #8f2028;
+}
+.arena-ranking-list article.is-current {
+  border-color: rgba(186, 151, 91, 0.74);
+  background: #fff8e7;
+  box-shadow: inset 4px 0 0 #ba975b;
 }
 .arena-podium {
   display: grid;
@@ -403,7 +468,11 @@
   order: 1;
   border-color: #78b9ca;
   background:
-    radial-gradient(circle at 50% 18%, rgba(177, 226, 239, 0.94), transparent 44%),
+    radial-gradient(
+      circle at 50% 18%,
+      rgba(177, 226, 239, 0.94),
+      transparent 44%
+    ),
     linear-gradient(155deg, #e8f8fb 0%, #f9ffff 64%, #d8eef3 100%);
   box-shadow:
     0 20px 44px rgba(35, 124, 151, 0.2),
@@ -853,14 +922,31 @@
     padding: 19px;
   }
   .arena-my-rank {
-    padding: 16px;
+    padding: 14px;
     gap: 10px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
   }
   .arena-my-rank > strong {
-    font-size: 2rem;
+    font-size: 1.9rem;
+    grid-column: 3;
+    grid-row: 1;
   }
-  .arena-my-rank > div {
+  .arena-my-rank__identity {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .arena-my-rank__xp {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    width: 100%;
+    margin-left: 0;
+    padding-top: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex;
+    justify-content: space-between;
     font-size: 0.82rem;
+    text-align: left;
   }
   .arena-podium {
     grid-template-columns: 1fr;

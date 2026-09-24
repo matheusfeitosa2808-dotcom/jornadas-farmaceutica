@@ -409,7 +409,39 @@ function ArenaChallengeDetail({ arena, id }: { arena: any; id: string }) {
 function ArenaRanking({ arena }: { arena: any }) {
   const ranking = arena.ranking || [];
   const top = ranking.slice(0, 3);
-  const rest = ranking.slice(3);
+  const [fullRanking, setFullRanking] = useState<any[] | null>(null);
+  const [fullVisible, setFullVisible] = useState(false);
+  const [loadingFull, setLoadingFull] = useState(false);
+  const [rankingError, setRankingError] = useState("");
+  const showFullRanking = async () => {
+    if (fullRanking) {
+      setFullVisible((current) => !current);
+      return;
+    }
+    setLoadingFull(true);
+    setRankingError("");
+    try {
+      const editionId = arena.config?.editionId;
+      const response = await fetch(
+        `/api/arena/ranking?full=1&editionId=${encodeURIComponent(editionId || "")}`,
+        { cache: "no-store" },
+      );
+      const payload = await readApiResponse<any>(
+        response,
+        "Não foi possível abrir o ranking completo.",
+      );
+      setFullRanking(payload.ranking || []);
+      setFullVisible(true);
+    } catch (reason) {
+      setRankingError(
+        reason instanceof Error
+          ? reason.message
+          : "Não foi possível abrir o ranking completo.",
+      );
+    } finally {
+      setLoadingFull(false);
+    }
+  };
   return (
     <div className="arena-surface ranking-page">
       <ArenaHeader
@@ -417,14 +449,6 @@ function ArenaRanking({ arena }: { arena: any }) {
         title="Ranking da Arena"
         description="Compras usam o XP disponível e nunca reduzem sua posição."
       />
-      <section className="arena-my-rank">
-        <span>Sua posição</span>
-        <strong>{arena.myRank ? `#${arena.myRank}` : "—"}</strong>
-        <div>
-          <b>{arena.myXpTotal} XP</b>
-          <small>{arena.myXpAvailable} disponíveis</small>
-        </div>
-      </section>
       <div className="arena-podium">
         {top.map((row: any) => (
           <article key={row.participantId} className={`place-${row.rank}`}>
@@ -446,25 +470,68 @@ function ArenaRanking({ arena }: { arena: any }) {
           </article>
         ))}
       </div>
-      <div className="arena-ranking-list">
-        {rest.map((row: any) => (
-          <article key={row.participantId}>
-            <b>#{row.rank}</b>
-            <span className="arena-avatar small">
-              {row.photoUrl ? (
-                <img src={row.photoUrl} alt="" />
-              ) : (
-                row.displayName.slice(0, 1)
-              )}
-            </span>
-            <div>
-              <strong>{row.displayName}</strong>
-              <small>{row.semester}º semestre</small>
-            </div>
-            <span>{row.xpTotal} XP</span>
-          </article>
-        ))}
-      </div>
+      <section className="arena-my-rank" aria-label="Sua classificação">
+        <span className="arena-avatar small">
+          {arena.myRanking?.photoUrl ? (
+            <img src={arena.myRanking.photoUrl} alt="" />
+          ) : (
+            (arena.myRanking?.displayName || "V").slice(0, 1)
+          )}
+        </span>
+        <div className="arena-my-rank__identity">
+          <small>SUA CLASSIFICAÇÃO</small>
+          <b>{arena.myRanking?.displayName || "Você"}</b>
+          <span>{arena.myRanking?.semester || "—"}º semestre</span>
+        </div>
+        <strong>{arena.myRank ? `#${arena.myRank}` : "—"}</strong>
+        <div className="arena-my-rank__xp">
+          <b>{arena.myXpTotal} XP</b>
+          <small>{arena.myXpAvailable} disponíveis</small>
+        </div>
+      </section>
+      <button
+        type="button"
+        className="arena-ranking-toggle"
+        onClick={() => void showFullRanking()}
+        disabled={loadingFull}
+        aria-expanded={fullVisible}
+      >
+        {loadingFull
+          ? "Carregando classificação…"
+          : fullVisible
+            ? "Ocultar ranking completo"
+            : "Ver ranking completo"}
+        {!loadingFull && <ChevronRight aria-hidden="true" />}
+      </button>
+      {rankingError && <p className="arena-ranking-error">{rankingError}</p>}
+      {fullVisible && fullRanking && (
+        <div className="arena-ranking-list" aria-label="Ranking completo">
+          {fullRanking.slice(3).map((row: any) => (
+            <article
+              key={row.participantId}
+              className={
+                row.participantId === arena.myRanking?.participantId
+                  ? "is-current"
+                  : undefined
+              }
+            >
+              <b>#{row.rank}</b>
+              <span className="arena-avatar small">
+                {row.photoUrl ? (
+                  <img src={row.photoUrl} alt="" />
+                ) : (
+                  row.displayName.slice(0, 1)
+                )}
+              </span>
+              <div>
+                <strong>{row.displayName}</strong>
+                <small>{row.semester}º semestre</small>
+              </div>
+              <span>{row.xpTotal} XP</span>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

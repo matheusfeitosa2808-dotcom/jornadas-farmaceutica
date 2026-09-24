@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
     if (actor.type === "admin") requirePermission(actor, "arena.read");
     const editionId =
       request.nextUrl.searchParams.get("editionId") || actor.editionId || "";
+    const wantsFullRanking =
+      actor.type === "admin" ||
+      request.nextUrl.searchParams.get("full") === "1";
     ensure(editionId, "Edição não informada.");
     if (actor.type === "participant")
       ensure(
@@ -47,7 +50,12 @@ export async function GET(request: NextRequest) {
           : null;
       return {
         enabled: config.rankingEnabled,
-        ranking: config.rankingEnabled ? safeRanking : [],
+        ranking: config.rankingEnabled
+          ? wantsFullRanking
+            ? safeRanking
+            : safeRanking.slice(0, 3)
+          : [],
+        myRanking: own ? publicArenaRanking([own])[0] : null,
         myRank: own?.rank || null,
         myXpTotal: own?.xpTotal || 0,
         myXpAvailable: own?.xpAvailable || 0,

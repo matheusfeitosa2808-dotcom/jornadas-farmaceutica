@@ -229,22 +229,29 @@ export async function arenaPayload(
   editionId: string,
   actor: Actor,
   includeAdmin = false,
+  adminView = "all",
 ) {
-  const config = await arenaConfig(tx, editionId);
-  const computedRanking = includeAdmin
-    ? await buildArenaRanking(tx, editionId, config)
-    : await cachedArenaRanking(tx, editionId, config);
-  const ranking = config.rankingEnabled || includeAdmin ? computedRanking : [];
   const challengeWhere = {
     editionId,
     ...(includeAdmin ? {} : { active: true }),
   };
-  const challenges = await tx.arenaChallenge.findMany({
+  const configPromise = arenaConfig(tx, editionId);
+  const challengesPromise = tx.arenaChallenge.findMany({
     where: challengeWhere,
     orderBy: [{ order: "asc" }, { title: "asc" }],
   });
+  const config = await configPromise;
+  const wantsAdminView = (...views: string[]) =>
+    !includeAdmin || adminView === "all" || views.includes(adminView);
+  // O cache é invalidado por toda mutação de XP. Usá-lo também no painel
+  // evita recalcular cinco conjuntos completos a cada troca de aba.
+  const computedRanking = wantsAdminView("ranking")
+    ? await cachedArenaRanking(tx, editionId, config)
+    : [];
+  const ranking = config.rankingEnabled || includeAdmin ? computedRanking : [];
   const ownId = actor.type === "participant" ? actor.id : undefined;
   const [
+    challenges,
     completions,
     awards,
     transactions,
@@ -252,51 +259,90 @@ export async function arenaPayload(
     rewards,
     reservations,
     operators,
+    adminParticipants,
   ] = await Promise.all([
-    tx.arenaCompletion.findMany({
-      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-      include: includeAdmin ? { participant: true } : undefined,
-      orderBy: { completedAt: "desc" },
-    }),
-    tx.arenaXpAward.findMany({
-      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-      include: includeAdmin ? { participant: true } : undefined,
-      orderBy: { createdAt: "desc" },
-    }),
-    tx.xpTransaction.findMany({
-      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-      orderBy: { createdAt: "desc" },
-    }),
-    tx.passportStamp.findMany({
-      where: {
-        editionId,
-        status: "VALID",
-        ...(ownId ? { participantId: ownId } : {}),
-      },
-      orderBy: { issuedAt: "desc" },
-    }),
-    tx.rewardItem
-      .findMany({
-        where: {
-          editionId,
-          ...(includeAdmin ? {} : { active: true }),
-        },
-        orderBy: { order: "asc" },
-      })
-      .then((items: any[]) =>
-        items
-          .filter((reward: any) => rewardRedemptionMode(reward) === "XP_STORE")
-          .map((reward: any) => ({
-            ...reward,
-            redemptionMode: "XP_STORE",
-            xpCost: rewardXpCost(reward),
-          })),
-      ),
-    tx.rewardReservation.findMany({
-      where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
-      orderBy: { createdAt: "desc" },
-    }),
-    includeAdmin ? tx.adminUser.findMany({}) : Promise.resolve([]),
+    challengesPromise,
+    wantsAdminView("validacao")
+      ? tx.arenaCompletion.findMany({
+          where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+          orderBy: { completedAt: "desc" },
+          ...(includeAdmin ? { take: 20 } : {}),
+        })
+      : Promise.resolve([]),
+    includeAdmin && wantsAdminView("liberacao")
+      ? Promise.all([
+          tx.arenaXpAward.findMany({
+            where: { editionId, status: "PENDING" },
+            orderBy: { createdAt: "desc" },
+          }),
+          tx.arenaXpAward.findMany({
+            where: { editionId, status: "RELEASED" },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          }),
+        ]).then(([pending, released]) => [...pending, ...released])
+      : !includeAdmin
+        ? tx.arenaXpAward.findMany({
+            where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
+    includeAdmin
+      ? Promise.resolve([])
+      : tx.xpTransaction.findMany({
+          where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+          orderBy: { createdAt: "desc" },
+        }),
+    includeAdmin
+      ? Promise.resolve([])
+      : tx.passportStamp.findMany({
+          where: {
+            editionId,
+            status: "VALID",
+            ...(ownId ? { participantId: ownId } : {}),
+          },
+          orderBy: { issuedAt: "desc" },
+        }),
+    wantsAdminView("loja")
+      ? tx.rewardItem
+          .findMany({
+            where: {
+              editionId,
+              ...(includeAdmin ? {} : { active: true }),
+            },
+            orderBy: { order: "asc" },
+          })
+          .then((items: any[]) =>
+            items
+              .filter(
+                (reward: any) => rewardRedemptionMode(reward) === "XP_STORE",
+              )
+              .map((reward: any) => ({
+                ...reward,
+                redemptionMode: "XP_STORE",
+                xpCost: rewardXpCost(reward),
+              })),
+          )
+      : Promise.resolve([]),
+    includeAdmin
+      ? Promise.resolve([])
+      : tx.rewardReservation.findMany({
+          where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+          orderBy: { createdAt: "desc" },
+        }),
+    Promise.resolve([]),
+    includeAdmin && wantsAdminView("liberacao")
+      ? tx.participant.findMany({
+          where: { editionId, active: true },
+          select: {
+            id: true,
+            name: true,
+            ra: true,
+            semester: true,
+            photoUrl: true,
+          },
+        })
+      : Promise.resolve([]),
   ]);
   const rewardIds = rewards.map((reward: any) => reward.id);
   const [stockReservations, stockDeliveries] = rewardIds.length
@@ -353,11 +399,15 @@ export async function arenaPayload(
   const operatorById = new Map(
     operators.map((operator: any) => [operator.id, operator.name]),
   );
+  const participantById = new Map(
+    adminParticipants.map((participant: any) => [participant.id, participant]),
+  );
   const awardsWithAdminContext = includeAdmin
     ? awards.map((award: any) => {
         const completion: any = completionById.get(award.completionId);
         return {
           ...award,
+          participant: participantById.get(award.participantId),
           validatedAt: completion?.completedAt || award.createdAt,
           validatedByName:
             operatorById.get(completion?.validatedBy) ||
@@ -717,6 +767,7 @@ export async function completeArenaChallenge(
   challengeId: string,
   ras: string[],
   actor: Actor,
+  options: { individual?: boolean } = {},
 ) {
   requirePermission(actor, "arena.validate");
   const [challenge, config] = await Promise.all([
@@ -724,7 +775,12 @@ export async function completeArenaChallenge(
     arenaConfig(tx, editionId, true),
   ]);
   const participants = await validateParticipantsByRa(tx, editionId, ras);
-  if (challenge.mode === "TEAM") {
+  if (options.individual) {
+    ensure(
+      participants.length === 1,
+      "A liberação individual aceita apenas um participante.",
+    );
+  } else if (challenge.mode === "TEAM") {
     ensure(
       participants.length >= challenge.minTeamSize,
       `A equipe precisa de pelo menos ${challenge.minTeamSize} participantes.`,
@@ -745,9 +801,11 @@ export async function completeArenaChallenge(
     const prior = await tx.arenaCompletion.count({
       where: { challengeId, participantId: participant.id, status: "VALID" },
     });
-    const limit = challenge.repeatable
-      ? Math.max(1, challenge.maxCompletionsPerParticipant)
-      : 1;
+    const limit = options.individual
+      ? 1
+      : challenge.repeatable
+        ? Math.max(1, challenge.maxCompletionsPerParticipant)
+        : 1;
     ensure(
       prior < limit,
       `${participant.name} já atingiu o limite deste desafio.`,

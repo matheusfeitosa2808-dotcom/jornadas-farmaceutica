@@ -41,7 +41,9 @@ export async function GET(req: NextRequest) {
       if (actor?.type === "participant" && actor.editionId !== editionId)
         editionId = actor.editionId;
 
-      const edition = await db.edition.findUnique({ where: { id: editionId } });
+      // A edição selecionada já veio na consulta acima. Evita uma ida extra ao
+      // banco em toda abertura ou troca de página administrativa.
+      const edition = editions.find((item: any) => item.id === editionId);
       if (!edition) throw new Error("Edição não encontrada");
 
       if (scope === "admin" && actor?.type === "admin" && mode === "import") {
@@ -49,6 +51,127 @@ export async function GET(req: NextRequest) {
           actor,
           edition,
           editions,
+          serverNow: new Date().toISOString(),
+          devMode: process.env.DEV_SEED === "true",
+        });
+      }
+
+      // A central da Farma Arena possui um endpoint próprio. Carregar aqui
+      // inscrições, presenças, certificados, auditoria e estoque duplicava o
+      // tráfego e deixava o painel especialmente lento em celulares.
+      if (scope === "admin" && actor?.type === "admin" && mode === "arena") {
+        const participants = await db.participant.findMany({
+          where: { editionId, active: true },
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            ra: true,
+            semester: true,
+            photoUrl: true,
+            active: true,
+          },
+        });
+        return NextResponse.json({
+          actor,
+          edition,
+          editions,
+          participants: participants.map((participant: any) => ({
+            ...participant,
+            fullName: participant.name,
+          })),
+          serverNow: new Date().toISOString(),
+          devMode: process.env.DEV_SEED === "true",
+        });
+      }
+
+      if (
+        scope === "admin" &&
+        actor?.type === "admin" &&
+        mode === "dashboard"
+      ) {
+        const [
+          participants,
+          activities,
+          enrollments,
+          waitlist,
+          attendances,
+          rewards0,
+          reservations,
+          deliveries,
+        ] = await Promise.all([
+          db.participant.findMany({
+            where: { editionId, active: true },
+            select: { id: true },
+          }),
+          db.activity.findMany({
+            where: { editionId },
+            orderBy: { startAt: "asc" },
+          }),
+          db.enrollment.findMany({
+            where: { editionId, status: { in: ["ACTIVE", "COMPLETED"] } },
+            select: {
+              id: true,
+              participantId: true,
+              activityId: true,
+              status: true,
+            },
+          }),
+          db.waitlistEntry.findMany({
+            where: { editionId, status: "WAITING" },
+            select: { id: true, activityId: true, status: true },
+          }),
+          db.attendance.findMany({
+            where: { editionId },
+            select: {
+              id: true,
+              activityId: true,
+              checkinAt: true,
+              status: true,
+            },
+          }),
+          db.rewardItem.findMany({
+            where: { editionId },
+            orderBy: { order: "asc" },
+          }),
+          db.rewardReservation.findMany({
+            where: {
+              editionId,
+              status: {
+                in: ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"],
+              },
+            },
+            select: { rewardId: true, quantity: true },
+          }),
+          db.rewardDelivery.findMany({
+            where: { editionId, status: "DELIVERED" },
+            select: { rewardId: true, quantity: true },
+          }),
+        ]);
+        const rewards = rewards0.map((reward: any) => {
+          const reserved = reservations
+            .filter((row: any) => row.rewardId === reward.id)
+            .reduce((sum: number, row: any) => sum + row.quantity, 0);
+          const delivered = deliveries
+            .filter((row: any) => row.rewardId === reward.id)
+            .reduce((sum: number, row: any) => sum + row.quantity, 0);
+          return {
+            ...reward,
+            stockReserved: reserved,
+            stockDelivered: delivered,
+            stockAvailable: Math.max(0, reward.total - reserved - delivered),
+          };
+        });
+        return NextResponse.json({
+          actor,
+          edition,
+          editions,
+          participants,
+          activities,
+          enrollments,
+          waitlist,
+          attendances,
+          rewards,
           serverNow: new Date().toISOString(),
           devMode: process.env.DEV_SEED === "true",
         });
@@ -243,13 +366,14 @@ export async function GET(req: NextRequest) {
           ? db.notification.findMany({
               where: { editionId },
               orderBy: { createdAt: "desc" },
+              take: 200,
             })
           : Promise.resolve([]),
         actor.type === "admin"
           ? db.auditLog.findMany({
               where: { editionId },
               orderBy: { createdAt: "desc" },
-              take: 1000,
+              take: 250,
             })
           : Promise.resolve([]),
         actor.type === "admin"

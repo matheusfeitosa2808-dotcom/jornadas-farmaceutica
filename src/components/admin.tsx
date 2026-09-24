@@ -3395,6 +3395,13 @@ export default function AdminApp({
           Sair
         </button>
       </aside>
+      {open && (
+        <button
+          className="a-sidebar-scrim"
+          aria-label="Fechar menu"
+          onClick={() => setOpen(false)}
+        />
+      )}
       <div className="a-main">
         <header className="a-header">
           <button

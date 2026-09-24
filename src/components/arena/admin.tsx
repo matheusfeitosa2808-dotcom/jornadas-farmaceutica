@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -45,35 +51,48 @@ export function FarmaArenaAdmin() {
   const [tab, setTab] = useState("desafios");
   const [arena, setArena] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingView, setLoadingView] = useState(false);
+  const requestRef = useRef(0);
   const activeEditionId = data?.edition?.id;
-  const load = useCallback(async () => {
-    if (!activeEditionId) return;
-    const response = await fetch(
-      `/api/arena?scope=admin&editionId=${encodeURIComponent(activeEditionId)}`,
-      { cache: "no-store" },
-    );
-    setArena(
-      await readApiResponse<any>(
-        response,
-        "Não foi possível carregar a Farma Arena.",
-      ),
-    );
-  }, [activeEditionId]);
+  const load = useCallback(
+    async (view: string) => {
+      if (!activeEditionId) return;
+      const requestId = ++requestRef.current;
+      setLoadingView(true);
+      try {
+        const response = await fetch(
+          `/api/arena?scope=admin&view=${encodeURIComponent(view)}&editionId=${encodeURIComponent(activeEditionId)}`,
+          { cache: "no-store" },
+        );
+        const next = await readApiResponse<any>(
+          response,
+          "Não foi possível carregar a Farma Arena.",
+        );
+        if (requestId !== requestRef.current) return;
+        setArena((current: any) => (current ? { ...current, ...next } : next));
+      } finally {
+        if (requestId === requestRef.current) setLoadingView(false);
+      }
+    },
+    [activeEditionId],
+  );
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(tab);
+  }, [load, tab]);
   const run = useCallback(
     async (name: string, payload?: any) => {
       setBusy(true);
       try {
-        const result = await action(name, payload);
-        await load();
+        // Este módulo atualiza apenas o payload específico da Arena. Evita a
+        // segunda recarga, muito maior, de todo o estado administrativo.
+        const result = await action(name, payload, { refresh: false });
+        await load(tab);
         return result;
       } finally {
         setBusy(false);
       }
     },
-    [action, load],
+    [action, load, tab],
   );
   if (!arena)
     return (
@@ -109,6 +128,11 @@ export function FarmaArenaAdmin() {
           </button>
         ))}
       </nav>
+      {loadingView && arena && (
+        <div className="arena-admin-view-loading" role="status">
+          Atualizando esta área…
+        </div>
+      )}
       {tab === "desafios" && <Challenges arena={arena} run={run} busy={busy} />}
       {tab === "configuracao" && (
         <Configuration arena={arena} run={run} busy={busy} />
@@ -419,16 +443,16 @@ function Validation({ arena, participants, run, busy }: any) {
   );
   const [ras, setRas] = useState("");
   const challenge = arena.challenges.find((x: any) => x.id === challengeId);
+  const [validationMode, setValidationMode] = useState<"individual" | "team">(
+    "individual",
+  );
+  const isTeamBatch = challenge?.mode === "TEAM" && validationMode === "team";
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const list = ras.split(/[\s,;]+/).filter(Boolean);
     await run(
-      challenge?.mode === "TEAM"
-        ? "arena.challenge.completeTeam"
-        : "arena.challenge.complete",
-      challenge?.mode === "TEAM"
-        ? { challengeId, ras: list }
-        : { challengeId, ra: list[0] },
+      isTeamBatch ? "arena.challenge.completeTeam" : "arena.challenge.complete",
+      isTeamBatch ? { challengeId, ras: list } : { challengeId, ra: list[0] },
     );
     setRas("");
   };
@@ -460,18 +484,48 @@ function Validation({ arena, participants, run, busy }: any) {
               ))}
           </select>
         </label>
+        {challenge?.mode === "TEAM" && (
+          <div
+            className="arena-validation-mode"
+            role="group"
+            aria-label="Forma de validação"
+          >
+            <button
+              type="button"
+              className={validationMode === "individual" ? "active" : ""}
+              onClick={() => {
+                setValidationMode("individual");
+                setRas("");
+              }}
+            >
+              Individual
+            </button>
+            <button
+              type="button"
+              className={validationMode === "team" ? "active" : ""}
+              onClick={() => {
+                setValidationMode("team");
+                setRas("");
+              }}
+            >
+              Equipe completa
+            </button>
+            <small>
+              Individual libera o XP para uma pessoa sem exigir a formação do
+              grupo.
+            </small>
+          </div>
+        )}
         <label className="arena-admin-field wide">
           <span>
-            {challenge?.mode === "TEAM"
+            {isTeamBatch
               ? "RAs da equipe (separados por vírgula)"
               : "RA do participante"}
           </span>
           <textarea
             value={ras}
             onChange={(e) => setRas(e.target.value)}
-            placeholder={
-              challenge?.mode === "TEAM" ? "48884, 48885, 48886" : "48884"
-            }
+            placeholder={isTeamBatch ? "48884, 48885, 48886" : "48884"}
             required
           />
         </label>
@@ -492,7 +546,12 @@ function Validation({ arena, participants, run, busy }: any) {
         )}
         <button
           className="button"
-          disabled={busy || !challengeId || identified.length !== typed.length}
+          disabled={
+            busy ||
+            !challengeId ||
+            identified.length !== typed.length ||
+            (!isTeamBatch && typed.length !== 1)
+          }
         >
           <CheckCircle2 /> Confirmar resultado · +{challenge?.xpReward || 0} XP
         </button>

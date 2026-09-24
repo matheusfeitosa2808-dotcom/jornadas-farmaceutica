@@ -1,5 +1,6 @@
 .a-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f4f6f3;
   display: grid;
   grid-template-columns: 236px 1fr;
@@ -9,12 +10,17 @@
   background: #123e46;
   color: #dce9e7;
   min-height: 100vh;
+  min-height: 100dvh;
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   z-index: 80;
+}
+.a-sidebar-scrim {
+  display: none;
 }
 .a-brand {
   height: 84px;
@@ -819,11 +825,21 @@
     left: -260px;
     top: 0;
     width: 236px;
+    height: 100dvh;
     transition: left 0.2s;
   }
   .a-sidebar.open {
     left: 0;
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.2);
+  }
+  .a-sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: block;
+    border: 0;
+    background: rgba(7, 30, 35, 0.48);
+    backdrop-filter: blur(2px);
   }
   .a-brand button {
     display: grid;
@@ -837,7 +853,9 @@
     place-items: center;
   }
   .a-header {
-    padding: 0 14px;
+    height: auto;
+    min-height: calc(64px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 12px 0;
   }
   .a-header > label {
     font-size: 0;
@@ -862,14 +880,14 @@
     display: none;
   }
   .a-content {
-    padding: 22px 14px 90px;
+    padding: 18px 12px calc(78px + env(safe-area-inset-bottom, 0px));
   }
   .a-page-title {
     align-items: flex-start;
     flex-direction: column;
   }
   .a-page-title h1 {
-    font-size: 2rem;
+    font-size: clamp(1.65rem, 8vw, 2rem);
   }
   .a-metrics {
     grid-template-columns: repeat(2, 1fr);
@@ -882,6 +900,12 @@
   .a-toolbar {
     align-items: stretch;
     flex-wrap: wrap;
+  }
+  .a-actions {
+    width: 100%;
+  }
+  .a-actions > * {
+    flex: 1 1 auto;
   }
   .a-search {
     flex-basis: 100%;
@@ -907,6 +931,13 @@
   }
   .a-export .button {
     width: 100%;
+  }
+  .a-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .a-stamp-picker {
     grid-template-columns: repeat(4, 1fr);
@@ -1013,6 +1044,15 @@
 @media (prefers-reduced-motion: reduce) {
   .a-sidebar {
     transition: none;
+  }
+  .a-sidebar nav a,
+  .a-logout,
+  .a-menu {
+    min-height: 44px;
+  }
+  .a-sidebar nav {
+    overscroll-behavior: contain;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
   .a-spinner {
     animation-duration: 0.01ms;
@@ -1447,7 +1487,7 @@
     display: none !important;
   }
   .a-content {
-    padding: 20px 13px 90px;
+    padding: 18px 12px calc(78px + env(safe-area-inset-bottom, 0px));
   }
   .a-dialog-wide {
     width: min(96vw, 700px);
@@ -1461,6 +1501,22 @@
   .a-stamp-picker img {
     width: 78px;
     height: 78px;
+  }
+}
+
+@media (pointer: coarse) {
+  .a-shell input,
+  .a-shell textarea,
+  .a-shell select {
+    font-size: 16px;
+  }
+  .a-shell button,
+  .a-shell a,
+  .a-shell [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 

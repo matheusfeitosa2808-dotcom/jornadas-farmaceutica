@@ -645,6 +645,7 @@ export async function POST(req: NextRequest) {
             String(body.challengeId || ""),
             [String(body.ra || "")],
             actor,
+            { individual: true },
           );
           message = result.releases?.length
             ? "Resultado confirmado e XP liberado."

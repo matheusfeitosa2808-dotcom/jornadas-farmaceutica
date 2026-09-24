@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     if (actor.type === "admin") requirePermission(actor, "arena.read");
     const editionId =
       request.nextUrl.searchParams.get("editionId") || actor.editionId || "";
+    const view = request.nextUrl.searchParams.get("view") || "desafios";
     ensure(editionId, "Edição não informada.");
     if (actor.type === "participant")
       ensure(
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
         403,
       );
     const payload = await transaction((tx) =>
-      arenaPayload(tx, editionId, actor, actor.type === "admin"),
+      arenaPayload(tx, editionId, actor, actor.type === "admin", view),
     );
     return NextResponse.json(payload);
   } catch (error) {

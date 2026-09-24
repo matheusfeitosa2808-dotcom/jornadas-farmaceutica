@@ -16,7 +16,11 @@ type Context = {
   loading: boolean;
   error: string;
   refresh: () => Promise<void>;
-  action: (action: string, payload?: any) => Promise<any>;
+  action: (
+    action: string,
+    payload?: any,
+    options?: { refresh?: boolean },
+  ) => Promise<any>;
   toast: (message: string) => void;
   setEditionId: (id: string) => void;
   editionId: string;
@@ -29,6 +33,8 @@ export function Provider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLogin = pathname.startsWith("/login/");
   const isAdminImport = pathname.startsWith("/admin/importacoes");
+  const isAdminArena = pathname.startsWith("/admin/farma-arena");
+  const isAdminDashboard = pathname === "/admin" || pathname === "/admin/";
   const scope = pathname.startsWith("/admin")
     ? "admin"
     : pathname.startsWith("/app")
@@ -59,7 +65,11 @@ export function Provider({ children }: { children: ReactNode }) {
           ? "/api/editions"
           : isAdminImport
             ? `/api/state?scope=admin&mode=import${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
-            : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
+            : isAdminArena
+              ? `/api/state?scope=admin&mode=arena${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
+              : isAdminDashboard
+                ? `/api/state?scope=admin&mode=dashboard${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
+                : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
       const res = await fetch(endpoint, {
         cache: "no-store",
         signal: controller.signal,
@@ -82,7 +92,14 @@ export function Provider({ children }: { children: ReactNode }) {
       window.clearTimeout(timeout);
       setLoading(false);
     }
-  }, [scope, editionId, isLogin, isAdminImport]);
+  }, [
+    scope,
+    editionId,
+    isLogin,
+    isAdminImport,
+    isAdminArena,
+    isAdminDashboard,
+  ]);
 
   // Uma única carga quando o escopo, a edição ou a tela realmente muda.
   // Sem polling, SSE, EventSource ou atualização automática contínua.
@@ -113,7 +130,11 @@ export function Provider({ children }: { children: ReactNode }) {
     };
   }, [data?.actor?.id, data?.edition?.id, editionId, isLogin, refresh, scope]);
 
-  const action = async (actionName: string, payload: any = {}) => {
+  const action = async (
+    actionName: string,
+    payload: any = {},
+    options: { refresh?: boolean } = {},
+  ) => {
     try {
       const currentEditionId = data?.edition?.id || editionId;
       const importConfirm = actionName === "import.confirm";
@@ -144,7 +165,7 @@ export function Provider({ children }: { children: ReactNode }) {
 
       // Em importação, o retorno já contém o resultado necessário.
       // Evita recarregar todo o estado administrativo logo após confirmar.
-      if (!importConfirm) await refresh();
+      if (!importConfirm && options.refresh !== false) await refresh();
       return body;
     } catch (e) {
       toast(e instanceof Error ? e.message : "Não foi possível concluir.");

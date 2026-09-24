@@ -4467,6 +4467,46 @@ img {
   padding: 4px 8px;
   font-size: 0.62rem;
 }
+:is(.participant-programacao, .participant-inscricoes) .activity-card-signals {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+:is(.participant-programacao, .participant-inscricoes) .activity-availability {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid rgba(12, 61, 76, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--muted);
+  font-size: 0.61rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-availability.open {
+  border-color: rgba(44, 107, 78, 0.24);
+  background: rgba(222, 239, 226, 0.72);
+  color: #285f45;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-availability.low {
+  border-color: rgba(177, 138, 59, 0.3);
+  background: rgba(247, 235, 200, 0.76);
+  color: #86651e;
+}
+:is(.participant-programacao, .participant-inscricoes)
+  .activity-availability.full {
+  border-color: rgba(139, 62, 49, 0.22);
+  background: rgba(242, 224, 218, 0.72);
+  color: #854638;
+}
 :is(.participant-programacao, .participant-inscricoes) .activity-title h2 {
   margin: 7px 0 6px;
   font-size: 1.18rem;

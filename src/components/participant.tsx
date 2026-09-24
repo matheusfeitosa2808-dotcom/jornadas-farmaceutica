@@ -24,6 +24,7 @@ import {
   Ticket,
   Trophy,
   Upload,
+  Users,
   WifiOff,
   Zap,
 } from "lucide-react";
@@ -35,6 +36,10 @@ import { isFarmaArena, resolvedStampUrl } from "@/lib/farma-arena";
 import { STAMP_XP_REWARD } from "@/lib/xp";
 import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
 import { dateKeyInTimeZone } from "@/lib/datetime";
+import {
+  activitySwapDeadline,
+  isActivityOpenInProgram,
+} from "@/lib/activity-visibility";
 import {
   ArenaAwardRevealQueue,
   ArenaRouter,
@@ -559,22 +564,30 @@ function Programacao({ onlyMine = false }: { onlyMine?: boolean }) {
     [search, setSearch] = useState(""),
     [date, setDate] = useState("");
   const timezone = data.edition.timezone;
+  const listedActivities = (data.activities || []).filter((activity: any) => {
+    if (activity.status === "DRAFT") return false;
+    if (onlyMine)
+      return (
+        ownEnrollment(data, activity.id) ||
+        (data.waitlist || []).some(
+          (item: any) =>
+            item.activityId === activity.id && item.status === "WAITING",
+        )
+      );
+    return isActivityOpenInProgram(
+      activity,
+      data.serverNow,
+      data.edition.lateMinutes,
+    );
+  });
   const dates: Array<string> = Array.from(
     new Set<string>(
-      (data.activities || []).map((a: any) =>
-        dateKeyInTimeZone(a.startAt, timezone),
-      ),
+      listedActivities.map((a: any) => dateKeyInTimeZone(a.startAt, timezone)),
     ),
   ).filter(Boolean);
-  const activities = (data.activities || [])
+  const activities = listedActivities
     .filter(
       (a: any) =>
-        a.status !== "DRAFT" &&
-        (!onlyMine ||
-          ownEnrollment(data, a.id) ||
-          (data.waitlist || []).some(
-            (w: any) => w.activityId === a.id && w.status === "WAITING",
-          )) &&
         (!category || a.categoryId === category) &&
         (!date || dateKeyInTimeZone(a.startAt, timezone) === date) &&
         (!search || a.title.toLowerCase().includes(search.toLowerCase())),
@@ -736,26 +749,39 @@ function ActivityCard({ activity }: { activity: any }) {
           <i />
           {c.name}
         </span>
-        {attendance ? (
-          <Badge tone="success">
-            <Check size={12} />
-            Presença confirmada
-          </Badge>
-        ) : activity.status === "CANCELLED" ? (
-          <Badge tone="danger">Cancelada</Badge>
-        ) : isLive(data, activity) ? (
-          <Badge tone="live">Acontecendo agora</Badge>
-        ) : enrollment ? (
-          <Badge tone="success">Inscrito</Badge>
-        ) : waiting ? (
-          <Badge tone="warning">Na lista de espera</Badge>
-        ) : ended ? (
-          <Badge>Encerrada</Badge>
-        ) : seats === 0 ? (
-          <Badge>Lotado</Badge>
-        ) : seats <= 3 ? (
-          <Badge tone="warning">Últimas vagas</Badge>
-        ) : null}
+        <div className="activity-card-signals">
+          <span
+            className={`activity-availability ${
+              seats === 0 ? "full" : seats <= 3 ? "low" : "open"
+            }`}
+            aria-label={
+              seats === 0
+                ? "Atividade lotada"
+                : seats === 1
+                  ? "1 vaga disponível"
+                  : `${seats} vagas disponíveis`
+            }
+          >
+            <Users size={12} />
+            {seats === 0 ? "Lotada" : seats === 1 ? "1 vaga" : `${seats} vagas`}
+          </span>
+          {attendance ? (
+            <Badge tone="success">
+              <Check size={12} />
+              Presença confirmada
+            </Badge>
+          ) : activity.status === "CANCELLED" ? (
+            <Badge tone="danger">Cancelada</Badge>
+          ) : isLive(data, activity) ? (
+            <Badge tone="live">Acontecendo agora</Badge>
+          ) : enrollment ? (
+            <Badge tone="success">Inscrito</Badge>
+          ) : waiting ? (
+            <Badge tone="warning">Na lista de espera</Badge>
+          ) : ended ? (
+            <Badge>Encerrada</Badge>
+          ) : null}
+        </div>
       </div>
       <Link href={`/app/programacao/${activity.id}`} className="activity-title">
         <h2>{displayTitle}</h2>
@@ -786,11 +812,7 @@ function ActivityCard({ activity }: { activity: any }) {
         </div>
       )}
       <div className="activity-card-bottom">
-        <span>
-          {seats === 0
-            ? "Sem vagas"
-            : `${seats} ${seats === 1 ? "vaga restante" : "vagas restantes"}`}
-        </span>
+        <span>{seats === 0 ? "Lista de espera" : "Inscrições abertas"}</span>
         <Link href={`/app/programacao/${activity.id}`} className="text-link">
           Ver detalhes <ArrowRight size={17} />
         </Link>
@@ -813,17 +835,15 @@ function ActivityDetail({ id }: { id: string }) {
       (w: any) => w.activityId === id && w.status === "WAITING",
     );
   const seats = Math.max(0, activity.capacity - (activity.enrolledCount || 0));
-  const closed =
+  const enrollmentClosed = !isActivityOpenInProgram(
+    activity,
+    data.serverNow,
+    data.edition.lateMinutes,
+  );
+  const swapClosed =
     ["CANCELLED", "DRAFT", "FINISHED"].includes(activity.status) ||
-    new Date(data.serverNow) >
-      new Date(
-        activity.enrollmentDeadline ||
-          new Date(
-            new Date(activity.startAt).getTime() +
-              data.edition.lateMinutes * 60000,
-          ).toISOString(),
-      ) ||
-    activity.enrollmentOpen === false;
+    new Date(data.serverNow).getTime() >
+      activitySwapDeadline(activity, data.edition.lateMinutes);
   async function run(name: string, payload: any) {
     setBusy(true);
     try {
@@ -946,14 +966,14 @@ function ActivityDetail({ id }: { id: string }) {
               <p>Apresente seu RA à equipe ao chegar.</p>
               <Badge status={enrollment.status} />
               <button
-                disabled={busy || closed}
+                disabled={busy || swapClosed}
                 className="button secondary full"
                 onClick={() => setSwap(true)}
               >
                 Trocar atividade
               </button>
               <button
-                disabled={busy || closed}
+                disabled={busy || swapClosed}
                 className="button ghost full"
                 onClick={() =>
                   run("enrollment.cancel", { enrollmentId: enrollment.id })
@@ -987,7 +1007,7 @@ function ActivityDetail({ id }: { id: string }) {
                 <span>vagas disponíveis</span>
               </div>
               <p>Capacidade: {activity.capacity} participantes</p>
-              {closed ? (
+              {enrollmentClosed ? (
                 <Badge>
                   {activity.status === "CANCELLED"
                     ? "Atividade cancelada"
@@ -1035,8 +1055,11 @@ function ActivityDetail({ id }: { id: string }) {
                 .filter(
                   (a: any) =>
                     a.id !== id &&
-                    a.status !== "CANCELLED" &&
-                    a.status !== "DRAFT",
+                    isActivityOpenInProgram(
+                      a,
+                      data.serverNow,
+                      data.edition.lateMinutes,
+                    ),
                 )
                 .map((a: any) => (
                   <option key={a.id} value={a.id}>

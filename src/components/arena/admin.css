@@ -467,6 +467,46 @@
     123px 123px;
   mask-image: linear-gradient(to bottom, #000, transparent 90%);
 }
+.arena-ranking-reveal__countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: rgba(10, 3, 4, 0.82);
+  backdrop-filter: blur(18px);
+  text-align: center;
+}
+.arena-ranking-reveal__countdown small {
+  color: #e8bd5c;
+  font-size: clamp(0.75rem, 1.2vw, 1rem);
+  font-weight: 900;
+  letter-spacing: 0.28em;
+}
+.arena-ranking-reveal__countdown strong {
+  color: #fff8e7;
+  font:
+    700 clamp(7rem, 22vw, 17rem) / 0.82 Georgia,
+    serif;
+  text-shadow: 0 0 70px rgba(232, 189, 92, 0.35);
+  animation: arena-countdown-tick 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.arena-ranking-reveal__countdown span {
+  color: rgba(255, 248, 231, 0.72);
+  font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+}
+@keyframes arena-countdown-tick {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .arena-ranking-reveal > header,
 .arena-ranking-reveal > footer {
   position: relative;
@@ -941,10 +981,22 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .arena-ranking-reveal__countdown strong {
+    animation: arena-countdown-fade 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
   .arena-ranking-reveal__track,
   .arena-ranking-reveal__track article,
   .arena-ranking-reveal__progress i {
     transition: none;
+  }
+}
+
+@keyframes arena-countdown-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

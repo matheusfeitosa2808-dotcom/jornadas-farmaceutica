@@ -912,14 +912,26 @@ function useReducedMotion() {
 function RankingReveal({ ranking, onClose }: any) {
   const rows = [...ranking].reverse();
   const reducedMotion = useReducedMotion();
+  const [countdown, setCountdown] = useState(5);
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const active = rows[current] || rows[0];
+  const countdownComplete = countdown === 0;
 
   useEffect(() => {
+    if (countdownComplete) return;
+    const timer = window.setTimeout(
+      () => setCountdown((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [countdown, countdownComplete]);
+
+  useEffect(() => {
+    if (!countdownComplete) return;
     if (reducedMotion) {
       setCurrent(Math.max(0, rows.length - 1));
       setFinished(true);
@@ -934,15 +946,22 @@ function RankingReveal({ ranking, onClose }: any) {
       else setCurrent((value) => value + 1);
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [current, finished, paused, reducedMotion, rows.length]);
+  }, [
+    countdownComplete,
+    current,
+    finished,
+    paused,
+    reducedMotion,
+    rows.length,
+  ]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = 0.62;
-    if (paused) audio.pause();
+    if (!countdownComplete || paused) audio.pause();
     else void audio.play().catch(() => undefined);
-  }, [paused]);
+  }, [countdownComplete, paused]);
 
   const skipToTop = () => {
     setCurrent(Math.max(0, rows.length - 1));
@@ -955,7 +974,6 @@ function RankingReveal({ ranking, onClose }: any) {
         <audio
           ref={audioRef}
           src="/assets/effects/farma-arena-ranking-reveal.m4a"
-          autoPlay
           preload="auto"
           muted={muted}
         />
@@ -964,6 +982,18 @@ function RankingReveal({ ranking, onClose }: any) {
         className="arena-ranking-reveal__constellations"
         aria-hidden="true"
       />
+      {!countdownComplete && (
+        <div
+          className="arena-ranking-reveal__countdown"
+          role="status"
+          aria-live="assertive"
+          aria-label={`A apresentação começa em ${countdown} segundos`}
+        >
+          <small>PREPARE-SE</small>
+          <strong key={countdown}>{countdown}</strong>
+          <span>A apresentação começa em instantes</span>
+        </div>
+      )}
       <header>
         <span>FARMA ARENA · CLASSIFICAÇÃO AO VIVO</span>
         <button onClick={onClose} aria-label="Fechar apresentação">
@@ -1010,16 +1040,19 @@ function RankingReveal({ ranking, onClose }: any) {
         </div>
         <button
           onClick={() => setPaused((value) => !value)}
-          disabled={finished}
+          disabled={!countdownComplete || finished}
         >
           {paused ? <Play /> : <Pause />}
           {paused ? "Continuar" : "Pausar"}
         </button>
-        <button onClick={() => setMuted((value) => !value)}>
+        <button
+          onClick={() => setMuted((value) => !value)}
+          disabled={!countdownComplete}
+        >
           {muted ? <VolumeX /> : <Volume2 />}
           {muted ? "Ativar música" : "Silenciar música"}
         </button>
-        <button onClick={skipToTop} disabled={finished}>
+        <button onClick={skipToTop} disabled={!countdownComplete || finished}>
           <SkipForward /> Ir ao topo
         </button>
       </footer>

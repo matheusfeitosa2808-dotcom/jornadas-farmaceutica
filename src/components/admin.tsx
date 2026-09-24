@@ -1916,6 +1916,13 @@ function EntityManager({
                 <Upload size={16} />
                 Importar
               </Link>
+              <a
+                className="secondary"
+                href={`/api/export/participants?editionId=${encodeURIComponent(data.edition.id)}&q=${encodeURIComponent(search || query)}&semester=${encodeURIComponent(semester)}&presence=${encodeURIComponent(presence)}`}
+              >
+                <ArrowDownToLine size={16} />
+                Exportar
+              </a>
             </>
           )}
           {section === "atividades" && (

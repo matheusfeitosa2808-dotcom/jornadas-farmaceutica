@@ -212,11 +212,17 @@ function RankingReleaseGate({
   onRelease: () => Promise<void>;
 }) {
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
   const refreshed = useRef(false);
   const releaseAt = new Date(
     arena.rankingRevealAt || arena.config?.rankingRevealAt || 0,
   ).getTime();
   const [serverOffset, setServerOffset] = useState(0);
+  useEffect(() => {
+    setPreviewMode(
+      new URLSearchParams(window.location.search).get("teste") === "ranking",
+    );
+  }, []);
   useEffect(() => {
     const serverNow = new Date(arena.serverNow || 0).getTime();
     setServerOffset(
@@ -243,7 +249,7 @@ function RankingReleaseGate({
     return () => window.clearInterval(timer);
   }, [arena.rankingLocked, onRelease, releaseAt, serverOffset]);
 
-  if (!arena.rankingLocked) return children;
+  if (!arena.rankingLocked || previewMode) return children;
 
   const totalSeconds = Math.floor((remaining || 0) / 1000);
   const hours = Math.floor(totalSeconds / 3600);

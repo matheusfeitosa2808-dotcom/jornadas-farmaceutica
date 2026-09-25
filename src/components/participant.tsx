@@ -1340,6 +1340,7 @@ function Rewards({ id }: { id?: string }) {
   const count = validStamps(data).length;
   const ownReservations = data.reservations || [];
   const isRankingPrize = (reward: any) =>
+    reward.exclusiveGroup === "RANKING_POSITION" ||
     ["Copo", "Ecobag", "Scrubs"].includes(String(reward.name));
   const allItems = (data.rewards || []).filter(
     (r: any) =>

@@ -199,7 +199,7 @@ export function FarmaArenaAdmin() {
           busy={busy}
         />
       )}
-      {tab === "loja" && <Store arena={arena} />}
+      {tab === "loja" && <Store arena={arena} run={run} busy={busy} />}
     </div>
   );
 }
@@ -1208,7 +1208,10 @@ function Adjustment({ participants, run, busy }: any) {
   );
 }
 
-function Store({ arena }: any) {
+function Store({ arena, run, busy }: any) {
+  const pending = (arena.reservations || []).filter(
+    (reservation: any) => reservation.status === "AWAITING_DRAW",
+  );
   return (
     <section className="arena-admin-panel">
       <div className="arena-admin-title">
@@ -1220,9 +1223,26 @@ function Store({ arena }: any) {
             mesma retirada.
           </p>
         </div>
-        <Link className="button" href="/admin/brindes">
-          <Plus /> Gerenciar itens
-        </Link>
+        <div className="arena-admin-actions">
+          <button
+            className="button"
+            disabled={busy || pending.length === 0}
+            onClick={() => run("reward.drawXpSequence")}
+          >
+            <Trophy /> Sortear do mais raro ao mais comum
+          </button>
+          <Link className="button secondary" href="/admin/brindes">
+            <Plus /> Gerenciar itens
+          </Link>
+        </div>
+      </div>
+      <div className="arena-admin-callout">
+        <b>{pending.length} pedidos aguardando distribuição</b>
+        <span>
+          O sistema limita cada participante a dois brindes, sorteia quando a
+          procura supera o estoque e realoca quem não ganhou para o próximo item
+          disponível.
+        </span>
       </div>
       <div className="arena-admin-cards">
         {arena.rewards.map((x: any) => (
@@ -1233,7 +1253,15 @@ function Store({ arena }: any) {
             <p>{x.description}</p>
             <footer>
               <b>{x.xpCost} XP</b>
-              <small>{x.stockAvailable ?? x.total} disponíveis</small>
+              <small>
+                {x.stockAvailable ?? x.total} disponíveis ·{" "}
+                {
+                  pending.filter(
+                    (reservation: any) => reservation.rewardId === x.id,
+                  ).length
+                }{" "}
+                pedidos
+              </small>
             </footer>
           </article>
         ))}

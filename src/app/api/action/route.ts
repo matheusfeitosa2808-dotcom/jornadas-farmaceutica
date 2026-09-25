@@ -33,6 +33,7 @@ import {
   cancelArenaAward,
   cancelXpPurchase,
   completeArenaChallenge,
+  executeXpRewardDrawSequence,
   submitArenaCreditChoice,
   markArenaAwardSeen,
   purchaseXpReward,
@@ -769,7 +770,7 @@ export async function POST(req: NextRequest) {
             String(body.rewardId || ""),
             actor,
           );
-          message = "Item reservado com XP.";
+          message = "Pedido registrado para a distribuição da Loja XP.";
           break;
         case "reward.purchase.cancel":
           result = await cancelXpPurchase(
@@ -779,6 +780,11 @@ export async function POST(req: NextRequest) {
             actor,
           );
           message = "Resgate cancelado e XP devolvido.";
+          break;
+        case "reward.drawXpSequence":
+          result = await executeXpRewardDrawSequence(tx, editionId, actor);
+          message =
+            "Distribuição da Loja XP concluída do item mais raro ao mais comum.";
           break;
         case "enrollment.create":
           requireParticipant(actor, editionId);
@@ -1166,6 +1172,10 @@ export async function POST(req: NextRequest) {
           requirePermission(actor, "draws.execute");
           await recalc(tx, editionId);
           const { reward, available } = await rewardStock(tx, body.rewardId);
+          ensure(
+            rewardRedemptionMode(reward) !== "XP_STORE",
+            "Use a distribuição sequencial da Loja XP na Farma Arena.",
+          );
           ensure(available > 0, "Sem estoque disponível.");
           const elig = await tx.rewardEligibility.findMany({
             where: { editionId, rewardId: reward.id, eligible: true },

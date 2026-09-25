@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { STAMP_XP_REWARD } from "@/lib/xp";
 import { rewardRedemptionMode, rewardXpCost } from "@/lib/rewards";
 import { FARMA_ARENA_STAMP_URL } from "@/lib/farma-arena";
@@ -24,6 +24,14 @@ export const defaultArenaConfig = (editionId: string) => ({
 
 export const EGRESS_INVITATION_CHALLENGE_SLUG = "convite-de-egressos";
 const RANKING_SCHEDULE_PREFIX = "SCHEDULED:";
+const MAX_REWARDS_PER_PARTICIPANT = 2;
+const ACTIVE_REWARD_STATUSES = [
+  "AWAITING_DRAW",
+  "AWAITING_CONFIRMATION",
+  "RESERVED",
+  "CONFIRMED",
+  "DELIVERED",
+];
 
 const ARENA_PASSPORT_ACTIVITY_PREFIX = "arena-passport-activity:";
 const ARENA_PASSPORT_CATEGORY_PREFIX = "arena-passport-category:";
@@ -441,12 +449,17 @@ export async function arenaPayload(
               })),
           )
       : Promise.resolve([]),
-    includeAdmin
-      ? Promise.resolve([])
-      : tx.rewardReservation.findMany({
-          where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+    includeAdmin && wantsAdminView("loja")
+      ? tx.rewardReservation.findMany({
+          where: { editionId },
           orderBy: { createdAt: "desc" },
-        }),
+        })
+      : !includeAdmin
+        ? tx.rewardReservation.findMany({
+            where: { editionId, ...(ownId ? { participantId: ownId } : {}) },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
     Promise.resolve([]),
     includeAdmin && wantsAdminView("liberacao")
       ? tx.participant.findMany({
@@ -1414,19 +1427,11 @@ export async function purchaseXpReward(
     "INSUFFICIENT_XP",
     409,
   );
-  ensure(
-    (await rewardAvailable(tx, reward)) > 0,
-    "Item esgotado.",
-    "OUT_OF_STOCK",
-    409,
-  );
   const previous = await tx.rewardReservation.count({
     where: {
       rewardId,
       participantId: actor.id,
-      status: {
-        in: ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED", "DELIVERED"],
-      },
+      status: { in: ACTIVE_REWARD_STATUSES },
     },
   });
   ensure(
@@ -1435,14 +1440,26 @@ export async function purchaseXpReward(
     "LIMIT_REACHED",
     409,
   );
+  const activeRewards = await tx.rewardReservation.count({
+    where: {
+      editionId,
+      participantId: actor.id,
+      status: { in: ACTIVE_REWARD_STATUSES },
+    },
+  });
+  ensure(
+    activeRewards < MAX_REWARDS_PER_PARTICIPANT,
+    `Cada participante pode receber no máximo ${MAX_REWARDS_PER_PARTICIPANT} brindes.`,
+    "REWARD_LIMIT_REACHED",
+    409,
+  );
   const reservation = await tx.rewardReservation.create({
     data: {
       editionId,
       rewardId,
       participantId: actor.id,
       quantity: 1,
-      status: "RESERVED",
-      confirmedAt: new Date(),
+      status: "AWAITING_DRAW",
       expiresAt: new Date(Date.now() + 30 * 24 * 3600000),
     },
   });
@@ -1465,8 +1482,8 @@ export async function purchaseXpReward(
     editionId,
     [actor.id],
     "XP_STORE_PURCHASE",
-    "Resgate confirmado",
-    `${reward.name} reservado por ${reward.xpCost} XP.`,
+    "Pedido registrado",
+    `${reward.name} entrou na distribuição por ${reward.xpCost} XP. Se a procura superar o estoque, haverá sorteio.`,
   );
   await audit(
     tx,
@@ -1492,7 +1509,7 @@ export async function cancelXpPurchase(
       id: reservationId,
       editionId,
       participantId: actor.type === "participant" ? actor.id : undefined,
-      status: "RESERVED",
+      status: { in: ["AWAITING_DRAW", "RESERVED"] },
     },
   });
   ensure(reservation, "Reserva cancelável não encontrada.", "NOT_FOUND", 404);
@@ -1505,22 +1522,23 @@ export async function cancelXpPurchase(
     "Este resgate não pertence à Loja XP.",
   );
   if (actor.type === "admin") requirePermission(actor, "rewards.manage");
-  const spend = await tx.xpTransaction.findFirst({
+  const ledger = await tx.xpTransaction.aggregate({
+    _sum: { balanceDelta: true },
     where: {
       editionId,
       participantId: reservation.participantId,
-      sourceType: "REWARD_PURCHASE",
       sourceId: reservation.id,
     },
   });
-  ensure(spend, "Débito original não encontrado.");
+  const refundAmount = Math.max(0, -Number(ledger._sum.balanceDelta || 0));
+  ensure(refundAmount > 0, "Débito original não encontrado.");
   const refund = await tx.xpTransaction.upsert({
     where: { idempotencyKey: `reward-refund:${reservation.id}` },
     create: {
       editionId,
       participantId: reservation.participantId,
       type: "REFUND",
-      balanceDelta: Math.abs(spend.balanceDelta),
+      balanceDelta: refundAmount,
       rankingDelta: 0,
       sourceType: "REWARD_REFUND",
       sourceId: reservation.id,
@@ -1545,6 +1563,219 @@ export async function cancelXpPurchase(
     updated,
   );
   return { reservation: updated, transaction: refund };
+}
+
+async function adjustRewardReservationBalance(
+  tx: any,
+  editionId: string,
+  reservation: any,
+  amount: number,
+  description: string,
+  key: string,
+  actor: Actor,
+) {
+  if (!amount) return null;
+  return tx.xpTransaction.upsert({
+    where: { idempotencyKey: key },
+    create: {
+      editionId,
+      participantId: reservation.participantId,
+      type: amount > 0 ? "REFUND" : "SPEND",
+      balanceDelta: amount,
+      rankingDelta: 0,
+      sourceType: "REWARD_REALLOCATION",
+      sourceId: reservation.id,
+      description,
+      idempotencyKey: key,
+      createdBy: actor.id,
+    },
+    update: {},
+  });
+}
+
+export async function executeXpRewardDrawSequence(
+  tx: any,
+  editionId: string,
+  actor: Actor,
+) {
+  requirePermission(actor, "draws.execute");
+  const records = await tx.rewardItem.findMany({
+    where: { editionId, active: true },
+    orderBy: [{ total: "asc" }, { order: "asc" }],
+  });
+  const rewards = records
+    .filter(
+      (reward: any) =>
+        rewardRedemptionMode(reward) === "XP_STORE" && rewardXpCost(reward) > 0,
+    )
+    .map((reward: any) => ({ ...reward, xpCost: rewardXpCost(reward) }))
+    .sort(
+      (a: any, b: any) =>
+        a.total - b.total || b.xpCost - a.xpCost || a.order - b.order,
+    );
+  ensure(rewards.length > 0, "Nenhum item da Loja XP está disponível.");
+
+  const summaries: any[] = [];
+  for (let index = 0; index < rewards.length; index += 1) {
+    const reward = rewards[index];
+    const pending = await tx.rewardReservation.findMany({
+      where: { editionId, rewardId: reward.id, status: "AWAITING_DRAW" },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!pending.length) continue;
+
+    const pool: any[] = [];
+    for (const reservation of pending) {
+      const wins = await tx.rewardReservation.count({
+        where: {
+          editionId,
+          participantId: reservation.participantId,
+          status: { in: ["RESERVED", "CONFIRMED", "DELIVERED"] },
+        },
+      });
+      if (wins < MAX_REWARDS_PER_PARTICIPANT) pool.push(reservation);
+    }
+
+    const available = await rewardAvailable(tx, reward);
+    const seed = randomBytes(20).toString("hex");
+    const ordered = pool
+      .map((reservation: any) => ({
+        ...reservation,
+        drawKey: createHash("sha256")
+          .update(`${seed}:${reservation.id}:${reservation.participantId}`)
+          .digest("hex"),
+      }))
+      .sort((a: any, b: any) => a.drawKey.localeCompare(b.drawKey));
+    const winners = ordered.slice(0, Math.min(available, ordered.length));
+    const winnerIds = new Set(winners.map((item: any) => item.id));
+    const round =
+      (await tx.rewardDraw.count({ where: { rewardId: reward.id } })) + 1;
+    const draw = await tx.rewardDraw.create({
+      data: {
+        editionId,
+        rewardId: reward.id,
+        round,
+        stockSnapshot: available,
+        eligibleCount: pool.length,
+        operatorId: actor.id,
+        mode: pool.length <= available ? "GUARANTEED" : "DRAW",
+        randomSeed: seed,
+        snapshot: JSON.stringify(pool.map((item: any) => item.participantId)),
+        entries: {
+          create: ordered.map((item: any, position: number) => ({
+            participantId: item.participantId,
+            winner: winnerIds.has(item.id),
+            rank: position + 1,
+          })),
+        },
+      },
+    });
+
+    if (winners.length) {
+      await tx.rewardReservation.updateMany({
+        where: { id: { in: winners.map((item: any) => item.id) } },
+        data: { status: "RESERVED", drawId: draw.id, confirmedAt: new Date() },
+      });
+      await notify(
+        tx,
+        editionId,
+        winners.map((item: any) => item.participantId),
+        "XP_STORE_WIN",
+        "Brinde confirmado",
+        `${reward.name} foi reservado para você.`,
+      );
+    }
+
+    let reallocated = 0;
+    let refunded = 0;
+    for (const reservation of pending.filter(
+      (item: any) => !winnerIds.has(item.id),
+    )) {
+      const wins = await tx.rewardReservation.count({
+        where: {
+          editionId,
+          participantId: reservation.participantId,
+          status: { in: ["RESERVED", "CONFIRMED", "DELIVERED"] },
+        },
+      });
+      let nextReward: any = null;
+      if (wins < MAX_REWARDS_PER_PARTICIPANT) {
+        for (const candidate of rewards.slice(index + 1)) {
+          const duplicate = await tx.rewardReservation.count({
+            where: {
+              editionId,
+              participantId: reservation.participantId,
+              rewardId: candidate.id,
+              status: { in: ACTIVE_REWARD_STATUSES },
+            },
+          });
+          if (!duplicate) {
+            nextReward = candidate;
+            break;
+          }
+        }
+      }
+
+      if (nextReward) {
+        const difference = Math.max(0, reward.xpCost - nextReward.xpCost);
+        await adjustRewardReservationBalance(
+          tx,
+          editionId,
+          reservation,
+          difference,
+          `Readequação: ${reward.name} para ${nextReward.name}`,
+          `reward-reallocation:${reservation.id}:${reward.id}:${nextReward.id}`,
+          actor,
+        );
+        await tx.rewardReservation.update({
+          where: { id: reservation.id },
+          data: {
+            rewardId: nextReward.id,
+            drawId: null,
+            status: "AWAITING_DRAW",
+          },
+        });
+        reallocated += 1;
+      } else {
+        await adjustRewardReservationBalance(
+          tx,
+          editionId,
+          reservation,
+          reward.xpCost,
+          `Reembolso: ${reward.name} sem disponibilidade`,
+          `reward-reallocation-refund:${reservation.id}:${reward.id}`,
+          actor,
+        );
+        await tx.rewardReservation.update({
+          where: { id: reservation.id },
+          data: { status: "EXPIRED", drawId: draw.id },
+        });
+        refunded += 1;
+      }
+    }
+
+    summaries.push({
+      rewardId: reward.id,
+      rewardName: reward.name,
+      candidates: pool.length,
+      winners: winners.length,
+      reallocated,
+      refunded,
+      drawId: draw.id,
+    });
+  }
+
+  await audit(
+    tx,
+    actor,
+    editionId,
+    "reward.drawXpSequence",
+    "RewardDraw",
+    summaries.at(-1)?.drawId || editionId,
+    undefined,
+    summaries,
+  );
+  return { summaries, maxRewardsPerParticipant: MAX_REWARDS_PER_PARTICIPANT };
 }
 
 export async function releaseScheduledArenaAwards(

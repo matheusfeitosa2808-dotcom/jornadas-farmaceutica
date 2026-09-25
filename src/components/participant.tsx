@@ -1166,10 +1166,7 @@ function Passport({ person }: { person: any }) {
     Number(data.edition.maxCheckins) || editionStampActivities.length || 1,
     1,
   );
-  const stampProgress = Math.min(
-    100,
-    (earnedEditionStamps / stampGoal) * 100,
-  );
+  const stampProgress = Math.min(100, (earnedEditionStamps / stampGoal) * 100);
   return (
     <>
       <section className="passport">
@@ -1443,7 +1440,9 @@ function Rewards({ id }: { id?: string }) {
           const xpOwned =
             xpItem &&
             reservation &&
-            ["RESERVED", "CONFIRMED", "DELIVERED"].includes(reservation.status);
+            ["AWAITING_DRAW", "RESERVED", "CONFIRMED", "DELIVERED"].includes(
+              reservation.status,
+            );
           const xpAvailable = Number(arena?.myXpAvailable || 0);
           const affordable = xpAvailable >= xpCost;
           const stockAvailable =
@@ -1497,15 +1496,17 @@ function Rewards({ id }: { id?: string }) {
                     <Badge tone={xpOwned ? "success" : ""}>
                       {reservation?.status === "DELIVERED"
                         ? "Entregue"
-                        : xpOwned
-                          ? "Resgatado"
-                          : xpPricingPending
-                            ? "Em definição"
-                            : stockAvailable <= 0
-                              ? "Esgotado"
-                              : affordable
-                                ? "Disponível"
-                                : "XP insuficiente"}
+                        : reservation?.status === "AWAITING_DRAW"
+                          ? "No sorteio"
+                          : xpOwned
+                            ? "Resgatado"
+                            : xpPricingPending
+                              ? "Em definição"
+                              : stockAvailable <= 0
+                                ? "Esgotado"
+                                : affordable
+                                  ? "Disponível"
+                                  : "XP insuficiente"}
                     </Badge>
                   ) : (
                     <Badge status={status} />
@@ -1591,7 +1592,9 @@ function Rewards({ id }: { id?: string }) {
                       }}
                     >
                       {xpOwned
-                        ? "Brinde já resgatado"
+                        ? reservation?.status === "AWAITING_DRAW"
+                          ? "Pedido aguardando sorteio"
+                          : "Brinde já resgatado"
                         : xpPricingPending
                           ? "Aguardando definição do valor"
                           : busy === r.id
@@ -1603,7 +1606,7 @@ function Rewards({ id }: { id?: string }) {
                                 : stockAvailable <= 0
                                   ? "Brinde esgotado"
                                   : affordable
-                                    ? `Resgatar por ${xpCost} XP`
+                                    ? `Participar por ${xpCost} XP`
                                     : `Faltam ${Math.max(0, xpCost - xpAvailable)} XP`}
                       <ArrowRight size={17} />
                     </button>
@@ -1612,9 +1615,11 @@ function Rewards({ id }: { id?: string }) {
                         <CheckCircle2 size={18} />
                         {reservation.status === "DELIVERED"
                           ? "Brinde entregue. Leve esta lembrança com você!"
-                          : redemptionLocked
-                            ? `Resgate confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
-                            : "Resgate confirmado. Apresente seu RA à equipe de retirada."}
+                          : reservation.status === "AWAITING_DRAW"
+                            ? "Pedido registrado. Se a procura superar o estoque, o sistema fará o sorteio e poderá realocar você para o próximo item."
+                            : redemptionLocked
+                              ? `Resgate confirmado. A retirada começa em ${formatDate(r.redemptionStartsAt, data.edition.timezone)}.`
+                              : "Resgate confirmado. Apresente seu RA à equipe de retirada."}
                       </div>
                     )}
                   </>

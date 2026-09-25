@@ -111,6 +111,28 @@
   margin: 0;
   color: #758284;
 }
+.arena-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.arena-admin-callout {
+  display: grid;
+  gap: 4px;
+  margin: -4px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #ead9b8;
+  border-radius: 14px;
+  color: #24494f;
+  background: #fffaf0;
+}
+.arena-admin-callout span {
+  color: #687a7d;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
 .arena-admin-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -798,6 +820,13 @@
   .arena-admin-title {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .arena-admin-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .arena-admin-actions .button {
+    width: 100%;
   }
   .arena-admin-title h2 {
     font-size: 1.4rem;

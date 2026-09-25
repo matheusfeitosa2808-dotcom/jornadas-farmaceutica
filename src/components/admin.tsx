@@ -52,6 +52,7 @@ import {
   isLegacyFarmaArenaStamp,
 } from "@/lib/farma-arena";
 import { readApiResponse } from "@/lib/api-response";
+import { rewardRedemptionMode } from "@/lib/rewards";
 import "./admin.css";
 import "./admin-motion.css";
 import {
@@ -2769,30 +2770,32 @@ function Draws() {
         description="Rodadas imparciais, com lista congelada e histórico preservado."
       />
       <div className="a-card-grid">
-        {all(data, "rewards").map((r) => {
-          const eligible = all(data, "eligibilities").filter(
-              (e) => e.rewardId === r.id && e.eligible,
-            ).length,
-            stock = r.stockAvailable ?? r.available ?? r.total;
-          return (
-            <article className="a-panel" key={r.id}>
-              <Gift />
-              <h2>{r.name}</h2>
-              <p>
-                {eligible} elegíveis · {stock} unidades disponíveis
-              </p>
-              <Badge
-                value={eligible > stock ? "DRAW_REQUIRED" : "GUARANTEED"}
-              />
-              <RunButton
-                disabled={!eligible || !stock}
-                run={() => action("draw.execute", { rewardId: r.id })}
-              >
-                Executar distribuição
-              </RunButton>
-            </article>
-          );
-        })}
+        {all(data, "rewards")
+          .filter((reward) => rewardRedemptionMode(reward) !== "XP_STORE")
+          .map((r) => {
+            const eligible = all(data, "eligibilities").filter(
+                (e) => e.rewardId === r.id && e.eligible,
+              ).length,
+              stock = r.stockAvailable ?? r.available ?? r.total;
+            return (
+              <article className="a-panel" key={r.id}>
+                <Gift />
+                <h2>{r.name}</h2>
+                <p>
+                  {eligible} elegíveis · {stock} unidades disponíveis
+                </p>
+                <Badge
+                  value={eligible > stock ? "DRAW_REQUIRED" : "GUARANTEED"}
+                />
+                <RunButton
+                  disabled={!eligible || !stock}
+                  run={() => action("draw.execute", { rewardId: r.id })}
+                >
+                  Executar distribuição
+                </RunButton>
+              </article>
+            );
+          })}
       </div>
       <Panel title="Histórico de rodadas">
         <Table

@@ -1338,8 +1338,15 @@ function Rewards({ id }: { id?: string }) {
   const [busy, setBusy] = useState("");
   const [mode, setMode] = useState<"ALL" | "ELIGIBILITY" | "XP_STORE">("ALL");
   const count = validStamps(data).length;
+  const ownReservations = data.reservations || [];
   const allItems = (data.rewards || []).filter(
-    (r: any) => r.active !== false && (!id || r.id === id),
+    (r: any) =>
+      r.active !== false &&
+      (!id || r.id === id) &&
+      (!String(r.id).startsWith("ranking-scrubs:") ||
+        ownReservations.some(
+          (reservation: any) => reservation.rewardId === r.id,
+        )),
   );
   const items = allItems.filter(
     (r: any) => mode === "ALL" || rewardRedemptionMode(r) === mode,
@@ -1385,8 +1392,8 @@ function Rewards({ id }: { id?: string }) {
         <p>
           Carimbos de presença rendem +{STAMP_XP_REWARD} XP. O carimbo especial
           da Farma Arena identifica sua primeira conquista sem somar XP extra.
-          Os valores dos demais brindes serão definidos a partir do ranking e
-          divulgados em breve.
+          Você pode solicitar até dois brindes. O resgate reduz somente seu
+          saldo disponível e preserva o XP acumulado e sua posição no ranking.
         </p>
       </section>
       {!id && (
@@ -1479,7 +1486,7 @@ function Rewards({ id }: { id?: string }) {
                 <span className="reward-stock">
                   {xpPricingPending
                     ? "Quantidade calculando"
-                    : `${r.total} unidades na edição`}
+                    : `${stockAvailable} disponíveis`}
                 </span>
               </div>
               <div className="reward-card-content">

@@ -2032,15 +2032,16 @@ function Certificates() {
       <PageHeading
         eyebrow="RECONHECIMENTO DO SEU CAMINHO"
         title="Meus certificados"
-        description="O registro de cada experiência de aprendizado."
+        description="Seus certificados oficiais, organizados em um só lugar."
       />
       <div className="info-note">
         <BrandIcon tone="teal" size="sm">
           <Clock3 size={17} />
         </BrandIcon>
         <p>
-          Cada certificado é liberado após a conclusão da presença na palestra.
-          Quando houver saída obrigatória, faça também o check-out.
+          {data.certificates?.length
+            ? "Os certificados já liberados estão disponíveis abaixo. Os demais serão publicados em breve pela organização."
+            : "Os certificados serão liberados em breve pela organização. Assim que estiverem disponíveis, o botão de emissão aparecerá nesta página."}
         </p>
       </div>
       {data.certificates?.length ? (
@@ -2070,15 +2071,16 @@ function Certificates() {
                   rel="noopener noreferrer"
                 >
                   <Download size={17} />
-                  Baixar PDF
+                  Emitir certificado
                 </a>
               )}
             </article>
           ))}
         </div>
       ) : (
-        <Empty title="Suas conquistas serão reconhecidas aqui.">
-          Seus certificados aparecerão aqui após a presença ser concluída.
+        <Empty title="Liberação em breve">
+          A organização está conferindo as presenças e preparando os
+          certificados para emissão.
         </Empty>
       )}
     </>

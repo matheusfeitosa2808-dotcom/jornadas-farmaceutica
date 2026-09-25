@@ -2976,7 +2976,7 @@ function Certificates() {
     <>
       <PageTitle
         title="Certificados"
-        description="Emissão automática por palestra, validação e controle individual."
+        description="Confira as presenças elegíveis e libere os certificados manualmente."
       />
       <Panel title="Elegíveis para emissão">
         {candidates.length > 0 && (
@@ -3064,10 +3064,10 @@ function Certificates() {
                     href={`/api/certificates/${r.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="a-icon-button"
-                    aria-label="Baixar certificado"
+                    className="button secondary"
                   >
                     <Download size={15} />
+                    Emitir PDF
                   </a>
                   {r.status !== "INVALIDATED" && (
                     <ReasonButton
@@ -3086,9 +3086,8 @@ function Certificates() {
         />
       </Panel>
       <p className="a-help">
-        Novos certificados são emitidos automaticamente ao concluir a presença.
-        Em palestras com saída obrigatória, o certificado é liberado após o
-        check-out.
+        A presença completa torna o participante elegível. A emissão acontece
+        somente quando a administração usar o botão “Emitir certificado”.
       </p>
     </>
   );

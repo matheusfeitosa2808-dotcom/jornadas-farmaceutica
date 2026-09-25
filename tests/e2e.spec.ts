@@ -921,7 +921,7 @@ test("@api importação CSV e XLSX apresenta prévia, rejeita duplicados e confi
   }
 });
 
-test("@api check-out libera certificado, validação pública e cancelamento de sorteio devolve estoque", async () => {
+test("@api check-out torna certificado elegível, emissão administrativa, validação pública e cancelamento de sorteio devolve estoque", async () => {
   const fixture = await makeFixture();
   try {
     const participant = await participantClient(fixture, 0);
@@ -978,7 +978,7 @@ test("@api check-out libera certificado, validação pública e cancelamento de 
           item.activityId === activityId &&
           item.participantId === fixture.participants[0].id,
       ),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     await action(fixture.admin, fixture.editionId, "entity.save", {
       entity: "edition",
       data: {
@@ -997,6 +997,14 @@ test("@api check-out libera certificado, validação pública e cancelamento de 
       },
     );
     expect(typeof issued.code).toBe("string");
+    const afterIssue = await state(fixture.admin, fixture.editionId);
+    expect(
+      afterIssue.certificates.filter(
+        (item) =>
+          item.activityId === activityId &&
+          item.participantId === fixture.participants[0].id,
+      ),
+    ).toHaveLength(1);
     const pdf = await fixture.admin.get(`/api/certificates/${issued.id}`);
     expect(pdf.ok(), await pdf.text()).toBeTruthy();
     expect(pdf.headers()["content-type"]).toContain("application/pdf");

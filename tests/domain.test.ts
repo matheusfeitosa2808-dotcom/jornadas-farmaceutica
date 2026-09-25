@@ -283,9 +283,6 @@ describe("regras centrais", () => {
       status: "VALID",
       activityId: "palestra",
     });
-    expect(certificate).toMatchObject({
-      participantId: "participante",
-      activityId: "palestra",
-    });
+    expect(certificate).toBeNull();
   });
 });

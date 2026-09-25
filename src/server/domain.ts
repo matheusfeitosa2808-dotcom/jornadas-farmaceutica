@@ -658,18 +658,6 @@ export async function checkAttendance(
       where: { participantId: participant.id, activityId, status: "ACTIVE" },
       data: { status: "COMPLETED" },
     });
-  if (
-    attendance.status === "COMPLETED" &&
-    activity.category.generatesCertificate
-  )
-    await issueCertificate(
-      tx,
-      editionId,
-      participant.id,
-      activityId,
-      actor,
-      now,
-    );
   await audit(
     tx,
     actor,
@@ -801,18 +789,6 @@ export async function correctAttendance(
         invalidationReason: `Correção de presença: ${reason}`,
       },
     });
-  if (
-    result.status === "COMPLETED" &&
-    old.activity.category.generatesCertificate
-  )
-    await issueCertificate(
-      tx,
-      editionId,
-      old.participantId,
-      old.activityId,
-      actor,
-      now,
-    );
   await audit(
     tx,
     actor,
@@ -962,16 +938,6 @@ export async function correctAttendanceByRa(
       },
     });
   }
-  if (activity.category.generatesCertificate)
-    await issueCertificate(
-      tx,
-      editionId,
-      participant.id,
-      activityId,
-      actor,
-      now,
-    );
-
   await audit(
     tx,
     actor,

@@ -29,6 +29,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { useJornadas } from "@/components/provider";
 import FarmaArenaStamp from "@/components/farma-arena-stamp";
 import { readApiResponse } from "@/lib/api-response";
@@ -1230,7 +1231,7 @@ function ParticipantRankingReveal({
       .catch(() => setAudioBlocked(true));
   };
 
-  return (
+  return createPortal(
     <section
       className="arena-participant-reveal"
       role="dialog"
@@ -1332,7 +1333,8 @@ function ParticipantRankingReveal({
           <ChevronRight aria-hidden="true" />
         </button>
       </footer>
-    </section>
+    </section>,
+    document.body,
   );
 }
 

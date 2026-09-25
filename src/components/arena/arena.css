@@ -1718,6 +1718,11 @@
   width: 88px;
   margin-bottom: 12px;
 }
+.arena-participant-reveal__countdown > .farma-arena-badge {
+  width: clamp(78px, 22vmin, 140px);
+  height: clamp(78px, 22vmin, 140px);
+  margin-bottom: 12px;
+}
 .arena-participant-reveal__countdown small {
   color: #edc75f;
   font-size: 0.72rem;
@@ -2137,8 +2142,10 @@
   }
   .arena-participant-reveal__countdown > svg,
   .arena-participant-reveal__countdown > img,
-  .arena-participant-reveal__countdown > div {
+  .arena-participant-reveal__countdown > div,
+  .arena-participant-reveal__countdown > .farma-arena-badge {
     width: 62px;
+    height: 62px;
     margin-bottom: 4px;
   }
   .arena-participant-reveal__countdown strong {
@@ -2180,9 +2187,11 @@
   }
   .arena-participant-reveal__launch > div,
   .arena-participant-reveal__launch > img,
-  .arena-participant-reveal__launch > svg {
+  .arena-participant-reveal__launch > svg,
+  .arena-participant-reveal__launch > .farma-arena-badge {
     grid-row: 1 / 4;
     width: min(22dvh, 96px);
+    height: min(22dvh, 96px);
     margin: 0;
   }
   .arena-participant-reveal__launch h1 {

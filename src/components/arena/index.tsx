@@ -740,6 +740,26 @@ function ArenaCreditChoice({ arena, run }: { arena: any; run: any }) {
   );
 }
 
+const RANKING_REVEAL_DEMO = [
+  ["Helena M.", 1860],
+  ["Rafael S.", 1740],
+  ["Camila A.", 1690],
+  ["Bruno C.", 1580],
+  ["Mariana F.", 1510],
+  ["Lucas P.", 1430],
+  ["Aline R.", 1360],
+  ["Gabriel N.", 1280],
+  ["Beatriz L.", 1190],
+  ["Daniel V.", 1110],
+  ["Larissa T.", 980],
+  ["André G.", 870],
+].map(([displayName, xpTotal], index) => ({
+  participantId: `ranking-demo-${index + 1}`,
+  displayName,
+  xpTotal,
+  rank: index + 1,
+}));
+
 function ArenaRanking({ arena }: { arena: any }) {
   const ranking = arena.ranking || [];
   const top = ranking.slice(0, 3);
@@ -754,6 +774,13 @@ function ArenaRanking({ arena }: { arena: any }) {
   const [xpBreakdown, setXpBreakdown] = useState<any>(null);
   const [loadingBreakdown, setLoadingBreakdown] = useState(false);
   const [breakdownError, setBreakdownError] = useState("");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("teste") !== "ranking")
+      return;
+    introStarted.current = true;
+    setIntroRanking(RANKING_REVEAL_DEMO);
+    setShowIntro(true);
+  }, []);
   useEffect(() => {
     if (
       introStarted.current ||

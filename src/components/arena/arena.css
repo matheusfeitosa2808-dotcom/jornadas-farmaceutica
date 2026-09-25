@@ -582,13 +582,37 @@
   color: #687778;
   line-height: 1.65;
 }
-.arena-ranking-countdown__timer {
-  margin: clamp(28px, 5vw, 46px) 0 26px;
+.arena-ranking-countdown__xp {
+  min-width: min(100%, 310px);
+  margin-top: 22px;
+  padding: 15px 20px;
+  border: 1px solid rgba(186, 151, 91, 0.38);
+  border-radius: 18px;
+  background: rgba(255, 253, 247, 0.82);
+  box-shadow: 0 12px 30px rgba(75, 35, 32, 0.07);
   display: grid;
-  grid-template-columns: minmax(82px, 128px) auto minmax(
-      82px,
-      128px
-    ) auto minmax(82px, 128px);
+  gap: 2px;
+}
+.arena-ranking-countdown__xp > span {
+  color: #9b762b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+.arena-ranking-countdown__xp > strong {
+  color: #6f171f;
+  font: 700 2rem var(--font-serif);
+}
+.arena-ranking-countdown__xp > small {
+  color: #777c78;
+  font-size: 0.75rem;
+}
+.arena-ranking-countdown__timer {
+  margin: clamp(20px, 4vw, 34px) 0 26px;
+  display: grid;
+  grid-template-columns:
+    minmax(82px, 128px) auto minmax(82px, 128px)
+    auto minmax(82px, 128px);
   align-items: start;
   gap: clamp(5px, 2vw, 18px);
 }

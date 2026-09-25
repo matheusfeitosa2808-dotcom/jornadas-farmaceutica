@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transaction } from "@/server/db";
 import { getActor, errorResponse } from "@/server/security";
-import { cachedArenaRanking } from "@/server/arena";
+import { arenaRankingIsLocked, cachedArenaRanking } from "@/server/arena";
 
 export const dynamic = "force-dynamic";
 
@@ -447,6 +447,9 @@ export async function GET(req: NextRequest) {
       const participantArenaRank = pendingArenaRanking.find(
         (row: any) => row.participantId === actor.id,
       );
+      const participantRankingLocked =
+        actor.type === "participant" &&
+        arenaRankingIsLocked(participantArenaConfig || {});
 
       let draws = drawsBase as any[];
       if (actor.type === "admin" && draws.length) {
@@ -542,8 +545,13 @@ export async function GET(req: NextRequest) {
                 },
                 challenges: pendingArenaChallenges,
                 pendingRevealAwards: pendingArenaAwards,
-                ranking: participantArenaRank ? [participantArenaRank] : [],
-                myRank: participantArenaRank?.rank || null,
+                ranking:
+                  participantArenaRank && !participantRankingLocked
+                    ? [participantArenaRank]
+                    : [],
+                myRank: participantRankingLocked
+                  ? null
+                  : participantArenaRank?.rank || null,
                 myXpTotal: participantArenaRank?.xpTotal || 0,
               }
             : undefined,

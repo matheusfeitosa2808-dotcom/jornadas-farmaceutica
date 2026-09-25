@@ -47,11 +47,40 @@ const tabs = [
   ["loja", "Loja e brindes", ShoppingBag],
 ] as const;
 
-function Input({ label, ...props }: any) {
+function localDateInput(value: any, zone: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(date)
+    .replace(" ", "T");
+}
+
+function utcDateInput(value: string, zone: string) {
+  if (!value) return null;
+  const initial = Date.parse(`${value}Z`);
+  let result = initial;
+  for (let index = 0; index < 2; index++) {
+    const rendered = localDateInput(new Date(result).toISOString(), zone);
+    result += initial - Date.parse(`${rendered}Z`);
+  }
+  return new Date(result).toISOString();
+}
+
+function Input({ label, help, wrapperClassName = "", ...props }: any) {
   return (
-    <label className="arena-admin-field">
+    <label className={`arena-admin-field ${wrapperClassName}`.trim()}>
       <span>{label}</span>
       <input {...props} />
+      {help && <small>{help}</small>}
     </label>
   );
 }
@@ -145,7 +174,12 @@ export function FarmaArenaAdmin() {
       )}
       {tab === "desafios" && <Challenges arena={arena} run={run} busy={busy} />}
       {tab === "configuracao" && (
-        <Configuration arena={arena} run={run} busy={busy} />
+        <Configuration
+          arena={arena}
+          run={run}
+          busy={busy}
+          timezone={data.edition?.timezone || "America/Manaus"}
+        />
       )}
       {tab === "validacao" && (
         <Validation
@@ -170,7 +204,7 @@ export function FarmaArenaAdmin() {
   );
 }
 
-function Configuration({ arena, run, busy }: any) {
+function Configuration({ arena, run, busy, timezone }: any) {
   const config = arena.config || {};
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -180,6 +214,10 @@ function Configuration({ arena, run, busy }: any) {
       data: {
         enabled: form.get("enabled") === "on",
         rankingEnabled: form.get("rankingEnabled") === "on",
+        rankingRevealAt: utcDateInput(
+          String(form.get("rankingRevealAt") || ""),
+          timezone,
+        ),
         xpReleaseMode: form.get("xpReleaseMode"),
         xpReleaseDelaySeconds: Number(form.get("xpReleaseDelaySeconds")),
         firstPlaceTitle: form.get("firstPlaceTitle"),
@@ -217,6 +255,14 @@ function Configuration({ arena, run, busy }: any) {
           />{" "}
           Ranking visível
         </label>
+        <Input
+          wrapperClassName="wide arena-admin-ranking-schedule"
+          name="rankingRevealAt"
+          label="Liberar posições do ranking em"
+          type="datetime-local"
+          defaultValue={localDateInput(config.rankingRevealAt, timezone)}
+          help={`Horário de ${timezone}. Até esse momento, cada participante verá somente o próprio XP e o contador. Deixe vazio para liberar as posições imediatamente.`}
+        />
         <label className="arena-admin-field">
           <span>Liberação do XP</span>
           <select name="xpReleaseMode" defaultValue={config.xpReleaseMode}>

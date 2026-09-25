@@ -23,6 +23,7 @@ export const defaultArenaConfig = (editionId: string) => ({
 });
 
 export const EGRESS_INVITATION_CHALLENGE_SLUG = "convite-de-egressos";
+const RANKING_SCHEDULE_PREFIX = "SCHEDULED:";
 
 const ARENA_PASSPORT_ACTIVITY_PREFIX = "arena-passport-activity:";
 const ARENA_PASSPORT_CATEGORY_PREFIX = "arena-passport-category:";
@@ -32,6 +33,18 @@ export const isArenaPassportStamp = (stamp: any) =>
   String(stamp?.activityId || "").startsWith(ARENA_PASSPORT_ACTIVITY_PREFIX);
 
 const asDate = (value: unknown) => (value ? new Date(value as any) : null);
+export function arenaRankingRevealAt(config: any) {
+  const visibility = String(config?.rankingVisibility || "");
+  if (!visibility.startsWith(RANKING_SCHEDULE_PREFIX)) return null;
+  const revealAt = asDate(visibility.slice(RANKING_SCHEDULE_PREFIX.length));
+  return revealAt && !Number.isNaN(revealAt.getTime()) ? revealAt : null;
+}
+export function arenaRankingIsLocked(config: any, now = new Date()) {
+  const revealAt = arenaRankingRevealAt(config);
+  return Boolean(
+    config?.rankingEnabled && revealAt && revealAt.getTime() > now.getTime(),
+  );
+}
 const titleForRank = (rank: number, config: any) =>
   rank === 1
     ? config.firstPlaceTitle
@@ -329,6 +342,8 @@ export async function arenaPayload(
     orderBy: [{ order: "asc" }, { title: "asc" }],
   });
   const config = await configPromise;
+  const rankingRevealAt = arenaRankingRevealAt(config);
+  const rankingLocked = !includeAdmin && arenaRankingIsLocked(config);
   const wantsAdminView = (...views: string[]) =>
     !includeAdmin || adminView === "all" || views.includes(adminView);
   // O cache é invalidado por toda mutação de XP. Usá-lo também no painel
@@ -494,6 +509,7 @@ export async function arenaPayload(
   const my = ownId
     ? computedRanking.find((row: any) => row.participantId === ownId)
     : undefined;
+  const publicMyRanking = my ? publicArenaRanking([my])[0] : null;
   const creditChallenge = challenges.find(
     (challenge: any) => challenge.slug === EGRESS_INVITATION_CHALLENGE_SLUG,
   );
@@ -555,13 +571,24 @@ export async function arenaPayload(
       (asDate(a.createdAt)?.getTime() || 0),
   );
   return {
-    config,
+    config: {
+      ...config,
+      rankingRevealAt: rankingRevealAt?.toISOString() || null,
+    },
+    rankingRevealAt: rankingRevealAt?.toISOString() || null,
+    rankingLocked,
+    serverNow: new Date().toISOString(),
     challenges,
     // O participante recebe somente o pódio na carga principal. O restante
     // do ranking é buscado apenas quando ele pedir para ver a lista completa.
-    ranking: publicArenaRanking(includeAdmin ? ranking : ranking.slice(0, 3)),
-    myRanking: my ? publicArenaRanking([my])[0] : null,
-    myRank: my?.rank || null,
+    ranking: publicArenaRanking(
+      includeAdmin ? ranking : rankingLocked ? [] : ranking.slice(0, 3),
+    ),
+    myRanking:
+      publicMyRanking && rankingLocked
+        ? { ...publicMyRanking, rank: null, title: null }
+        : publicMyRanking,
+    myRank: rankingLocked ? null : my?.rank || null,
     myXpTotal: my?.xpTotal || 0,
     myXpAvailable: my?.xpAvailable || 0,
     completedChallenges: my?.completedChallenges || 0,

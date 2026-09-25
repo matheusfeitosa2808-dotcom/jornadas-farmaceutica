@@ -200,6 +200,20 @@
   font-weight: 900;
   color: #456064;
 }
+.arena-admin-field > small {
+  color: #6c7b7c;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+.arena-admin-ranking-schedule {
+  padding: 16px;
+  border: 1px solid rgba(182, 143, 62, 0.34);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffaf0, #f5f0e5);
+}
+.arena-admin-ranking-schedule > span {
+  color: #7e5e20;
+}
 .arena-admin-field input,
 .arena-admin-field select,
 .arena-admin-field textarea {

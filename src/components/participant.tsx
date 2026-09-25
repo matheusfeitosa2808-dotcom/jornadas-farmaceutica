@@ -1900,11 +1900,15 @@ function Profile({ person }: { person: any }) {
           <span className="profile-ranking-card__copy">
             <small>FARMA ARENA · MEU RANKING</small>
             <strong>
-              {arena.myRank ? `#${arena.myRank}` : "—"} na classificação
+              {arena.rankingLocked
+                ? `${arena.myXpTotal || 0} XP acumulados`
+                : `${arena.myRank ? `#${arena.myRank}` : "—"} na classificação`}
             </strong>
             <span>
-              <Zap size={15} /> {arena.myXpTotal || 0} XP acumulados ·{" "}
-              {arena.completedChallenges || 0} desafios concluídos
+              <Zap size={15} />
+              {arena.rankingLocked
+                ? ` Posições ocultas até o fim do contador · ${arena.completedChallenges || 0} desafios concluídos`
+                : ` ${arena.myXpTotal || 0} XP acumulados · ${arena.completedChallenges || 0} desafios concluídos`}
             </span>
           </span>
           <span className="profile-ranking-card__action">

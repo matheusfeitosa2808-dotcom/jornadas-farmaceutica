@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   defaultArenaConfig,
   arenaPassportActivityId,
+  arenaRankingIsLocked,
+  arenaRankingRevealAt,
   publicArenaRanking,
   rankArenaParticipants,
   rankingDisplayName,
@@ -27,6 +29,26 @@ const earn = (
 });
 
 describe("Farma Arena", () => {
+  it("mantém as posições ocultas até o horário configurado", () => {
+    const config = {
+      ...defaultArenaConfig("edition"),
+      rankingVisibility: "SCHEDULED:2026-09-25T19:00:00.000Z",
+    };
+    expect(
+      arenaRankingIsLocked(config, new Date("2026-09-25T18:59:59.000Z")),
+    ).toBe(true);
+    expect(
+      arenaRankingIsLocked(config, new Date("2026-09-25T19:00:00.000Z")),
+    ).toBe(false);
+    expect(arenaRankingRevealAt(config)?.toISOString()).toBe(
+      "2026-09-25T19:00:00.000Z",
+    );
+  });
+
+  it("deixa o ranking livre quando não há horário programado", () => {
+    expect(arenaRankingIsLocked(defaultArenaConfig("edition"))).toBe(false);
+  });
+
   it("separa XP total do saldo disponível ao comprar", () => {
     const rows = rankArenaParticipants(
       people,

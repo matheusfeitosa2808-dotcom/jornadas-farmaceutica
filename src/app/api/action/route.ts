@@ -395,14 +395,29 @@ async function saveEntity(
       ["IMMEDIATE", "MANUAL", "SCHEDULED"].includes(releaseMode),
       "Modo de liberação inválido.",
     );
+    const hasRankingRevealAt = Object.prototype.hasOwnProperty.call(
+      data,
+      "rankingRevealAt",
+    );
+    const rankingRevealAt = hasRankingRevealAt ? D(data.rankingRevealAt) : null;
+    ensure(
+      !rankingRevealAt || !Number.isNaN(rankingRevealAt.getTime()),
+      "Informe uma data válida para liberar o ranking.",
+    );
+    const rankingVisibility = hasRankingRevealAt
+      ? rankingRevealAt
+        ? `SCHEDULED:${rankingRevealAt.toISOString()}`
+        : "AUTHENTICATED"
+      : (data.rankingVisibility ??
+        current?.rankingVisibility ??
+        "AUTHENTICATED");
     const v = {
       editionId,
       enabled: B(data.enabled, current?.enabled ?? true),
       logoUrl: safeUrl(data.logoUrl ?? current?.logoUrl),
       accentColor: data.accentColor ?? current?.accentColor ?? "#9f2f2f",
       rankingEnabled: B(data.rankingEnabled, current?.rankingEnabled ?? true),
-      rankingVisibility:
-        data.rankingVisibility ?? current?.rankingVisibility ?? "AUTHENTICATED",
+      rankingVisibility,
       firstPlaceTitle: String(
         data.firstPlaceTitle ?? current?.firstPlaceTitle ?? "Rei da Jornada",
       ).trim(),

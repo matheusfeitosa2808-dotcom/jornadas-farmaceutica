@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { transaction } from "@/server/db";
 import {
   arenaConfig,
+  arenaRankingIsLocked,
+  arenaRankingRevealAt,
   buildArenaXpBreakdown,
   buildArenaRanking,
   cachedArenaRanking,
@@ -42,6 +44,9 @@ export async function GET(request: NextRequest) {
       );
     const result = await transaction(async (tx) => {
       const config = await arenaConfig(tx, editionId);
+      const revealAt = arenaRankingRevealAt(config);
+      const rankingLocked =
+        actor.type === "participant" && arenaRankingIsLocked(config);
       const ranking =
         actor.type === "admin"
           ? await buildArenaRanking(tx, editionId, config)
@@ -51,6 +56,12 @@ export async function GET(request: NextRequest) {
         ensure(
           config.rankingEnabled,
           "O ranking ainda não está disponível.",
+          "FORBIDDEN",
+          403,
+        );
+        ensure(
+          !rankingLocked,
+          "A classificação ainda está protegida pelo contador.",
           "FORBIDDEN",
           403,
         );
@@ -81,15 +92,23 @@ export async function GET(request: NextRequest) {
         actor.type === "participant"
           ? ranking.find((row: any) => row.participantId === actor.id)
           : null;
+      const publicOwn = own ? publicArenaRanking([own])[0] : null;
       return {
         enabled: config.rankingEnabled,
-        ranking: config.rankingEnabled
-          ? wantsFullRanking
-            ? safeRanking
-            : safeRanking.slice(0, 3)
-          : [],
-        myRanking: own ? publicArenaRanking([own])[0] : null,
-        myRank: own?.rank || null,
+        ranking:
+          config.rankingEnabled && !rankingLocked
+            ? wantsFullRanking
+              ? safeRanking
+              : safeRanking.slice(0, 3)
+            : [],
+        rankingLocked,
+        rankingRevealAt: revealAt?.toISOString() || null,
+        serverNow: new Date().toISOString(),
+        myRanking:
+          publicOwn && rankingLocked
+            ? { ...publicOwn, rank: null, title: null }
+            : publicOwn,
+        myRank: rankingLocked ? null : own?.rank || null,
         myXpTotal: own?.xpTotal || 0,
         myXpAvailable: own?.xpAvailable || 0,
         completedChallenges: own?.completedChallenges || 0,

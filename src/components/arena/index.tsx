@@ -188,7 +188,7 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
     );
   if (page === "ranking")
     return (
-      <RankingReleaseGate onRelease={state.load}>
+      <RankingReleaseGate arena={state.arena} onRelease={state.load}>
         <ArenaRanking arena={state.arena} />
       </RankingReleaseGate>
     );
@@ -202,21 +202,36 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
   return <ArenaHome arena={state.arena} />;
 }
 
-const RANKING_RELEASE_AT = new Date("2026-09-25T15:00:00-04:00").getTime();
-
 function RankingReleaseGate({
+  arena,
   children,
   onRelease,
 }: {
+  arena: any;
   children: ReactNode;
   onRelease: () => Promise<void>;
 }) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const refreshed = useRef(false);
+  const releaseAt = new Date(
+    arena.rankingRevealAt || arena.config?.rankingRevealAt || 0,
+  ).getTime();
+  const [serverOffset, setServerOffset] = useState(0);
+  useEffect(() => {
+    const serverNow = new Date(arena.serverNow || 0).getTime();
+    setServerOffset(
+      Number.isFinite(serverNow) && serverNow > 0 ? serverNow - Date.now() : 0,
+    );
+  }, [arena.serverNow]);
 
   useEffect(() => {
+    if (!arena.rankingLocked || !Number.isFinite(releaseAt) || releaseAt <= 0) {
+      setRemaining(0);
+      return;
+    }
+    refreshed.current = false;
     const update = () => {
-      const next = Math.max(0, RANKING_RELEASE_AT - Date.now());
+      const next = Math.max(0, releaseAt - (Date.now() + serverOffset));
       setRemaining(next);
       if (next === 0 && !refreshed.current) {
         refreshed.current = true;
@@ -226,15 +241,24 @@ function RankingReleaseGate({
     update();
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
-  }, [onRelease]);
+  }, [arena.rankingLocked, onRelease, releaseAt, serverOffset]);
 
-  if (remaining === 0) return children;
+  if (!arena.rankingLocked) return children;
 
   const totalSeconds = Math.floor((remaining || 0) / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const unit = (value: number) => String(value).padStart(2, "0");
+  const releaseLabel = Number.isFinite(releaseAt)
+    ? new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Manaus",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(releaseAt))
+    : "no horário definido pela organização";
 
   return (
     <div className="arena-surface ranking-page">
@@ -246,11 +270,16 @@ function RankingReleaseGate({
         <span className="arena-ranking-countdown__eyebrow">
           CLASSIFICAÇÃO EM PREPARAÇÃO
         </span>
-        <h1>O ranking será revelado às 15h</h1>
+        <h1>As posições ainda estão em segredo</h1>
         <p>
-          A contagem usa o horário do seu aparelho e termina às 15h de hoje, no
-          horário de Boa Vista, Roraima.
+          A classificação será revelada em {releaseLabel}, no horário de Boa
+          Vista. Até lá, você acompanha apenas o seu XP.
         </p>
+        <div className="arena-ranking-countdown__xp">
+          <span>SEU XP ATUAL</span>
+          <strong>{arena.myXpTotal || 0} XP</strong>
+          <small>Sua posição permanece oculta durante a contagem.</small>
+        </div>
         <div
           className="arena-ranking-countdown__timer"
           aria-label={`${hours} horas, ${minutes} minutos e ${seconds} segundos para a abertura do ranking`}
@@ -272,7 +301,11 @@ function RankingReleaseGate({
         </div>
         <div className="arena-ranking-countdown__note">
           <Clock3 aria-hidden="true" />
-          <span>O ranking abrirá automaticamente quando o contador zerar.</span>
+          <span>
+            {remaining === 0
+              ? "Liberando a classificação…"
+              : "O ranking abrirá automaticamente quando o contador zerar."}
+          </span>
         </div>
       </section>
     </div>
@@ -332,8 +365,14 @@ function ArenaHome({ arena }: { arena: any }) {
         />
         <Stat
           icon={Trophy}
-          label="Posição"
-          value={arena.myRank ? `#${arena.myRank}` : "—"}
+          label="Ranking"
+          value={
+            arena.rankingLocked
+              ? "Oculta"
+              : arena.myRank
+                ? `#${arena.myRank}`
+                : "—"
+          }
         />
         <Stat
           icon={CheckCircle2}
@@ -1003,7 +1042,13 @@ function ArenaPerformance({ arena }: { arena: any }) {
         <Stat
           icon={Trophy}
           label="Ranking"
-          value={arena.myRank ? `#${arena.myRank}` : "—"}
+          value={
+            arena.rankingLocked
+              ? "Oculta"
+              : arena.myRank
+                ? `#${arena.myRank}`
+                : "—"
+          }
         />
         <Stat
           icon={CheckCircle2}
@@ -1161,7 +1206,7 @@ export function ArenaAwardRevealQueue() {
         {arena.myXpTotal} XP acumulados
         {arena.myRank ? ` · #${arena.myRank} no ranking` : ""}
       </p>
-      {current.animationVariant?.startsWith("TOP_") && (
+      {current.animationVariant?.startsWith("TOP_") && rank && (
         <div className="arena-reveal__title">
           <Trophy /> NOVO TÍTULO CONQUISTADO
           <br />

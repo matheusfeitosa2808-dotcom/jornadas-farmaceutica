@@ -23,6 +23,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useJornadas } from "@/components/provider";
@@ -184,7 +185,12 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
         <Link href="/app">Voltar ao início</Link>
       </div>
     );
-  if (page === "ranking") return <ArenaRanking arena={state.arena} />;
+  if (page === "ranking")
+    return (
+      <RankingReleaseGate onRelease={state.load}>
+        <ArenaRanking arena={state.arena} />
+      </RankingReleaseGate>
+    );
   if (page === "desafios" && id)
     return <ArenaChallengeDetail arena={state.arena} id={id} />;
   if (page === "desafios") return <ArenaChallenges arena={state.arena} />;
@@ -193,6 +199,83 @@ export function ArenaRouter({ page, id }: { page: string; id?: string }) {
     return <ArenaCreditChoice arena={state.arena} run={state.run} />;
   if (page === "loja") return <ArenaStoreRedirect />;
   return <ArenaHome arena={state.arena} />;
+}
+
+const RANKING_RELEASE_AT = new Date("2026-09-25T15:00:00-04:00").getTime();
+
+function RankingReleaseGate({
+  children,
+  onRelease,
+}: {
+  children: ReactNode;
+  onRelease: () => Promise<void>;
+}) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const refreshed = useRef(false);
+
+  useEffect(() => {
+    const update = () => {
+      const next = Math.max(0, RANKING_RELEASE_AT - Date.now());
+      setRemaining(next);
+      if (next === 0 && !refreshed.current) {
+        refreshed.current = true;
+        void onRelease();
+      }
+    };
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [onRelease]);
+
+  if (remaining === 0) return children;
+
+  const totalSeconds = Math.floor((remaining || 0) / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const unit = (value: number) => String(value).padStart(2, "0");
+
+  return (
+    <div className="arena-surface ranking-page">
+      <section className="arena-ranking-countdown" aria-live="polite">
+        <div className="arena-ranking-countdown__seal" aria-hidden="true">
+          <img src="/assets/navigation/nav-ranking-hygia.webp" alt="" />
+          <i />
+        </div>
+        <span className="arena-ranking-countdown__eyebrow">
+          CLASSIFICAÇÃO EM PREPARAÇÃO
+        </span>
+        <h1>O ranking será revelado às 15h</h1>
+        <p>
+          A contagem usa o horário do seu aparelho e termina às 15h de hoje,
+          no horário de Boa Vista, Roraima.
+        </p>
+        <div
+          className="arena-ranking-countdown__timer"
+          aria-label={`${hours} horas, ${minutes} minutos e ${seconds} segundos para a abertura do ranking`}
+        >
+          <span>
+            <strong>{remaining === null ? "--" : unit(hours)}</strong>
+            <small>horas</small>
+          </span>
+          <b aria-hidden="true">:</b>
+          <span>
+            <strong>{remaining === null ? "--" : unit(minutes)}</strong>
+            <small>minutos</small>
+          </span>
+          <b aria-hidden="true">:</b>
+          <span>
+            <strong>{remaining === null ? "--" : unit(seconds)}</strong>
+            <small>segundos</small>
+          </span>
+        </div>
+        <div className="arena-ranking-countdown__note">
+          <Clock3 aria-hidden="true" />
+          <span>O ranking abrirá automaticamente quando o contador zerar.</span>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function ArenaHome({ arena }: { arena: any }) {

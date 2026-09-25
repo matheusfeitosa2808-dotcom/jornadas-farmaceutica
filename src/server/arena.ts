@@ -27,6 +27,19 @@ const RANKING_SCHEDULE_PREFIX = "SCHEDULED:";
 
 const ARENA_PASSPORT_ACTIVITY_PREFIX = "arena-passport-activity:";
 const ARENA_PASSPORT_CATEGORY_PREFIX = "arena-passport-category:";
+export const ARENA_RANKING_INTRO_VERSION = "ranking-reveal-2026-09-25-v1";
+export const ARENA_RANKING_INTRO_ACTION = `arena.ranking.intro.seen:${ARENA_RANKING_INTRO_VERSION}`;
+export const shouldShowArenaRankingIntro = ({
+  participantId,
+  rankingEnabled,
+  rankingLocked,
+  introSeen,
+}: {
+  participantId?: string | null;
+  rankingEnabled: boolean;
+  rankingLocked: boolean;
+  introSeen: boolean;
+}) => Boolean(participantId && rankingEnabled && !rankingLocked && !introSeen);
 export const arenaPassportActivityId = (editionId: string) =>
   `${ARENA_PASSPORT_ACTIVITY_PREFIX}${editionId}`;
 export const isArenaPassportStamp = (stamp: any) =>
@@ -510,6 +523,18 @@ export async function arenaPayload(
     ? computedRanking.find((row: any) => row.participantId === ownId)
     : undefined;
   const publicMyRanking = my ? publicArenaRanking([my])[0] : null;
+  const rankingIntroSeen =
+    ownId && config.rankingEnabled && !rankingLocked
+      ? await tx.auditLog.findFirst({
+          where: {
+            editionId,
+            actorType: "participant",
+            actorId: ownId,
+            action: ARENA_RANKING_INTRO_ACTION,
+          },
+          select: { id: true },
+        })
+      : null;
   const creditChallenge = challenges.find(
     (challenge: any) => challenge.slug === EGRESS_INVITATION_CHALLENGE_SLUG,
   );
@@ -577,6 +602,15 @@ export async function arenaPayload(
     },
     rankingRevealAt: rankingRevealAt?.toISOString() || null,
     rankingLocked,
+    rankingIntro: {
+      version: ARENA_RANKING_INTRO_VERSION,
+      shouldShow: shouldShowArenaRankingIntro({
+        participantId: ownId,
+        rankingEnabled: config.rankingEnabled,
+        rankingLocked,
+        introSeen: Boolean(rankingIntroSeen),
+      }),
+    },
     serverNow: new Date().toISOString(),
     challenges,
     // O participante recebe somente o pódio na carga principal. O restante

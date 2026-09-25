@@ -7,6 +7,7 @@ import {
   publicArenaRanking,
   rankArenaParticipants,
   rankingDisplayName,
+  shouldShowArenaRankingIntro,
 } from "../src/server/arena";
 import { STAMP_XP_REWARD } from "../src/lib/xp";
 import { rewardRedemptionMode, rewardXpCost } from "../src/lib/rewards";
@@ -47,6 +48,33 @@ describe("Farma Arena", () => {
 
   it("deixa o ranking livre quando não há horário programado", () => {
     expect(arenaRankingIsLocked(defaultArenaConfig("edition"))).toBe(false);
+  });
+
+  it("mostra a apresentação apenas no primeiro acesso após a liberação", () => {
+    expect(
+      shouldShowArenaRankingIntro({
+        participantId: "p1",
+        rankingEnabled: true,
+        rankingLocked: false,
+        introSeen: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowArenaRankingIntro({
+        participantId: "p1",
+        rankingEnabled: true,
+        rankingLocked: false,
+        introSeen: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowArenaRankingIntro({
+        participantId: "p1",
+        rankingEnabled: true,
+        rankingLocked: true,
+        introSeen: false,
+      }),
+    ).toBe(false);
   });
 
   it("separa XP total do saldo disponível ao comprar", () => {

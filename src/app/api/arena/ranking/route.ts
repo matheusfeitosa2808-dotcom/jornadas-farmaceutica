@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transaction } from "@/server/db";
 import {
+  ARENA_RANKING_INTRO_ACTION,
+  ARENA_RANKING_INTRO_VERSION,
   arenaConfig,
   arenaRankingIsLocked,
   arenaRankingRevealAt,
@@ -8,8 +10,11 @@ import {
   buildArenaRanking,
   cachedArenaRanking,
   publicArenaRanking,
+  shouldShowArenaRankingIntro,
 } from "@/server/arena";
+import { audit } from "@/server/domain";
 import {
+  csrf,
   ensure,
   errorResponse,
   getActor,
@@ -93,6 +98,18 @@ export async function GET(request: NextRequest) {
           ? ranking.find((row: any) => row.participantId === actor.id)
           : null;
       const publicOwn = own ? publicArenaRanking([own])[0] : null;
+      const introSeen =
+        actor.type === "participant"
+          ? await tx.auditLog.findFirst({
+              where: {
+                editionId,
+                actorType: "participant",
+                actorId: actor.id,
+                action: ARENA_RANKING_INTRO_ACTION,
+              },
+              select: { id: true },
+            })
+          : null;
       return {
         enabled: config.rankingEnabled,
         ranking:
@@ -112,9 +129,63 @@ export async function GET(request: NextRequest) {
         myXpTotal: own?.xpTotal || 0,
         myXpAvailable: own?.xpAvailable || 0,
         completedChallenges: own?.completedChallenges || 0,
+        rankingIntro: {
+          version: ARENA_RANKING_INTRO_VERSION,
+          shouldShow: shouldShowArenaRankingIntro({
+            participantId: actor.type === "participant" ? actor.id : null,
+            rankingEnabled: config.rankingEnabled,
+            rankingLocked,
+            introSeen: Boolean(introSeen),
+          }),
+        },
       };
     });
     return NextResponse.json(result);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    csrf(request);
+    const actor = await getActor(request, "participant");
+    ensure(
+      actor?.type === "participant",
+      "Faça login para continuar.",
+      "UNAUTHORIZED",
+      401,
+    );
+    const body = await request.json().catch(() => ({}));
+    const editionId = String(body.editionId || actor.editionId || "");
+    ensure(
+      editionId && editionId === actor.editionId,
+      "Edição inválida.",
+      "FORBIDDEN",
+      403,
+    );
+    await transaction(async (tx) => {
+      const existing = await tx.auditLog.findFirst({
+        where: {
+          editionId,
+          actorType: "participant",
+          actorId: actor.id,
+          action: ARENA_RANKING_INTRO_ACTION,
+        },
+      });
+      if (!existing)
+        await audit(
+          tx,
+          actor,
+          editionId,
+          ARENA_RANKING_INTRO_ACTION,
+          "ArenaRankingIntro",
+          ARENA_RANKING_INTRO_VERSION,
+          undefined,
+          { seen: true },
+        );
+    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return errorResponse(error);
   }

@@ -743,6 +743,9 @@ function ArenaCreditChoice({ arena, run }: { arena: any; run: any }) {
 function ArenaRanking({ arena }: { arena: any }) {
   const ranking = arena.ranking || [];
   const top = ranking.slice(0, 3);
+  const introStarted = useRef(false);
+  const [introRanking, setIntroRanking] = useState<any[]>([]);
+  const [showIntro, setShowIntro] = useState(false);
   const [fullRanking, setFullRanking] = useState<any[] | null>(null);
   const [fullVisible, setFullVisible] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
@@ -751,6 +754,48 @@ function ArenaRanking({ arena }: { arena: any }) {
   const [xpBreakdown, setXpBreakdown] = useState<any>(null);
   const [loadingBreakdown, setLoadingBreakdown] = useState(false);
   const [breakdownError, setBreakdownError] = useState("");
+  useEffect(() => {
+    if (
+      introStarted.current ||
+      arena.rankingLocked ||
+      !arena.rankingIntro?.shouldShow
+    )
+      return;
+    introStarted.current = true;
+    const controller = new AbortController();
+    const editionId = arena.config?.editionId;
+    fetch(
+      `/api/arena/ranking?full=1&editionId=${encodeURIComponent(editionId || "")}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then((response) =>
+        readApiResponse<any>(
+          response,
+          "Não foi possível preparar a apresentação do ranking.",
+        ),
+      )
+      .then((payload) => {
+        const rows = payload.ranking || [];
+        if (!rows.length) return;
+        setFullRanking(rows);
+        setIntroRanking(rows);
+        setShowIntro(true);
+        void fetch("/api/arena/ranking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ editionId }),
+          keepalive: true,
+        });
+      })
+      .catch((reason) => {
+        if (reason?.name !== "AbortError") introStarted.current = false;
+      });
+    return () => controller.abort();
+  }, [
+    arena.config?.editionId,
+    arena.rankingIntro?.shouldShow,
+    arena.rankingLocked,
+  ]);
   useEffect(() => {
     if (!selectedParticipant) return;
     const previousOverflow = document.body.style.overflow;
@@ -827,6 +872,12 @@ function ArenaRanking({ arena }: { arena: any }) {
   };
   return (
     <div className="arena-surface ranking-page">
+      {showIntro && (
+        <ParticipantRankingReveal
+          ranking={introRanking}
+          onClose={() => setShowIntro(false)}
+        />
+      )}
       <ArenaHeader
         eyebrow="CLASSIFICAÇÃO"
         title="Ranking da Arena"
@@ -1031,6 +1082,161 @@ function ArenaRanking({ arena }: { arena: any }) {
         </div>
       )}
     </div>
+  );
+}
+
+function ParticipantRankingReveal({
+  ranking,
+  onClose,
+}: {
+  ranking: any[];
+  onClose: () => void;
+}) {
+  const rows = useMemo(() => [...ranking].reverse(), [ranking]);
+  const [countdown, setCountdown] = useState(5);
+  const [current, setCurrent] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const active = rows[current] || rows[0];
+  const countdownComplete = countdown === 0;
+  const windowStart = Math.max(0, current - 3);
+  const visibleRows = rows.slice(windowStart, current + 4);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      media.removeEventListener("change", update);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!reducedMotion) return;
+    setCountdown(0);
+    setCurrent(Math.max(0, rows.length - 1));
+    setFinished(true);
+  }, [reducedMotion, rows.length]);
+
+  useEffect(() => {
+    if (countdownComplete || reducedMotion) return;
+    const timer = window.setTimeout(
+      () => setCountdown((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [countdown, countdownComplete, reducedMotion]);
+
+  useEffect(() => {
+    if (!countdownComplete || reducedMotion || finished || !rows.length) return;
+    const rank = Number(rows[current]?.rank || rows.length);
+    const fastStep = Math.max(55, Math.min(170, 9000 / rows.length));
+    const delay = rank <= 3 ? 1100 : rank <= 10 ? 480 : fastStep;
+    const timer = window.setTimeout(() => {
+      if (current >= rows.length - 1) setFinished(true);
+      else setCurrent((value) => value + 1);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [countdownComplete, current, finished, reducedMotion, rows]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !countdownComplete || reducedMotion) return;
+    audio.volume = 0.42;
+    void audio.play().catch(() => undefined);
+    return () => audio.pause();
+  }, [countdownComplete, reducedMotion]);
+
+  return (
+    <section
+      className="arena-participant-reveal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Apresentação do ranking da Farma Arena"
+    >
+      {!reducedMotion && (
+        <audio
+          ref={audioRef}
+          src="/assets/effects/farma-arena-ranking-reveal.m4a"
+          preload="metadata"
+        />
+      )}
+      <div className="arena-participant-reveal__sky" aria-hidden="true" />
+      {!countdownComplete && (
+        <div
+          className="arena-participant-reveal__countdown"
+          role="status"
+          aria-live="assertive"
+        >
+          <FarmaArenaStamp />
+          <small>PREPARE-SE</small>
+          <strong key={countdown}>{countdown}</strong>
+          <span>O ranking vai começar</span>
+        </div>
+      )}
+      <header>
+        <div>
+          <span>FARMA ARENA</span>
+          <strong>Rumo ao topo</strong>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Pular apresentação">
+          <X aria-hidden="true" />
+        </button>
+      </header>
+      <main>
+        <span className="arena-participant-reveal__eyebrow">
+          {finished ? "O TOPO DA JORNADA" : "CLASSIFICAÇÃO EM MOVIMENTO"}
+        </span>
+        <div className="arena-participant-reveal__viewport" aria-live="polite">
+          {visibleRows.map((row: any, index: number) => {
+            const absoluteIndex = windowStart + index;
+            const distance = absoluteIndex - current;
+            return (
+              <article
+                key={row.participantId}
+                className={distance === 0 ? "is-active" : ""}
+                style={{
+                  transform: `translate3d(0, ${distance * 66}px, 0) scale(${distance === 0 ? 1 : 0.94})`,
+                  opacity: Math.max(0.14, 1 - Math.abs(distance) * 0.26),
+                }}
+              >
+                <b>#{row.rank}</b>
+                <span>{row.displayName}</span>
+                <strong>{row.xpTotal} XP</strong>
+              </article>
+            );
+          })}
+        </div>
+        {active && (
+          <div
+            className={`arena-participant-reveal__focus ${finished ? "is-winner" : ""}`}
+          >
+            <small>{finished ? "LIDERANÇA ATUAL" : "SUBINDO"}</small>
+            <b>#{active.rank}</b>
+            <h2>{active.displayName}</h2>
+            <strong>{active.xpTotal} XP</strong>
+          </div>
+        )}
+      </main>
+      <footer>
+        <div className="arena-participant-reveal__progress" aria-hidden="true">
+          <i
+            style={{
+              transform: `scaleX(${rows.length ? (current + 1) / rows.length : 0})`,
+            }}
+          />
+        </div>
+        <button type="button" onClick={onClose}>
+          {finished ? "Ver ranking" : "Pular apresentação"}
+          <ChevronRight aria-hidden="true" />
+        </button>
+      </footer>
+    </section>
   );
 }
 

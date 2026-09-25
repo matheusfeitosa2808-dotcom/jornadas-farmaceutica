@@ -1156,10 +1156,13 @@ function ParticipantRankingReveal({
     update();
     media.addEventListener("change", update);
     const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       media.removeEventListener("change", update);
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
     };
   }, []);
 

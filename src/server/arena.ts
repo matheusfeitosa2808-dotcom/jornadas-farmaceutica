@@ -61,6 +61,92 @@ export function publicArenaRanking(ranking: any[]) {
   }));
 }
 
+export async function buildArenaXpBreakdown(
+  tx: any,
+  editionId: string,
+  participantId: string,
+) {
+  const participant = await tx.participant.findUnique({
+    where: { id: participantId },
+    select: {
+      id: true,
+      editionId: true,
+      active: true,
+      name: true,
+      photoUrl: true,
+      semester: true,
+    },
+  });
+  ensure(
+    participant?.active && participant.editionId === editionId,
+    "Participante não encontrado no ranking.",
+    "NOT_FOUND",
+    404,
+  );
+
+  const [transactions, stamps] = await Promise.all([
+    tx.xpTransaction.findMany({
+      where: { editionId, participantId },
+      orderBy: { createdAt: "desc" },
+    }),
+    tx.passportStamp.findMany({
+      where: { editionId, participantId, status: "VALID" },
+      orderBy: { issuedAt: "desc" },
+    }),
+  ]);
+  const eligibleStamps = stamps.filter(
+    (stamp: any) => !isArenaPassportStamp(stamp),
+  );
+  const activityIds = [
+    ...new Set(eligibleStamps.map((stamp: any) => stamp.activityId)),
+  ];
+  const activities = activityIds.length
+    ? await tx.activity.findMany({
+        where: { editionId, id: { in: activityIds } },
+        select: { id: true, title: true },
+      })
+    : [];
+  const activityById = new Map(
+    activities.map((activity: any) => [activity.id, activity.title]),
+  );
+  const entries = [
+    ...transactions
+      .filter((item: any) => Number(item.rankingDelta || 0) !== 0)
+      .map((item: any) => ({
+        id: item.id,
+        source: item.sourceType,
+        label: item.description || "Ajuste de XP",
+        amount: Number(item.rankingDelta || 0),
+        createdAt: item.createdAt,
+      })),
+    ...eligibleStamps.map((stamp: any) => ({
+      id: `stamp-${stamp.id}`,
+      source: "PASSPORT_STAMP",
+      label: `Carimbo: ${activityById.get(stamp.activityId) || "atividade da Jornada"}`,
+      amount: STAMP_XP_REWARD,
+      createdAt: stamp.issuedAt,
+    })),
+  ].sort(
+    (a: any, b: any) =>
+      (asDate(b.createdAt)?.getTime() || 0) -
+      (asDate(a.createdAt)?.getTime() || 0),
+  );
+
+  return {
+    participant: {
+      participantId: participant.id,
+      displayName: rankingDisplayName(participant.name),
+      photoUrl: participant.photoUrl,
+      semester: participant.semester,
+    },
+    xpTotal: entries.reduce(
+      (sum: number, item: any) => sum + Number(item.amount || 0),
+      0,
+    ),
+    entries,
+  };
+}
+
 type ArenaRankingCacheEntry = {
   expiresAt: number;
   promise: Promise<any[]>;

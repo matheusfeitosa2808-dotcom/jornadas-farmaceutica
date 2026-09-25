@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -247,8 +248,8 @@ function RankingReleaseGate({
         </span>
         <h1>O ranking será revelado às 15h</h1>
         <p>
-          A contagem usa o horário do seu aparelho e termina às 15h de hoje,
-          no horário de Boa Vista, Roraima.
+          A contagem usa o horário do seu aparelho e termina às 15h de hoje, no
+          horário de Boa Vista, Roraima.
         </p>
         <div
           className="arena-ranking-countdown__timer"
@@ -694,6 +695,55 @@ function ArenaRanking({ arena }: { arena: any }) {
   const [fullVisible, setFullVisible] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [rankingError, setRankingError] = useState("");
+  const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
+  const [xpBreakdown, setXpBreakdown] = useState<any>(null);
+  const [loadingBreakdown, setLoadingBreakdown] = useState(false);
+  const [breakdownError, setBreakdownError] = useState("");
+  useEffect(() => {
+    if (!selectedParticipant) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedParticipant(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedParticipant]);
+  const showXpBreakdown = async (participant: any) => {
+    setSelectedParticipant(participant);
+    setXpBreakdown(null);
+    setBreakdownError("");
+    setLoadingBreakdown(true);
+    try {
+      const editionId = arena.config?.editionId;
+      const response = await fetch(
+        `/api/arena/ranking?participantId=${encodeURIComponent(participant.participantId)}&editionId=${encodeURIComponent(editionId || "")}`,
+        { cache: "no-store" },
+      );
+      setXpBreakdown(
+        await readApiResponse<any>(
+          response,
+          "Não foi possível carregar a origem deste XP.",
+        ),
+      );
+    } catch (reason) {
+      setBreakdownError(
+        reason instanceof Error
+          ? reason.message
+          : "Não foi possível carregar a origem deste XP.",
+      );
+    } finally {
+      setLoadingBreakdown(false);
+    }
+  };
+  const keyboardOpenBreakdown = (event: ReactKeyboardEvent, row: any) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    void showXpBreakdown(row);
+  };
   const showFullRanking = async () => {
     if (fullRanking) {
       setFullVisible((current) => !current);
@@ -728,11 +778,20 @@ function ArenaRanking({ arena }: { arena: any }) {
       <ArenaHeader
         eyebrow="CLASSIFICAÇÃO"
         title="Ranking da Arena"
-        description="Compras usam o XP disponível e nunca reduzem sua posição."
+        description="Compras usam o XP disponível e nunca reduzem sua posição. Toque em uma pessoa para conferir a origem do XP."
       />
       <div className="arena-podium">
         {top.map((row: any) => (
-          <article key={row.participantId} className={`place-${row.rank}`}>
+          <article
+            key={row.participantId}
+            className={`place-${row.rank} arena-ranking-person`}
+            role="button"
+            tabIndex={0}
+            aria-haspopup="dialog"
+            aria-label={`Ver origem dos ${row.xpTotal} XP de ${row.displayName}`}
+            onClick={() => void showXpBreakdown(row)}
+            onKeyDown={(event) => keyboardOpenBreakdown(event, row)}
+          >
             <div className="arena-crown">
               <Trophy />
               <i />
@@ -751,7 +810,17 @@ function ArenaRanking({ arena }: { arena: any }) {
           </article>
         ))}
       </div>
-      <section className="arena-my-rank" aria-label="Sua classificação">
+      <section
+        className="arena-my-rank arena-ranking-person"
+        aria-label="Sua classificação. Toque para ver a origem do seu XP."
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        onClick={() => arena.myRanking && void showXpBreakdown(arena.myRanking)}
+        onKeyDown={(event) =>
+          arena.myRanking && keyboardOpenBreakdown(event, arena.myRanking)
+        }
+      >
         <span className="arena-avatar small">
           {arena.myRanking?.photoUrl ? (
             <img src={arena.myRanking.photoUrl} alt="" />
@@ -792,9 +861,15 @@ function ArenaRanking({ arena }: { arena: any }) {
               key={row.participantId}
               className={
                 row.participantId === arena.myRanking?.participantId
-                  ? "is-current"
-                  : undefined
+                  ? "is-current arena-ranking-person"
+                  : "arena-ranking-person"
               }
+              role="button"
+              tabIndex={0}
+              aria-haspopup="dialog"
+              aria-label={`Ver origem dos ${row.xpTotal} XP de ${row.displayName}`}
+              onClick={() => void showXpBreakdown(row)}
+              onKeyDown={(event) => keyboardOpenBreakdown(event, row)}
             >
               <b>#{row.rank}</b>
               <span className="arena-avatar small">
@@ -811,6 +886,96 @@ function ArenaRanking({ arena }: { arena: any }) {
               <span>{row.xpTotal} XP</span>
             </article>
           ))}
+        </div>
+      )}
+      {selectedParticipant && (
+        <div
+          className="arena-xp-audit-backdrop"
+          onMouseDown={() => setSelectedParticipant(null)}
+        >
+          <section
+            className="arena-xp-audit"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="arena-xp-audit-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div className="arena-xp-audit__identity">
+                <span className="arena-avatar small">
+                  {selectedParticipant.photoUrl ? (
+                    <img src={selectedParticipant.photoUrl} alt="" />
+                  ) : (
+                    selectedParticipant.displayName.slice(0, 1)
+                  )}
+                </span>
+                <div>
+                  <small>TRANSPARÊNCIA DO RANKING</small>
+                  <h2 id="arena-xp-audit-title">
+                    {selectedParticipant.displayName}
+                  </h2>
+                  <span>
+                    #{selectedParticipant.rank} · {selectedParticipant.xpTotal}{" "}
+                    XP
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedParticipant(null)}
+                aria-label="Fechar detalhamento"
+              >
+                <X aria-hidden="true" />
+              </button>
+            </header>
+            <div className="arena-xp-audit__summary">
+              <span>XP auditado</span>
+              <strong>
+                {xpBreakdown?.xpTotal ?? selectedParticipant.xpTotal} XP
+              </strong>
+              <small>Soma de carimbos, desafios e ajustes registrados.</small>
+            </div>
+            {loadingBreakdown ? (
+              <div className="arena-xp-audit__loading" role="status">
+                <i />
+                <span>Carregando lançamentos…</span>
+              </div>
+            ) : breakdownError ? (
+              <p className="arena-xp-audit__error" role="alert">
+                {breakdownError}
+              </p>
+            ) : (
+              <div className="arena-xp-audit__ledger">
+                {(xpBreakdown?.entries || []).map((entry: any) => (
+                  <article key={entry.id}>
+                    <span
+                      className={
+                        entry.amount >= 0 ? "is-positive" : "is-negative"
+                      }
+                    >
+                      {entry.amount > 0 ? "+" : ""}
+                      {entry.amount} XP
+                    </span>
+                    <div>
+                      <strong>{entry.label}</strong>
+                      <small>
+                        {entry.source === "PASSPORT_STAMP"
+                          ? "Passaporte"
+                          : entry.source === "ARENA_AWARD"
+                            ? "Farma Arena"
+                            : "Ajuste da organização"}
+                        {" · "}
+                        {new Date(entry.createdAt).toLocaleString("pt-BR")}
+                      </small>
+                    </div>
+                  </article>
+                ))}
+                {xpBreakdown && !xpBreakdown.entries?.length && (
+                  <p>Nenhum lançamento de XP foi encontrado.</p>
+                )}
+              </div>
+            )}
+          </section>
         </div>
       )}
     </div>

@@ -1249,9 +1249,8 @@ function ParticipantRankingReveal({
       {!presentationStarted && !reducedMotion && (
         <div className="arena-participant-reveal__countdown arena-participant-reveal__launch">
           <FarmaArenaStamp />
-          <small>APRESENTAÇÃO DO RANKING</small>
-          <h1>Do menor XP até o topo</h1>
-          <p>A classificação será revelada do último ao primeiro lugar.</p>
+          <small>FARMA ARENA</small>
+          <h1>Do último ao primeiro</h1>
           <button type="button" onClick={startPresentation}>
             <Play aria-hidden="true" />
             Começar com música
@@ -1267,7 +1266,6 @@ function ParticipantRankingReveal({
           <FarmaArenaStamp />
           <small>PREPARE-SE</small>
           <strong key={countdown}>{countdown}</strong>
-          <span>O ranking vai começar</span>
         </div>
       )}
       {audioBlocked && (
@@ -1283,16 +1281,13 @@ function ParticipantRankingReveal({
       <header>
         <div>
           <span>FARMA ARENA</span>
-          <strong>Rumo ao topo</strong>
         </div>
         <button type="button" onClick={onClose} aria-label="Pular apresentação">
           <X aria-hidden="true" />
         </button>
       </header>
       <main>
-        <span className="arena-participant-reveal__eyebrow">
-          {finished ? "O TOPO DA JORNADA" : "CLASSIFICAÇÃO EM MOVIMENTO"}
-        </span>
+        <span className="arena-participant-reveal__eyebrow" aria-hidden="true" />
         <div className="arena-participant-reveal__viewport" aria-live="polite">
           {visibleRows.map((row: any, index: number) => {
             const absoluteIndex = windowStart + index;

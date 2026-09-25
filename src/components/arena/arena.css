@@ -1589,7 +1589,8 @@
 .arena-participant-reveal > main {
   min-height: 0;
   width: min(760px, 100%);
-  margin: auto;
+  margin: 0 auto;
+  align-self: stretch;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   align-items: center;

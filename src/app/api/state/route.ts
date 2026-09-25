@@ -194,7 +194,16 @@ export async function GET(req: NextRequest) {
         db.activity.findMany({
           where: {
             editionId,
-            ...(scope !== "admin" ? { status: { not: "DRAFT" } } : {}),
+            ...(scope === "public"
+              ? { status: { not: "DRAFT" } }
+              : scope === "participant"
+                ? {
+                    OR: [
+                      { status: { not: "DRAFT" } },
+                      { id: { startsWith: "arena-passport-activity:" } },
+                    ],
+                  }
+                : {}),
           },
           orderBy: { startAt: "asc" },
         }),

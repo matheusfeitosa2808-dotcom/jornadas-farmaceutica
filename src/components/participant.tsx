@@ -1154,11 +1154,22 @@ function Passport({ person }: { person: any }) {
           Number(!!ownAttendance(data, a.id)) ||
         a.startAt.localeCompare(b.startAt),
     );
+  const earnedEditionStamps = activities.filter(
+    (activity: any) =>
+      !isFarmaArena(categoryOf(data, activity), activity) &&
+      stamps.some((stamp: any) => stamp.activityId === activity.id),
+  ).length;
+  const editionStampActivities = activities.filter(
+    (activity: any) => !isFarmaArena(categoryOf(data, activity), activity),
+  );
   const stampGoal = Math.max(
-    Number(data.edition.maxCheckins) || activities.length || 1,
+    Number(data.edition.maxCheckins) || editionStampActivities.length || 1,
     1,
   );
-  const stampProgress = Math.min(100, (stamps.length / stampGoal) * 100);
+  const stampProgress = Math.min(
+    100,
+    (earnedEditionStamps / stampGoal) * 100,
+  );
   return (
     <>
       <section className="passport">
@@ -1190,7 +1201,7 @@ function Passport({ person }: { person: any }) {
           </div>
           <span className="passport-progress-summary">
             <strong>
-              {stamps.length} de {stampGoal}
+              {earnedEditionStamps} de {stampGoal}
             </strong>
             <small>concluídos</small>
           </span>

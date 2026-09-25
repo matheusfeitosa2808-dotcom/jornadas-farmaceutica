@@ -1339,11 +1339,13 @@ function Rewards({ id }: { id?: string }) {
   const [mode, setMode] = useState<"ALL" | "ELIGIBILITY" | "XP_STORE">("ALL");
   const count = validStamps(data).length;
   const ownReservations = data.reservations || [];
+  const isRankingPrize = (reward: any) =>
+    ["Copo", "Ecobag", "Scrubs"].includes(String(reward.name));
   const allItems = (data.rewards || []).filter(
     (r: any) =>
       r.active !== false &&
       (!id || r.id === id) &&
-      (!String(r.id).startsWith("ranking-scrubs:") ||
+      (!isRankingPrize(r) ||
         ownReservations.some(
           (reservation: any) => reservation.rewardId === r.id,
         )),
@@ -1421,6 +1423,7 @@ function Rewards({ id }: { id?: string }) {
       <div className="reward-grid">
         {items.map((r: any) => {
           const xpItem = rewardRedemptionMode(r) === "XP_STORE";
+          const rankingPrize = isRankingPrize(r);
           const xpCost = rewardXpCost(r);
           const xpPricingPending = xpItem && xpCost <= 0;
           const arenaReward = (arena?.rewards || []).find(
@@ -1486,7 +1489,9 @@ function Rewards({ id }: { id?: string }) {
                 <span className="reward-stock">
                   {xpPricingPending
                     ? "Quantidade calculando"
-                    : `${stockAvailable} disponíveis`}
+                    : rankingPrize
+                      ? "Prêmio conquistado"
+                      : `${stockAvailable} disponíveis`}
                 </span>
               </div>
               <div className="reward-card-content">
@@ -1495,11 +1500,17 @@ function Rewards({ id }: { id?: string }) {
                     <span
                       className={`reward-mode-label ${xpItem ? "xp" : "journey"}`}
                     >
-                      {xpItem ? "RESGATE COM XP" : "RESGATE COM CARIMBO"}
+                      {rankingPrize
+                        ? "PRÊMIO DO RANKING"
+                        : xpItem
+                          ? "RESGATE COM XP"
+                          : "RESGATE COM CARIMBO"}
                     </span>
                     <h2>{r.name}</h2>
                   </div>
-                  {xpItem ? (
+                  {rankingPrize ? (
+                    <Badge tone="success">Conquistado</Badge>
+                  ) : xpItem ? (
                     <Badge tone={xpOwned ? "success" : ""}>
                       {reservation?.status === "DELIVERED"
                         ? "Entregue"
@@ -1520,7 +1531,13 @@ function Rewards({ id }: { id?: string }) {
                   )}
                 </div>
                 <p>{r.description}</p>
-                {xpItem ? (
+                {rankingPrize ? (
+                  <div className="reward-ready">
+                    <Trophy size={18} />
+                    Este prêmio foi reservado pela sua posição no ranking da
+                    Farma Arena. Apresente seu RA à equipe de retirada.
+                  </div>
+                ) : xpItem ? (
                   <>
                     <div className="xp-redemption-summary">
                       <span>

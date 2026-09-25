@@ -661,6 +661,53 @@
 .arena-ranking-countdown__note svg {
   width: 17px;
 }
+.arena-ranking-countdown__history {
+  width: min(100%, 420px);
+  margin-top: 14px;
+  padding: 13px 16px;
+  border: 1px solid rgba(34, 63, 67, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #244b51;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.arena-ranking-countdown__history:hover {
+  border-color: rgba(159, 47, 47, 0.34);
+  box-shadow: 0 10px 24px rgba(75, 35, 32, 0.08);
+}
+.arena-ranking-countdown__history:active {
+  transform: scale(0.985);
+}
+.arena-ranking-countdown__history > svg:first-child {
+  width: 21px;
+  color: #2a7359;
+}
+.arena-ranking-countdown__history > svg:last-child {
+  width: 18px;
+  color: #9f2f2f;
+}
+.arena-ranking-countdown__history > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.arena-ranking-countdown__history strong {
+  font-size: 0.88rem;
+}
+.arena-ranking-countdown__history small {
+  color: #718080;
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
 @keyframes arena-ranking-wait {
   0%,
   100% {
@@ -1729,7 +1776,8 @@
   }
   .arena-actions a,
   .arena-challenge-card,
-  .arena-ranking-person {
+  .arena-ranking-person,
+  .arena-ranking-countdown__history {
     transition: none;
   }
   .arena-ranking-countdown__seal i {

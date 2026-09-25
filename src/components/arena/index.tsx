@@ -307,6 +307,19 @@ function RankingReleaseGate({
               : "O ranking abrirá automaticamente quando o contador zerar."}
           </span>
         </div>
+        <Link
+          href="/app/arena/desempenho"
+          className="arena-ranking-countdown__history"
+        >
+          <CheckCircle2 aria-hidden="true" />
+          <span>
+            <strong>Minhas atividades concluídas</strong>
+            <small>
+              Consulte seu histórico individual sem revelar posições.
+            </small>
+          </span>
+          <ChevronRight aria-hidden="true" />
+        </Link>
       </section>
     </div>
   );

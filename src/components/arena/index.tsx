@@ -10,11 +10,13 @@ import {
   Flame,
   Gift,
   Medal,
+  Play,
   ShoppingBag,
   Sparkles,
   Send,
   Trophy,
   Users,
+  Volume2,
   X,
   Zap,
 } from "lucide-react";
@@ -1125,11 +1127,22 @@ function ParticipantRankingReveal({
   ranking: any[];
   onClose: () => void;
 }) {
-  const rows = useMemo(() => [...ranking].reverse(), [ranking]);
+  const rows = useMemo(
+    () =>
+      [...ranking].sort((left, right) => {
+        const xpDifference =
+          Number(left.xpTotal || 0) - Number(right.xpTotal || 0);
+        if (xpDifference !== 0) return xpDifference;
+        return Number(right.rank || 0) - Number(left.rank || 0);
+      }),
+    [ranking],
+  );
+  const [presentationStarted, setPresentationStarted] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [current, setCurrent] = useState(0);
   const [finished, setFinished] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const active = rows[current] || rows[0];
   const countdownComplete = countdown === 0;
@@ -1157,16 +1170,23 @@ function ParticipantRankingReveal({
   }, [reducedMotion, rows.length]);
 
   useEffect(() => {
-    if (countdownComplete || reducedMotion) return;
+    if (!presentationStarted || countdownComplete || reducedMotion) return;
     const timer = window.setTimeout(
       () => setCountdown((value) => Math.max(0, value - 1)),
       1000,
     );
     return () => window.clearTimeout(timer);
-  }, [countdown, countdownComplete, reducedMotion]);
+  }, [countdown, countdownComplete, presentationStarted, reducedMotion]);
 
   useEffect(() => {
-    if (!countdownComplete || reducedMotion || finished || !rows.length) return;
+    if (
+      !presentationStarted ||
+      !countdownComplete ||
+      reducedMotion ||
+      finished ||
+      !rows.length
+    )
+      return;
     const rank = Number(rows[current]?.rank || rows.length);
     const fastStep = Math.max(55, Math.min(170, 9000 / rows.length));
     const delay = rank <= 3 ? 1100 : rank <= 10 ? 480 : fastStep;
@@ -1175,15 +1195,40 @@ function ParticipantRankingReveal({
       else setCurrent((value) => value + 1);
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [countdownComplete, current, finished, reducedMotion, rows]);
+  }, [
+    countdownComplete,
+    current,
+    finished,
+    presentationStarted,
+    reducedMotion,
+    rows,
+  ]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !countdownComplete || reducedMotion) return;
-    audio.volume = 0.42;
-    void audio.play().catch(() => undefined);
-    return () => audio.pause();
-  }, [countdownComplete, reducedMotion]);
+    return () => audio?.pause();
+  }, []);
+
+  const startPresentation = () => {
+    const audio = audioRef.current;
+    setAudioBlocked(false);
+    if (audio && !reducedMotion) {
+      audio.volume = 0.48;
+      audio.currentTime = 0;
+      void audio.play().catch(() => setAudioBlocked(true));
+    }
+    setPresentationStarted(true);
+  };
+
+  const retryAudio = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = 0.48;
+    void audio
+      .play()
+      .then(() => setAudioBlocked(false))
+      .catch(() => setAudioBlocked(true));
+  };
 
   return (
     <section
@@ -1196,11 +1241,24 @@ function ParticipantRankingReveal({
         <audio
           ref={audioRef}
           src="/assets/effects/farma-arena-ranking-reveal.m4a"
-          preload="metadata"
+          preload="auto"
+          loop
         />
       )}
       <div className="arena-participant-reveal__sky" aria-hidden="true" />
-      {!countdownComplete && (
+      {!presentationStarted && !reducedMotion && (
+        <div className="arena-participant-reveal__countdown arena-participant-reveal__launch">
+          <FarmaArenaStamp />
+          <small>APRESENTAÇÃO DO RANKING</small>
+          <h1>Do menor XP até o topo</h1>
+          <p>A classificação será revelada do último ao primeiro lugar.</p>
+          <button type="button" onClick={startPresentation}>
+            <Play aria-hidden="true" />
+            Começar com música
+          </button>
+        </div>
+      )}
+      {presentationStarted && !countdownComplete && (
         <div
           className="arena-participant-reveal__countdown"
           role="status"
@@ -1211,6 +1269,16 @@ function ParticipantRankingReveal({
           <strong key={countdown}>{countdown}</strong>
           <span>O ranking vai começar</span>
         </div>
+      )}
+      {audioBlocked && (
+        <button
+          type="button"
+          className="arena-participant-reveal__audio"
+          onClick={retryAudio}
+        >
+          <Volume2 aria-hidden="true" />
+          Ativar música
+        </button>
       )}
       <header>
         <div>

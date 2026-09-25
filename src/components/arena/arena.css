@@ -1718,6 +1718,37 @@
 .arena-participant-reveal__countdown span {
   color: rgba(255, 248, 231, 0.72);
 }
+.arena-participant-reveal__launch h1 {
+  max-width: 520px;
+  margin: 2px 0 0;
+  font: 700 clamp(2.6rem, 11vw, 5rem) / 0.94 var(--font-serif);
+  text-wrap: balance;
+}
+.arena-participant-reveal__launch p {
+  max-width: 420px;
+  margin: 4px 0 10px;
+  color: rgba(255, 248, 231, 0.74);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+.arena-participant-reveal__launch button {
+  min-width: min(300px, 100%);
+  padding: 14px 20px;
+  border-color: rgba(237, 199, 95, 0.62);
+  background: #edc75f;
+  color: #281012;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+.arena-participant-reveal__audio {
+  position: fixed;
+  z-index: 8;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(76px, calc(env(safe-area-inset-bottom) + 64px));
+  padding: 10px 14px;
+  border-color: rgba(237, 199, 95, 0.7) !important;
+  background: rgba(25, 8, 10, 0.94) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
+}
 @keyframes arena-ranking-intro-tick {
   from {
     opacity: 0;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { transaction } from "@/server/db";
 import { getActor, errorResponse } from "@/server/security";
 import { arenaRankingIsLocked, cachedArenaRanking } from "@/server/arena";
+import { rewardStoreDescription } from "@/lib/rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,82 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      if (scope === "admin" && actor?.type === "admin" && mode === "store") {
+        const [participants, rewards0, reservations, deliveries, draws, xpTransactions] =
+          await Promise.all([
+            db.participant.findMany({
+              where: { editionId, active: true },
+              orderBy: { name: "asc" },
+              select: { id: true, name: true, ra: true, active: true },
+            }),
+            db.rewardItem.findMany({
+              where: { editionId },
+              orderBy: [{ order: "asc" }, { name: "asc" }],
+            }),
+            db.rewardReservation.findMany({
+              where: { editionId },
+              orderBy: { createdAt: "desc" },
+            }),
+            db.rewardDelivery.findMany({
+              where: { editionId },
+              orderBy: { deliveredAt: "desc" },
+            }),
+            db.rewardDraw.findMany({
+              where: { editionId },
+              orderBy: { createdAt: "desc" },
+            }),
+            db.xpTransaction.findMany({
+              where: {
+                editionId,
+                sourceType: {
+                  in: ["REWARD_PURCHASE", "REWARD_REFUND", "REWARD_REALLOCATION"],
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            }),
+          ]);
+        const rewards = rewards0.map((reward: any) => {
+          const reserved = reservations
+            .filter(
+              (row: any) =>
+                row.rewardId === reward.id &&
+                ["AWAITING_CONFIRMATION", "RESERVED", "CONFIRMED"].includes(
+                  row.status,
+                ),
+            )
+            .reduce((sum: number, row: any) => sum + row.quantity, 0);
+          const delivered = deliveries
+            .filter(
+              (row: any) => row.rewardId === reward.id && row.status === "DELIVERED",
+            )
+            .reduce((sum: number, row: any) => sum + row.quantity, 0);
+          return {
+            ...reward,
+            description: rewardStoreDescription(reward),
+            stockTotal: reward.total,
+            stockReserved: reserved,
+            stockDelivered: delivered,
+            stockAvailable: Math.max(0, reward.total - reserved - delivered),
+          };
+        });
+        return NextResponse.json({
+          actor,
+          edition,
+          editions,
+          participants: participants.map((participant: any) => ({
+            ...participant,
+            fullName: participant.name,
+          })),
+          rewards,
+          reservations,
+          deliveries,
+          draws,
+          xpTransactions,
+          serverNow: new Date().toISOString(),
+          devMode: process.env.DEV_SEED === "true",
+        });
+      }
+
       if (
         scope === "admin" &&
         actor?.type === "admin" &&
@@ -157,6 +234,7 @@ export async function GET(req: NextRequest) {
             .reduce((sum: number, row: any) => sum + row.quantity, 0);
           return {
             ...reward,
+            description: rewardStoreDescription(reward),
             stockReserved: reserved,
             stockDelivered: delivered,
             stockAvailable: Math.max(0, reward.total - reserved - delivered),
@@ -296,6 +374,7 @@ export async function GET(req: NextRequest) {
             .reduce((n: number, x: any) => n + x.quantity, 0);
         return {
           ...r,
+          description: rewardStoreDescription(r),
           stockTotal: r.total,
           stockReserved: reserved,
           stockDelivered: delivered,

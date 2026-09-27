@@ -23,7 +23,6 @@ import {
   Save,
   Send,
   Settings2,
-  ShoppingBag,
   SkipForward,
   Trophy,
   Volume2,
@@ -44,7 +43,6 @@ const tabs = [
   ["ranking", "Ranking", Trophy],
   ["beneficios", "Pontos em disciplina", BookOpen],
   ["ajustes", "Ajustar XP", Settings2],
-  ["loja", "Loja e brindes", ShoppingBag],
 ] as const;
 
 function localDateInput(value: any, zone: string) {
@@ -199,7 +197,6 @@ export function FarmaArenaAdmin() {
           busy={busy}
         />
       )}
-      {tab === "loja" && <Store arena={arena} run={run} busy={busy} />}
     </div>
   );
 }
@@ -1204,68 +1201,6 @@ function Adjustment({ participants, run, busy }: any) {
           <RotateCcw /> Registrar ajuste
         </button>
       </form>
-    </section>
-  );
-}
-
-function Store({ arena, run, busy }: any) {
-  const pending = (arena.reservations || []).filter(
-    (reservation: any) => reservation.status === "AWAITING_DRAW",
-  );
-  return (
-    <section className="arena-admin-panel">
-      <div className="arena-admin-title">
-        <div>
-          <span>CATÁLOGO UNIFICADO</span>
-          <h2>Loja da Jornada</h2>
-          <p>
-            Brindes por carimbo e itens por XP compartilham o mesmo estoque e a
-            mesma retirada.
-          </p>
-        </div>
-        <div className="arena-admin-actions">
-          <button
-            className="button"
-            disabled={busy || pending.length === 0}
-            onClick={() => run("reward.drawXpSequence")}
-          >
-            <Trophy /> Sortear do mais raro ao mais comum
-          </button>
-          <Link className="button secondary" href="/admin/brindes">
-            <Plus /> Gerenciar itens
-          </Link>
-        </div>
-      </div>
-      <div className="arena-admin-callout">
-        <b>{pending.length} pedidos aguardando distribuição</b>
-        <span>
-          O sistema limita cada participante a dois brindes, sorteia quando a
-          procura supera o estoque e realoca quem não ganhou para o próximo item
-          disponível.
-        </span>
-      </div>
-      <div className="arena-admin-cards">
-        {arena.rewards.map((x: any) => (
-          <article key={x.id}>
-            {x.imageUrl && <img src={x.imageUrl} alt="" />}
-            <span>RESGATE COM XP</span>
-            <h3>{x.name}</h3>
-            <p>{x.description}</p>
-            <footer>
-              <b>{x.xpCost} XP</b>
-              <small>
-                {x.stockAvailable ?? x.total} disponíveis ·{" "}
-                {
-                  pending.filter(
-                    (reservation: any) => reservation.rewardId === x.id,
-                  ).length
-                }{" "}
-                pedidos
-              </small>
-            </footer>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }

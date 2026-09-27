@@ -34,6 +34,13 @@ export function Provider({ children }: { children: ReactNode }) {
   const isLogin = pathname.startsWith("/login/");
   const isAdminImport = pathname.startsWith("/admin/importacoes");
   const isAdminArena = pathname.startsWith("/admin/farma-arena");
+  const isAdminStore = [
+    "/admin/brindes",
+    "/admin/estoque",
+    "/admin/elegibilidade",
+    "/admin/sorteios",
+    "/admin/retiradas",
+  ].some((path) => pathname.startsWith(path));
   const isAdminDashboard = pathname === "/admin" || pathname === "/admin/";
   const scope = pathname.startsWith("/admin")
     ? "admin"
@@ -67,6 +74,8 @@ export function Provider({ children }: { children: ReactNode }) {
             ? `/api/state?scope=admin&mode=import${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
             : isAdminArena
               ? `/api/state?scope=admin&mode=arena${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
+              : isAdminStore
+                ? `/api/state?scope=admin&mode=store${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
               : isAdminDashboard
                 ? `/api/state?scope=admin&mode=dashboard${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`
                 : `/api/state?scope=${scope}${editionId ? "&editionId=" + encodeURIComponent(editionId) : ""}`;
@@ -98,6 +107,7 @@ export function Provider({ children }: { children: ReactNode }) {
     isLogin,
     isAdminImport,
     isAdminArena,
+    isAdminStore,
     isAdminDashboard,
   ]);
 

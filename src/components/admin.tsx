@@ -31,16 +31,17 @@ import {
   Package,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Settings2,
   ShieldCheck,
-  Sparkles,
   Ticket,
   Trash2,
   Upload,
   UserRound,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import { useJornadas } from "@/components/provider";
 import LoadingScreen from "@/components/loading-screen";
@@ -114,7 +115,9 @@ const labels: Record<string, string> = {
   RELEASED: "Disponível",
   INVALIDATED: "Invalidado",
   AWAITING_CONFIRMATION: "Aguardando confirmação",
+  AWAITING_DRAW: "Aguardando distribuição",
   RESERVED: "Reservado",
+  CONFIRMED: "Confirmado",
   DELIVERED: "Entregue",
   EXPIRED: "Expirado",
   REVERSED: "Revertido",
@@ -1952,7 +1955,9 @@ function EntityManager({
           empty={`Nenhum registro encontrado. Cadastre ${config.singular} para começar.`}
         />
       </section>
-      {section === "brindes" && <EntityManager section="regras" compact />}
+      {section === "brindes" && !compact && (
+        <EntityManager section="regras" compact />
+      )}
       {editing && (
         <EntityForm
           config={config}
@@ -2051,11 +2056,7 @@ const menu = [
   ["presencas", "Presenças", CheckCheck],
   ["passaportes", "Passaportes", BookOpen],
   ["farma-arena", "Farma Arena", Flame],
-  ["brindes", "Loja e brindes", Gift],
-  ["estoque", "Estoque", Package],
-  ["elegibilidade", "Elegibilidade", Sparkles],
-  ["sorteios", "Sorteios", Award],
-  ["retiradas", "Retiradas", CheckCircle2],
+  ["brindes", "Loja e retiradas", Gift],
   ["certificados", "Certificados", Award],
   ["notificacoes", "Notificações", Bell],
   ["relatorios", "Relatórios", FileSpreadsheet],
@@ -2721,242 +2722,316 @@ function ImportPage() {
     </>
   );
 }
-function Stock() {
-  const { data } = useJornadas();
-  return (
-    <>
-      <PageTitle
-        title="Estoque"
-        description="Acompanhe cada unidade disponível, reservada e entregue."
-      />
-      <Panel title="Posição atual">
-        <Table
-          data={data}
-          rows={all(data, "rewards")}
-          columns={[
-            { key: "name", label: "Item" },
-            {
-              key: "stockTotal",
-              label: "Total",
-              render: (r) => r.stockTotal ?? r.total,
-            },
-            {
-              key: "stockAvailable",
-              label: "Disponível",
-              render: (r) => r.stockAvailable ?? r.available,
-            },
-            {
-              key: "stockReserved",
-              label: "Reservado",
-              render: (r) => r.stockReserved ?? r.reserved,
-            },
-            {
-              key: "stockDelivered",
-              label: "Entregue",
-              render: (r) => r.stockDelivered ?? r.delivered,
-            },
-          ]}
-        />
-      </Panel>
-    </>
-  );
-}
-function Draws() {
-  const { data, action } = useJornadas();
-  return (
-    <>
-      <PageTitle
-        title="Sorteios"
-        description="Rodadas imparciais, com lista congelada e histórico preservado."
-      />
-      <div className="a-card-grid">
-        {all(data, "rewards")
-          .filter((reward) => rewardRedemptionMode(reward) !== "XP_STORE")
-          .map((r) => {
-            const eligible = all(data, "eligibilities").filter(
-                (e) => e.rewardId === r.id && e.eligible,
-              ).length,
-              stock = r.stockAvailable ?? r.available ?? r.total;
-            return (
-              <article className="a-panel" key={r.id}>
-                <Gift />
-                <h2>{r.name}</h2>
-                <p>
-                  {eligible} elegíveis · {stock} unidades disponíveis
-                </p>
-                <Badge
-                  value={eligible > stock ? "DRAW_REQUIRED" : "GUARANTEED"}
-                />
-                <RunButton
-                  disabled={!eligible || !stock}
-                  run={() => action("draw.execute", { rewardId: r.id })}
-                >
-                  Executar distribuição
-                </RunButton>
-              </article>
-            );
-          })}
-      </div>
-      <Panel title="Histórico de rodadas">
-        <Table
-          data={data}
-          rows={all(data, "draws")}
-          columns={[
-            {
-              key: "rewardId",
-              label: "Brinde",
-              render: (r) => find(data, "rewards", r.rewardId).name,
-            },
-            { key: "round", label: "Rodada" },
-            { key: "eligibleCount", label: "Elegíveis" },
-            { key: "stockSnapshot", label: "Unidades" },
-            {
-              key: "createdAt",
-              label: "Executado em",
-              render: (r) => dt(r.createdAt, data.edition.timezone),
-            },
-            {
-              key: "status",
-              label: "Status",
-              render: (r) => <Badge value={r.status} />,
-            },
-            {
-              key: "actions",
-              label: "Ação",
-              render: (r) =>
-                r.status === "EXECUTED" ? (
-                  <ReasonButton
-                    title="Cancelar sorteio"
-                    run={(reason) =>
-                      action("draw.cancel", { drawId: r.id, reason })
-                    }
-                  >
-                    Cancelar
-                  </ReasonButton>
-                ) : null,
-            },
-          ]}
-        />
-      </Panel>
-    </>
-  );
-}
-function Deliveries() {
+function StoreManagement() {
   const { data, action } = useJornadas();
   const [ra, setRa] = useState("");
-  const p = all(data, "participants").find((x) => x.ra === ra);
-  const reserv = all(data, "reservations").filter(
-    (x) =>
-      x.participantId === p?.id && ["RESERVED", "CONFIRMED"].includes(x.status),
-  );
   const [selected, setSelected] = useState<string[]>([]);
+  const rewards = all(data, "rewards");
+  const reservations = all(data, "reservations");
+  const deliveries = all(data, "deliveries");
+  const transactions = all(data, "xpTransactions");
+  const participant = all(data, "participants").find(
+    (row) => String(row.ra) === ra.trim(),
+  );
+  const activePickup = reservations.filter(
+    (row) =>
+      row.participantId === participant?.id &&
+      ["RESERVED", "CONFIRMED"].includes(row.status),
+  );
+  const xpRewards = rewards.filter(
+    (reward) => rewardRedemptionMode(reward) === "XP_STORE",
+  );
+  const rankingRewards = rewards.filter(
+    (reward) => reward.exclusiveGroup === "RANKING_POSITION",
+  );
+  const pendingPurchases = reservations.filter(
+    (reservation) =>
+      reservation.status === "AWAITING_DRAW" &&
+      xpRewards.some((reward) => reward.id === reservation.rewardId),
+  );
+  const readyForPickup = reservations.filter((reservation) =>
+    ["RESERVED", "CONFIRMED"].includes(reservation.status),
+  );
+  const delivered = deliveries.filter((delivery) => delivery.status === "DELIVERED");
+  const netSpent = transactions.reduce(
+    (total, transaction) => total + Number(transaction.balanceDelta || 0),
+    0,
+  );
+  const refunded = transactions
+    .filter((transaction) => Number(transaction.balanceDelta || 0) > 0)
+    .reduce(
+      (total, transaction) => total + Number(transaction.balanceDelta || 0),
+      0,
+    );
+  const drawItems = xpRewards.map((reward) => {
+    const pending = pendingPurchases.filter(
+      (reservation) => reservation.rewardId === reward.id,
+    ).length;
+    const available = Number(reward.stockAvailable ?? 0);
+    return { reward, pending, available, drawRequired: pending > available };
+  });
+  const requiresDraw = drawItems.some((item) => item.drawRequired);
+  const ledgerByReservation = new Map<string, number>();
+  for (const transaction of transactions) {
+    ledgerByReservation.set(
+      transaction.sourceId,
+      (ledgerByReservation.get(transaction.sourceId) || 0) +
+        Number(transaction.balanceDelta || 0),
+    );
+  }
+
   return (
     <>
       <PageTitle
-        title="Retiradas"
-        description="Entregue vários brindes de uma vez, sempre com atualização do estoque."
-      />
-      <Panel title="Localizar participante">
-        <div className="a-toolbar">
-          <input
-            aria-label="RA para retirada"
-            value={ra}
-            onChange={(e) => setRa(e.target.value)}
-            placeholder="Digite o RA"
-          />
-          {p && <strong>{name(p)}</strong>}
+        title="Loja, prêmios e retiradas"
+        description="Uma central para acompanhar o estoque, o XP gasto, os prêmios do ranking, os sorteios e cada retirada."
+      >
+        <a className="secondary button" href="#catalogo">
+          <Pencil size={16} />
+          Editar catálogo
+        </a>
+      </PageTitle>
+
+      <div className="a-store-metrics">
+        {[
+          ["XP comprometido", Math.max(0, -netSpent), Zap],
+          ["Pedidos em análise", pendingPurchases.length, Clock3],
+          ["Prontos para retirada", readyForPickup.length, Package],
+          ["Itens entregues", delivered.length, CheckCircle2],
+          ["XP devolvido", refunded, RotateCcw],
+        ].map(([label, value, Icon]: any) => (
+          <article className="a-store-metric" key={label}>
+            <span><Icon size={19} /></span>
+            <small>{label}</small>
+            <strong>{value}{String(label).includes("XP") ? " XP" : ""}</strong>
+          </article>
+        ))}
+      </div>
+
+      <section className="a-store-rulebook">
+        <div>
+          <span>REGRA ATUAL</span>
+          <h2>Um prêmio de posição e uma loja separada por saldo</h2>
         </div>
-        {p && (
-          <div className="a-people-list">
-            {reserv.map((r) => {
-              const reward = find(data, "rewards", r.rewardId);
-              const locked =
-                reward.redemptionStartsAt &&
-                new Date(data.serverNow) < new Date(reward.redemptionStartsAt);
+        <ol>
+          <li><b>1º lugar</b><span>Ecobag + Scrubs, sem gasto de XP.</span></li>
+          <li><b>2º ao 21º</b><span>Copo e direito a uma compra na loja.</span></li>
+          <li><b>22º ao 45º</b><span>Ecobag e direito a uma compra na loja.</span></li>
+          <li><b>46º em diante</b><span>Até duas compras na loja com XP.</span></li>
+        </ol>
+        <p>Comprar reduz apenas o saldo disponível. O XP acumulado e a posição no ranking permanecem iguais.</p>
+      </section>
+
+      <div className="a-store-grid">
+        <Panel
+          title="Distribuição por item"
+          sub="Mostra o que é prêmio, o que foi comprado e quando o sorteio é necessário."
+        >
+          <div className="a-store-items">
+            {rewards.map((reward) => {
+              const isRanking = reward.exclusiveGroup === "RANKING_POSITION";
+              const pending = pendingPurchases.filter(
+                (reservation) => reservation.rewardId === reward.id,
+              ).length;
+              const reserved = reservations.filter(
+                (reservation) =>
+                  reservation.rewardId === reward.id &&
+                  ["RESERVED", "CONFIRMED"].includes(reservation.status),
+              ).length;
+              const itemDelivered = delivered.filter(
+                (delivery) => delivery.rewardId === reward.id,
+              ).length;
+              const needsDraw = pending > Number(reward.stockAvailable ?? 0);
               return (
-                <label key={r.id}>
-                  <input
-                    type="checkbox"
-                    disabled={locked}
-                    checked={selected.includes(r.id)}
-                    onChange={(e) =>
-                      setSelected(
-                        e.target.checked
-                          ? [...selected, r.id]
-                          : selected.filter((x) => x !== r.id),
-                      )
-                    }
-                  />
-                  <span>
+                <article className="a-store-item" key={reward.id}>
+                  <div className="a-store-item-image">
+                    {reward.imageUrl ? (
+                      <img src={reward.imageUrl} alt="" />
+                    ) : (
+                      <Gift size={23} />
+                    )}
+                  </div>
+                  <div className="a-store-item-copy">
+                    <span>{isRanking ? "PRÊMIO DO RANKING" : rewardRedemptionMode(reward) === "XP_STORE" ? "COMPRA COM XP" : "RESGATE POR CARIMBO"}</span>
                     <strong>{reward.name}</strong>
-                    <small>
-                      {locked
-                        ? `Retirada a partir de ${dt(reward.redemptionStartsAt, data.edition.timezone)}`
-                        : labels[r.status] || r.status}
-                    </small>
-                  </span>
-                </label>
+                    <small>{reward.description || "Sem descrição pública."}</small>
+                  </div>
+                  <dl>
+                    <div><dt>Estoque</dt><dd>{reward.stockTotal ?? reward.total}</dd></div>
+                    <div><dt>Pendentes</dt><dd>{pending}</dd></div>
+                    <div><dt>Reservados</dt><dd>{reserved}</dd></div>
+                    <div><dt>Entregues</dt><dd>{itemDelivered}</dd></div>
+                  </dl>
+                  <div className="a-store-item-status">
+                    {isRanking ? (
+                      <Badge value="GUARANTEED" />
+                    ) : needsDraw ? (
+                      <span className="a-store-alert">Sorteio necessário</span>
+                    ) : pending ? (
+                      <span className="a-store-ok">Todos podem receber</span>
+                    ) : (
+                      <span className="a-store-neutral">Sem pedidos pendentes</span>
+                    )}
+                    {rewardRedemptionMode(reward) === "XP_STORE" && (
+                      <b>{reward.xpCost} XP</b>
+                    )}
+                  </div>
+                </article>
               );
             })}
           </div>
-        )}
-        <RunButton
-          disabled={!selected.length}
-          run={async () => {
-            await action("delivery.create", { reservationIds: selected });
-            setSelected([]);
-          }}
-        >
-          Confirmar entrega de {selected.length || ""}{" "}
-          {selected.length === 1 ? "item" : "itens"}
-        </RunButton>
-      </Panel>
-      <Panel title="Histórico">
+        </Panel>
+
+        <div className="a-store-side">
+          <Panel title="Decisão de sorteio" sub="O sistema compara pedidos pendentes e estoque disponível.">
+            <div className={`a-draw-decision ${requiresDraw ? "required" : "clear"}`}>
+              {requiresDraw ? <Award /> : <CheckCircle2 />}
+              <div>
+                <strong>{requiresDraw ? "Há item com demanda acima do estoque" : pendingPurchases.length ? "Todos os pedidos cabem no estoque" : "Não há pedidos aguardando"}</strong>
+                <p>{requiresDraw ? "Finalize a distribuição para sortear do item mais raro ao mais comum e realocar quem não for contemplado." : pendingPurchases.length ? "Finalize a distribuição para confirmar os pedidos sem sorteio." : "A função ficará disponível quando houver novas compras."}</p>
+              </div>
+            </div>
+            <RunButton
+              disabled={!pendingPurchases.length}
+              run={() => action("reward.drawXpSequence")}
+            >
+              <Award size={16} />
+              Finalizar distribuição
+            </RunButton>
+          </Panel>
+
+          <Panel title="Prêmios do ranking" sub="Reservas automáticas, sem débito de XP.">
+            <div className="a-ranking-prize-summary">
+              {rankingRewards.map((reward) => {
+                const allocated = reservations.filter(
+                  (reservation) =>
+                    reservation.rewardId === reward.id &&
+                    !["EXPIRED", "CANCELLED"].includes(reservation.status),
+                ).length;
+                return <div key={reward.id}><span>{reward.name}</span><b>{allocated} alocados</b></div>;
+              })}
+            </div>
+          </Panel>
+        </div>
+      </div>
+
+      <Panel
+        title="Compras e XP"
+        sub="O valor líquido confirma quem gastou XP e quem já recebeu reembolso."
+      >
         <Table
           data={data}
-          rows={all(data, "deliveries")}
+          rows={reservations
+            .filter((reservation) =>
+              xpRewards.some((reward) => reward.id === reservation.rewardId),
+            )
+            .slice(0, 250)}
+          empty="Ainda não existem compras com XP."
           columns={[
-            {
-              key: "participantId",
-              label: "Participante",
-              render: (r) => person(data, r.participantId),
-            },
-            {
-              key: "rewardId",
-              label: "Brinde",
-              render: (r) => find(data, "rewards", r.rewardId).name,
-            },
-            {
-              key: "deliveredAt",
-              label: "Entrega",
-              render: (r) => dt(r.deliveredAt, data.edition.timezone),
-            },
-            {
-              key: "status",
-              label: "Status",
-              render: (r) => <Badge value={r.status} />,
-            },
-            {
-              key: "actions",
-              label: "Ação",
-              render: (r) =>
-                r.status === "DELIVERED" ? (
-                  <ReasonButton
-                    title="Reverter entrega"
-                    run={(reason) =>
-                      action("delivery.reverse", { deliveryId: r.id, reason })
-                    }
-                  >
-                    Reverter
-                  </ReasonButton>
-                ) : null,
-            },
+            { key: "participantId", label: "Participante", render: (row) => <span className="a-cell-title"><strong>{person(data, row.participantId)}</strong><small>RA {find(data, "participants", row.participantId).ra || "—"}</small></span> },
+            { key: "rewardId", label: "Item", render: (row) => find(data, "rewards", row.rewardId).name },
+            { key: "createdAt", label: "Pedido", render: (row) => dt(row.createdAt, data.edition.timezone) },
+            { key: "xp", label: "XP líquido", render: (row) => `${Math.max(0, -(ledgerByReservation.get(row.id) || 0))} XP` },
+            { key: "status", label: "Situação", render: (row) => <Badge value={row.status} /> },
+            { key: "actions", label: "Ação", render: (row) => ["AWAITING_DRAW", "RESERVED"].includes(row.status) ? (
+              <ReasonButton title="Cancelar compra e devolver XP" run={() => action("reward.purchase.cancel", { reservationId: row.id })}>Cancelar e devolver XP</ReasonButton>
+            ) : null },
           ]}
         />
       </Panel>
+
+      <div style={{ height: 14 }} />
+      <Panel
+        title="Histórico de distribuições"
+        sub="Cada rodada preserva a demanda, o estoque disponível e se houve sorteio."
+      >
+        <Table
+          data={data}
+          rows={all(data, "draws").slice(0, 100)}
+          empty="Nenhuma distribuição foi finalizada."
+          columns={[
+            { key: "rewardId", label: "Item", render: (row) => find(data, "rewards", row.rewardId).name },
+            { key: "round", label: "Rodada" },
+            { key: "mode", label: "Decisão", render: (row) => row.mode === "DRAW" ? "Sorteio" : "Todos contemplados" },
+            { key: "eligibleCount", label: "Pedidos" },
+            { key: "stockSnapshot", label: "Estoque da rodada" },
+            { key: "createdAt", label: "Executado em", render: (row) => dt(row.createdAt, data.edition.timezone) },
+            { key: "status", label: "Situação", render: (row) => <Badge value={row.status} /> },
+          ]}
+        />
+      </Panel>
+
+      <div className="a-store-grid a-store-pickup-grid">
+        <Panel title="Registrar retirada" sub="Localize pelo RA e entregue todos os itens selecionados.">
+          <div className="a-toolbar">
+            <input
+              aria-label="RA para retirada"
+              value={ra}
+              onChange={(event) => {
+                setRa(event.target.value.replace(/\D/g, ""));
+                setSelected([]);
+              }}
+              placeholder="Digite o RA"
+              inputMode="numeric"
+            />
+            {participant && <strong>{name(participant)}</strong>}
+          </div>
+          {ra && !participant && <p className="a-help">Nenhum participante encontrado com esse RA.</p>}
+          {participant && !activePickup.length && <Empty>Este participante não tem itens liberados para retirada.</Empty>}
+          {participant && activePickup.length > 0 && (
+            <div className="a-people-list">
+              {activePickup.map((reservation) => {
+                const reward = find(data, "rewards", reservation.rewardId);
+                const locked = reward.redemptionStartsAt && new Date(data.serverNow) < new Date(reward.redemptionStartsAt);
+                return (
+                  <label key={reservation.id}>
+                    <input
+                      type="checkbox"
+                      disabled={locked}
+                      checked={selected.includes(reservation.id)}
+                      onChange={(event) => setSelected(event.target.checked ? [...selected, reservation.id] : selected.filter((id) => id !== reservation.id))}
+                    />
+                    <span><strong>{reward.name}</strong><small>{locked ? `Retirada a partir de ${dt(reward.redemptionStartsAt, data.edition.timezone)}` : labels[reservation.status] || reservation.status}</small></span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          <RunButton
+            disabled={!selected.length}
+            run={async () => {
+              await action("delivery.create", { reservationIds: selected });
+              setSelected([]);
+            }}
+          >
+            <CheckCircle2 size={16} />
+            Confirmar retirada {selected.length ? `(${selected.length})` : ""}
+          </RunButton>
+        </Panel>
+
+        <Panel title="Últimas retiradas" sub="Histórico reversível para corrigir entregas indevidas.">
+          <div className="a-delivery-history">
+            {deliveries.slice(0, 12).map((delivery) => (
+              <article key={delivery.id}>
+                <div><strong>{person(data, delivery.participantId)}</strong><span>{find(data, "rewards", delivery.rewardId).name} · RA {find(data, "participants", delivery.participantId).ra || "—"}</span></div>
+                <Badge value={delivery.status} />
+                {delivery.status === "DELIVERED" && (
+                  <ReasonButton title="Reverter retirada" run={(reason) => action("delivery.reverse", { deliveryId: delivery.id, reason })}>Reverter</ReasonButton>
+                )}
+              </article>
+            ))}
+            {!deliveries.length && <Empty>Nenhuma retirada registrada.</Empty>}
+          </div>
+        </Panel>
+      </div>
+
+      <div id="catalogo" className="a-store-catalog">
+        <EntityManager section="brindes" compact />
+      </div>
     </>
   );
 }
+
 function Certificates() {
   const { data, action } = useJornadas();
   const candidates = all(data, "attendances").filter((attendance) => {
@@ -3367,6 +3442,12 @@ export default function AdminApp({
   else if (id && section === "atividades")
     content = <ActivityDetailPage id={id} />;
   else if (!section) content = <Dashboard />;
+  else if (
+    ["brindes", "estoque", "elegibilidade", "sorteios", "retiradas"].includes(
+      section,
+    )
+  )
+    content = <StoreManagement />;
   else if (configs[section]) content = <EntityManager section={section} />;
   else if (section === "importacoes") content = <ImportPage />;
   else if (section === "operacao") content = <Operation />;
@@ -3377,14 +3458,10 @@ export default function AdminApp({
       "lista-espera",
       "presencas",
       "passaportes",
-      "elegibilidade",
       "auditoria",
     ].includes(section)
   )
     content = <ListPage section={section} />;
-  else if (section === "estoque") content = <Stock />;
-  else if (section === "sorteios") content = <Draws />;
-  else if (section === "retiradas") content = <Deliveries />;
   else if (section === "certificados") content = <Certificates />;
   else if (section === "notificacoes") content = <Notifications />;
   else if (section === "relatorios") content = <Reports />;

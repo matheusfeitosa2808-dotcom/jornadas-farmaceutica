@@ -1363,9 +1363,9 @@ function Rewards({ id }: { id?: string }) {
   return (
     <>
       <PageHeading
-        eyebrow="CARIMBOS E XP QUE VIRAM LEMBRANÇAS"
+        eyebrow="PRÊMIOS DO RANKING E RESGATES COM XP"
         title="Loja da Jornada"
-        description="Acompanhe seus carimbos, seu saldo e os brindes preparados para esta edição."
+        description="Veja seus prêmios garantidos, acompanhe o saldo disponível e escolha os itens que podem ser comprados com XP."
       />
       <section className="unified-store-summary" aria-label="Seus saldos">
         <div>
@@ -1393,10 +1393,11 @@ function Rewards({ id }: { id?: string }) {
           </span>
         </div>
         <p>
-          Carimbos de presença rendem +{STAMP_XP_REWARD} XP. O carimbo especial
-          da Farma Arena identifica sua primeira conquista sem somar XP extra.
-          Você pode solicitar até dois brindes. O resgate reduz somente seu
-          saldo disponível e preserva o XP acumulado e sua posição no ranking.
+          Carimbos de presença rendem +{STAMP_XP_REWARD} XP. Prêmios de posição
+          são reservados automaticamente e não gastam XP. Quem recebe Copo ou
+          Ecobag pode comprar mais um item; os demais participantes podem comprar
+          até dois. A compra reduz apenas o saldo disponível e preserva o XP
+          acumulado e sua posição no ranking.
         </p>
       </section>
       {!id && (

@@ -99,7 +99,9 @@ export async function buildStoreReportPdf(data: StoreReportData) {
   };
 
   const heading = (title: string, subtitle?: string) => {
-    ensure(subtitle ? 48 : 33);
+    // Reserve enough room for the heading and the first table header/row so
+    // section titles never become orphaned at the bottom of a page.
+    ensure(subtitle ? 88 : 72);
     page.drawText(clean(title), { x: margin, y, size: 15, font: bold, color: palette.ink });
     y -= 17;
     if (subtitle) {
@@ -173,6 +175,16 @@ export async function buildStoreReportPdf(data: StoreReportData) {
     ledger.set(transaction.sourceId, (ledger.get(transaction.sourceId) || 0) + Number(transaction.balanceDelta || 0));
   });
   const xpRewardIds = new Set(data.rewards.filter((reward) => reward.redemptionMode === "XP_STORE").map((reward) => reward.id));
+  const activePurchaseStatuses = new Set([
+    "AWAITING_DRAW",
+    "AWAITING_CONFIRMATION",
+    "RESERVED",
+    "CONFIRMED",
+    "DELIVERED",
+  ]);
+  const activePurchases = data.reservations.filter(
+    (reservation) => xpRewardIds.has(reservation.rewardId) && activePurchaseStatuses.has(reservation.status),
+  );
   const activeDeliveries = data.deliveries.filter((delivery) => delivery.status === "DELIVERED");
   const pending = data.reservations.filter((reservation) => reservation.status === "AWAITING_DRAW" && xpRewardIds.has(reservation.rewardId));
   const ready = data.reservations.filter((reservation) => ["RESERVED", "CONFIRMED"].includes(reservation.status));
@@ -190,10 +202,10 @@ export async function buildStoreReportPdf(data: StoreReportData) {
   const metrics = [
     ["XP comprometido", `${Math.max(0, -netSpent)} XP`],
     ["XP devolvido", `${refunded} XP`],
+    ["Compras ativas", String(activePurchases.length)],
     ["Pedidos pendentes", String(pending.length)],
     ["Prontos para retirada", String(ready.length)],
     ["Itens entregues", String(activeDeliveries.length)],
-    ["Itens no catálogo", String(data.rewards.length)],
   ];
   metrics.forEach(([label, value], index) => {
     const column = index % 3;
@@ -223,29 +235,52 @@ export async function buildStoreReportPdf(data: StoreReportData) {
   });
   y -= 8;
 
-  heading("Estoque e distribuição", "A coluna 'Aguardando' indica pedidos que ainda precisam ser confirmados ou sorteados.");
+  heading("Estoque e distribuição", "Compraram reúne os pedidos ativos. Só há sorteio quando Aguardando supera o Estoque livre.");
   table(
     [
-      { label: "ITEM", width: 130 },
-      { label: "TIPO", width: 86 },
-      { label: "TOTAL", width: 50, align: "right" },
-      { label: "AGUARD.", width: 56, align: "right" },
-      { label: "RESERV.", width: 56, align: "right" },
-      { label: "ENTREG.", width: 56, align: "right" },
-      { label: "DISP.", width: 54, align: "right" },
-      { label: "XP", width: 31, align: "right" },
+      { label: "ITEM", width: 103 },
+      { label: "TIPO", width: 61 },
+      { label: "TOTAL", width: 42, align: "right" },
+      { label: "COMPR.", width: 50, align: "right" },
+      { label: "AGUARD.", width: 53, align: "right" },
+      { label: "RESERV.", width: 53, align: "right" },
+      { label: "ENTREG.", width: 53, align: "right" },
+      { label: "LIVRE", width: 50, align: "right" },
+      { label: "XP", width: 34, align: "right" },
     ],
     data.rewards.map((reward) => {
-      const awaiting = data.reservations.filter((reservation) => reservation.rewardId === reward.id && reservation.status === "AWAITING_DRAW").length;
-      const reserved = data.reservations.filter((reservation) => reservation.rewardId === reward.id && ["RESERVED", "CONFIRMED"].includes(reservation.status)).length;
-      const delivered = activeDeliveries.filter((delivery) => delivery.rewardId === reward.id).length;
+      const awaiting = data.reservations.filter((reservation) => reservation.rewardId === reward.id && reservation.status === "AWAITING_DRAW").reduce((sum, reservation) => sum + Number(reservation.quantity || 1), 0);
+      const reserved = data.reservations.filter((reservation) => reservation.rewardId === reward.id && ["RESERVED", "CONFIRMED"].includes(reservation.status)).reduce((sum, reservation) => sum + Number(reservation.quantity || 1), 0);
+      const delivered = activeDeliveries.filter((delivery) => delivery.rewardId === reward.id).reduce((sum, delivery) => sum + Number(delivery.quantity || 1), 0);
+      const bought = activePurchases.filter((reservation) => reservation.rewardId === reward.id).reduce((sum, reservation) => sum + Number(reservation.quantity || 1), 0);
       const type = reward.exclusiveGroup === "RANKING_POSITION" ? "Ranking" : reward.redemptionMode === "XP_STORE" ? "Loja XP" : "Carimbo";
-      return [reward.name, type, reward.total, awaiting, reserved, delivered, Math.max(0, reward.total - reserved - delivered), reward.redemptionMode === "XP_STORE" ? reward.xpCost : "-"] .map(String);
+      return [reward.name, type, reward.total, bought, awaiting, reserved, delivered, Math.max(0, reward.total - reserved - delivered), reward.redemptionMode === "XP_STORE" ? reward.xpCost : "-"] .map(String);
     }),
     "Nenhum item cadastrado.",
   );
 
-  heading("Compras com XP", "O XP líquido considera débitos, reembolsos e realocações vinculados a cada pedido.");
+  heading("Decisão de sorteio", "A conta usa somente pedidos aguardando e estoque livre. Reservas e entregas já foram descontadas do estoque.");
+  table(
+    [
+      { label: "ITEM", width: 180 },
+      { label: "AGUARDANDO", width: 88, align: "right" },
+      { label: "ESTOQUE LIVRE", width: 96, align: "right" },
+      { label: "DECISÃO", width: 155 },
+    ],
+    data.rewards
+      .filter((reward) => reward.redemptionMode === "XP_STORE")
+      .map((reward) => {
+        const awaiting = data.reservations.filter((reservation) => reservation.rewardId === reward.id && reservation.status === "AWAITING_DRAW").reduce((sum, reservation) => sum + Number(reservation.quantity || 1), 0);
+        const reserved = data.reservations.filter((reservation) => reservation.rewardId === reward.id && ["RESERVED", "CONFIRMED"].includes(reservation.status)).reduce((sum, reservation) => sum + Number(reservation.quantity || 1), 0);
+        const delivered = activeDeliveries.filter((delivery) => delivery.rewardId === reward.id).reduce((sum, delivery) => sum + Number(delivery.quantity || 1), 0);
+        const available = Math.max(0, Number(reward.total || 0) - reserved - delivered);
+        return [reward.name, String(awaiting), String(available), awaiting > available ? "Sorteio necessário" : awaiting ? "Todos cabem" : "Sem pedidos"];
+      }),
+    "Nenhum item da loja com XP cadastrado.",
+  );
+
+  addPage();
+  heading("Quem comprou", "A lista identifica participante, RA, item e situação. Cancelamentos permanecem no histórico para auditoria.");
   table(
     [
       { label: "PARTICIPANTE", width: 167 },

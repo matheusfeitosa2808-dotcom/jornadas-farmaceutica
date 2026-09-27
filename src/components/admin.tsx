@@ -35,6 +35,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  ShoppingBag,
   Ticket,
   Trash2,
   Upload,
@@ -2726,6 +2727,8 @@ function StoreManagement() {
   const { data, action } = useJornadas();
   const [ra, setRa] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [purchaseRewardId, setPurchaseRewardId] = useState("ALL");
+  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const rewards = all(data, "rewards");
   const reservations = all(data, "reservations");
   const deliveries = all(data, "deliveries");
@@ -2749,6 +2752,19 @@ function StoreManagement() {
       reservation.status === "AWAITING_DRAW" &&
       xpRewards.some((reward) => reward.id === reservation.rewardId),
   );
+  const activePurchaseStatuses = [
+    "AWAITING_DRAW",
+    "AWAITING_CONFIRMATION",
+    "RESERVED",
+    "CONFIRMED",
+    "DELIVERED",
+  ];
+  const xpPurchases = reservations.filter((reservation) =>
+    xpRewards.some((reward) => reward.id === reservation.rewardId),
+  );
+  const activePurchases = xpPurchases.filter((reservation) =>
+    activePurchaseStatuses.includes(reservation.status),
+  );
   const readyForPickup = reservations.filter((reservation) =>
     ["RESERVED", "CONFIRMED"].includes(reservation.status),
   );
@@ -2771,6 +2787,11 @@ function StoreManagement() {
     return { reward, pending, available, drawRequired: pending > available };
   });
   const requiresDraw = drawItems.some((item) => item.drawRequired);
+  const visiblePurchases = xpPurchases.filter(
+    (reservation) =>
+      (purchaseRewardId === "ALL" || reservation.rewardId === purchaseRewardId) &&
+      (showPurchaseHistory || activePurchaseStatuses.includes(reservation.status)),
+  );
   const ledgerByReservation = new Map<string, number>();
   for (const transaction of transactions) {
     ledgerByReservation.set(
@@ -2802,6 +2823,7 @@ function StoreManagement() {
       <div className="a-store-metrics">
         {[
           ["XP comprometido", Math.max(0, -netSpent), Zap],
+          ["Compras ativas", activePurchases.length, ShoppingBag],
           ["Pedidos em análise", pendingPurchases.length, Clock3],
           ["Prontos para retirada", readyForPickup.length, Package],
           ["Itens entregues", delivered.length, CheckCircle2],
@@ -2848,6 +2870,9 @@ function StoreManagement() {
               const itemDelivered = delivered.filter(
                 (delivery) => delivery.rewardId === reward.id,
               ).length;
+              const bought = activePurchases.filter(
+                (reservation) => reservation.rewardId === reward.id,
+              ).length;
               const needsDraw = pending > Number(reward.stockAvailable ?? 0);
               return (
                 <article className="a-store-item" key={reward.id}>
@@ -2864,10 +2889,12 @@ function StoreManagement() {
                     <small>{reward.description || "Sem descrição pública."}</small>
                   </div>
                   <dl>
-                    <div><dt>Estoque</dt><dd>{reward.stockTotal ?? reward.total}</dd></div>
-                    <div><dt>Pendentes</dt><dd>{pending}</dd></div>
+                    <div><dt>Estoque total</dt><dd>{reward.stockTotal ?? reward.total}</dd></div>
+                    <div><dt>Compraram</dt><dd>{bought}</dd></div>
+                    <div><dt>Aguardam</dt><dd>{pending}</dd></div>
                     <div><dt>Reservados</dt><dd>{reserved}</dd></div>
                     <div><dt>Entregues</dt><dd>{itemDelivered}</dd></div>
+                    <div><dt>Estoque livre</dt><dd>{reward.stockAvailable ?? 0}</dd></div>
                   </dl>
                   <div className="a-store-item-status">
                     {isRanking ? (
@@ -2880,7 +2907,21 @@ function StoreManagement() {
                       <span className="a-store-neutral">Sem pedidos pendentes</span>
                     )}
                     {rewardRedemptionMode(reward) === "XP_STORE" && (
-                      <b>{reward.xpCost} XP</b>
+                      <>
+                        <b>{reward.xpCost} XP</b>
+                        {bought > 0 && (
+                          <button
+                            className="a-store-see-buyers"
+                            type="button"
+                            onClick={() => {
+                              setPurchaseRewardId(reward.id);
+                              document.getElementById("compras-loja")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                          >
+                            Ver quem comprou
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </article>
@@ -2898,6 +2939,17 @@ function StoreManagement() {
                 <p>{requiresDraw ? "Finalize a distribuição para sortear do item mais raro ao mais comum e realocar quem não for contemplado." : pendingPurchases.length ? "Finalize a distribuição para confirmar os pedidos sem sorteio." : "A função ficará disponível quando houver novas compras."}</p>
               </div>
             </div>
+            <div className="a-draw-breakdown">
+              {drawItems.map(({ reward, pending, available, drawRequired }) => (
+                <div key={reward.id}>
+                  <span><strong>{reward.name}</strong><small>{pending} aguardando × {available} em estoque livre</small></span>
+                  <b className={drawRequired ? "required" : pending ? "clear" : "neutral"}>
+                    {drawRequired ? "Sorteio necessário" : pending ? "Todos cabem" : "Sem pedidos"}
+                  </b>
+                </div>
+              ))}
+            </div>
+            <p className="a-help a-draw-help">Só há sorteio quando os pedidos aguardando superam o estoque livre. Itens já reservados ou entregues já foram descontados desse estoque.</p>
             <RunButton
               disabled={!pendingPurchases.length}
               run={() => action("reward.drawXpSequence")}
@@ -2922,18 +2974,45 @@ function StoreManagement() {
         </div>
       </div>
 
+      <div id="compras-loja" className="a-store-purchases">
       <Panel
-        title="Compras e XP"
-        sub="O valor líquido confirma quem gastou XP e quem já recebeu reembolso."
+        title="Quem comprou"
+        sub={`${activePurchases.length} compras ativas. Filtre por item para ver os participantes, os RAs e a situação de cada pedido.`}
       >
+        <div className="a-store-filterbar" aria-label="Filtrar compras por item">
+          <button
+            type="button"
+            className={purchaseRewardId === "ALL" ? "active" : ""}
+            onClick={() => setPurchaseRewardId("ALL")}
+          >
+            Todas <b>{activePurchases.length}</b>
+          </button>
+          {xpRewards.map((reward) => {
+            const count = activePurchases.filter((reservation) => reservation.rewardId === reward.id).length;
+            return (
+              <button
+                type="button"
+                key={reward.id}
+                className={purchaseRewardId === reward.id ? "active" : ""}
+                onClick={() => setPurchaseRewardId(reward.id)}
+              >
+                {reward.name} <b>{count}</b>
+              </button>
+            );
+          })}
+          <label>
+            <input
+              type="checkbox"
+              checked={showPurchaseHistory}
+              onChange={(event) => setShowPurchaseHistory(event.target.checked)}
+            />
+            Incluir canceladas e reembolsadas
+          </label>
+        </div>
         <Table
           data={data}
-          rows={reservations
-            .filter((reservation) =>
-              xpRewards.some((reward) => reward.id === reservation.rewardId),
-            )
-            .slice(0, 250)}
-          empty="Ainda não existem compras com XP."
+          rows={visiblePurchases.slice(0, 250)}
+          empty="Nenhuma compra encontrada neste filtro."
           columns={[
             { key: "participantId", label: "Participante", render: (row) => <span className="a-cell-title"><strong>{person(data, row.participantId)}</strong><small>RA {find(data, "participants", row.participantId).ra || "—"}</small></span> },
             { key: "rewardId", label: "Item", render: (row) => find(data, "rewards", row.rewardId).name },
@@ -2946,6 +3025,7 @@ function StoreManagement() {
           ]}
         />
       </Panel>
+      </div>
 
       <div style={{ height: 14 }} />
       <Panel

@@ -2786,6 +2786,13 @@ function StoreManagement() {
         title="Loja, prêmios e retiradas"
         description="Uma central para acompanhar o estoque, o XP gasto, os prêmios do ranking, os sorteios e cada retirada."
       >
+        <a
+          className="button"
+          href={`/api/export/store-report?editionId=${encodeURIComponent(data.edition.id)}`}
+        >
+          <Download size={16} />
+          Exportar relatório PDF
+        </a>
         <a className="secondary button" href="#catalogo">
           <Pencil size={16} />
           Editar catálogo
